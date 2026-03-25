@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAGUMS – Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0f;
+    --deep: #0f0f1a;
+    --surface: #13131f;
+    --card: #18182a;
+    --border: #2a2a45;
+    --purple: #7c3aed;
+    --purple-bright: #9d5bff;
+    --purple-dim: #4c1d95;
+    --text: #e8e6ff;
+    --text-muted: #7b7a9d;
+    --text-dim: #4a4a6a;
+    --accent: #c084fc;
+    --success: #34d399;
+    --error: #f87171;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--black);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: var(--black);
+    pointer-events: none;
+  }
+  .bg::before {
+    content: '';
+    position: absolute;
+    top: -20%; right: -10%;
+    width: 55%; height: 70%;
+    background: radial-gradient(ellipse, rgba(124,58,237,0.16) 0%, transparent 70%);
+    animation: drift 9s ease-in-out infinite alternate;
+  }
+  .bg::after {
+    content: '';
+    position: absolute;
+    bottom: -10%; left: -10%;
+    width: 45%; height: 60%;
+    background: radial-gradient(ellipse, rgba(168,85,247,0.10) 0%, transparent 70%);
+    animation: drift 11s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes drift {
+    from { transform: translate(0,0); }
+    to   { transform: translate(3%,5%); }
+  }
+
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* ── CONTAINER ── */
+  .container {
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 620px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 0 80px rgba(124,58,237,0.12), 0 40px 80px rgba(0,0,0,0.5);
+    animation: rise 0.6s cubic-bezier(.16,1,.3,1) forwards;
+    opacity: 0; transform: translateY(24px);
+  }
+  @keyframes rise { to { opacity:1; transform:translateY(0); } }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(168,85,247,0.08));
+    border-bottom: 1px solid var(--border);
+    padding: clamp(24px,4vw,36px) clamp(20px,4vw,44px) clamp(20px,3vw,28px);
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-muted);
+    text-decoration: none; margin-bottom: 16px;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(20px,3vw,28px);
+    font-weight: 800; color: #fff; margin-bottom: 4px;
+  }
+  .header p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+  /* ── STEP PROGRESS ── */
+  .steps {
+    display: flex;
+    align-items: center;
+  }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 500;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    color: var(--text-dim);
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .step.active .step-num {
+    background: var(--purple);
+    border-color: var(--purple);
+    color: #fff;
+    box-shadow: 0 0 14px rgba(124,58,237,0.55);
+  }
+  .step.done .step-num {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+  }
+  .step-label { color: var(--text-dim); transition: color 0.3s; }
+  .step.active .step-label { color: var(--accent); }
+  .step.done  .step-label { color: var(--success); }
+
+  .step-line {
+    flex: 1; height: 1px;
+    background: var(--border);
+    margin: 0 10px;
+    transition: background 0.3s;
+  }
+  .step-line.done { background: var(--purple-dim); }
+
+  /* ── FORM BODY ── */
+  .form-body {
+    padding: clamp(24px,4vw,40px) clamp(20px,4vw,44px);
+  }
+
+  .step-content { display: none; }
+  .step-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity:0; transform:translateX(10px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
+
+  /* Step 1 – student info */
+  .student-info-box {
+    text-align: center;
+    padding: 8px 0 20px;
+  }
+  .student-avatar {
+    width: 72px; height: 72px;
+    background: rgba(124,58,237,0.15);
+    border: 2px solid rgba(124,58,237,0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 18px;
+  }
+  .student-info-box h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px;
+  }
+  .student-info-box p {
+    font-size: 13px; color: var(--text-muted);
+    line-height: 1.7; max-width: 360px; margin: 0 auto;
+  }
+  .student-info-box p strong { color: var(--accent); }
+  .info-notice {
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-top: 18px; text-align: left;
+  }
+  .info-notice span { font-size: 17px; margin-top: 1px; flex-shrink: 0; }
+  .info-notice p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* Step 2 – personal details */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  .form-group { display: flex; flex-direction: column; gap: 7px; }
+  .form-group label {
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .input-wrap { position: relative; }
+  .input-wrap .icon {
+    position: absolute; left: 13px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px; pointer-events: none; z-index: 1;
+  }
+  .input-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px 12px 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+  .input-wrap input::placeholder { color: var(--text-dim); }
+  .input-wrap input:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+  }
+
+  /* Step 3 – security */
+  .password-strength { display:flex; gap:4px; margin-top:6px; }
+  .strength-bar {
+    flex:1; height:3px;
+    background: var(--border); border-radius:2px; transition: background 0.3s;
+  }
+  .strength-bar.weak   { background: var(--error); }
+  .strength-bar.medium { background: #f59e0b; }
+  .strength-bar.strong { background: var(--success); }
+  .strength-label { font-size:11px; color:var(--text-dim); margin-top:4px; text-align:right; }
+
+  .terms-check {
+    display: flex; align-items: flex-start; gap: 10px; margin-top: 4px;
+  }
+  .terms-check input { margin-top:3px; accent-color:var(--purple); flex-shrink:0; width:15px; height:15px; }
+  .terms-check label { font-size:13px; color:var(--text-muted); line-height:1.5; }
+  .terms-check a { color:var(--accent); text-decoration:none; }
+
+  /* Navigation */
+  .form-nav {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-top: 28px; gap: 12px;
+  }
+  .btn-back {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--text-muted);
+    cursor: pointer; transition: all 0.2s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-back:hover { border-color:var(--purple); color:var(--text); }
+  .btn-next {
+    flex: 1;
+    background: linear-gradient(135deg, var(--purple), var(--purple-bright));
+    border: none; border-radius: 12px;
+    padding: 13px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 700; color: #fff;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn-next:hover { transform:translateY(-1px); box-shadow:0 8px 28px rgba(124,58,237,0.45); }
+  .btn-next:active { transform:translateY(0); opacity:0.9; }
+
+  /* Success */
+  .success-screen { text-align:center; padding:12px 0; }
+  .success-icon {
+    width:72px; height:72px;
+    background: rgba(52,211,153,0.15);
+    border: 2px solid var(--success);
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:32px; margin:0 auto 20px;
+    animation: pop 0.4s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes pop {
+    from { transform:scale(0.5); opacity:0; }
+    to   { transform:scale(1);   opacity:1; }
+  }
+  .success-screen h2 {
+    font-family:'Syne',sans-serif;
+    font-size:22px; font-weight:700; color:#fff; margin-bottom:8px;
+  }
+  .success-screen p { font-size:14px; color:var(--text-muted); line-height:1.6; margin-bottom:24px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 520px) {
+    body { padding: 0; align-items: flex-start; }
+    .container {
+      border-radius: 0; border: none;
+      box-shadow: none; max-width: 100%;
+      min-height: 100vh; min-height: 100dvh;
+    }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    /* Prevent iOS zoom */
+    .input-wrap input { font-size: 16px; }
+    .btn-next { font-size: 16px; padding: 15px; }
+    .step-label { display: none; }
+    .step-line { margin: 0 6px; }
+  }
+
+  @media (max-width: 360px) {
+    .header { padding: 20px 16px 18px; }
+    .form-body { padding: 20px 16px; }
+    .student-avatar { width:60px; height:60px; font-size:26px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="grid-overlay"></div>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <a href="login.html" class="back-link">← Back to Login</a>
+    <h1>Create Account</h1>
+    <p>Your Average Generic University Management System</p>
+
+    <div class="steps">
+      <div class="step active" id="si1">
+        <div class="step-num" id="sn1">1</div>
+        <span class="step-label">Info</span>
+      </div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step" id="si2">
+        <div class="step-num" id="sn2">2</div>
+        <span class="step-label">Details</span>
+      </div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step" id="si3">
+        <div class="step-num" id="sn3">3</div>
+        <span class="step-label">Security</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Body -->
+  <div class="form-body">
+
+    <!-- Step 1: Student Info -->
+    <div class="step-content active" id="step-1">
+      <div class="student-info-box">
+        <div class="student-avatar">👤</div>
+        <h3>Student Registration</h3>
+        <p>Registration is open to <strong>students only</strong>. Other roles such as Lecturer, Facility Manager, and Maintenance Staff are assigned by the system administrator.</p>
+      </div>
+      <div class="info-notice">
+        <span>ℹ️</span>
+        <p>If you are a staff member and need access, please contact your administrator to have an account created for you.</p>
+      </div>
+      <div class="form-nav">
+        <button class="btn-next" onclick="goStep(2)">Get Started →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Personal Details -->
+    <div class="step-content" id="step-2">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>First Name</label>
+          <div class="input-wrap">
+            <span class="icon">👤</span>
+            <input type="text" id="first_name" placeholder="Alice" autocomplete="given-name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <div class="input-wrap">
+            <span class="icon">👤</span>
+            <input type="text" id="last_name" placeholder="Tan" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Email Address</label>
+          <div class="input-wrap">
+            <span class="icon">📧</span>
+            <input type="email" id="reg_email" placeholder="you@university.edu" autocomplete="email">
+          </div>
+        </div>
+        <div class="form-group full">
+          <label>Phone Number</label>
+          <div class="input-wrap">
+            <span class="icon">📱</span>
+            <input type="tel" id="phone" placeholder="+6012-3456789" autocomplete="tel">
+          </div>
+        </div>
+      </div>
+      <div class="form-nav">
+        <button class="btn-back" onclick="goStep(1)">← Back</button>
+        <button class="btn-next" onclick="goStep(3)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Security -->
+    <div class="step-content" id="step-3">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Password</label>
+          <div class="input-wrap">
+            <span class="icon">🔒</span>
+            <input type="password" id="reg_password" placeholder="Create a strong password"
+                   autocomplete="new-password" oninput="checkStrength(this.value)">
+          </div>
+          <div class="password-strength">
+            <div class="strength-bar" id="s1"></div>
+            <div class="strength-bar" id="s2"></div>
+            <div class="strength-bar" id="s3"></div>
+            <div class="strength-bar" id="s4"></div>
+          </div>
+          <div class="strength-label" id="strength-label">Enter a password</div>
+        </div>
+        <div class="form-group full">
+          <label>Confirm Password</label>
+          <div class="input-wrap">
+            <span class="icon">🔒</span>
+            <input type="password" id="confirm_password" placeholder="Re-enter your password" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="form-group full">
+          <div class="terms-check">
+            <input type="checkbox" id="terms">
+            <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a> of YAGUMS.</label>
+          </div>
+        </div>
+      </div>
+      <div class="form-nav">
+        <button class="btn-back" onclick="goStep(2)">← Back</button>
+        <button class="btn-next" onclick="handleRegister()">Create Account ✓</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div class="step-content" id="step-4">
+      <div class="success-screen">
+        <div class="success-icon">✓</div>
+        <h2>Account Created!</h2>
+        <p>Welcome to YAGUMS. Your account has been registered successfully. You can now sign in and start using the system.</p>
+        <button class="btn-next" onclick="window.location.href='login.html'">Go to Login →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let currentStep = 1;
+  const selectedRole = 'Student';
+
+  function goStep(step) {
+    if (step === 3) {
+      const fn = document.getElementById('first_name').value.trim();
+      const ln = document.getElementById('last_name').value.trim();
+      const em = document.getElementById('reg_email').value.trim();
+      if (!fn || !ln || !em) { alert('Please fill in all required fields.'); return; }
+    }
+
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    document.getElementById(`step-${step}`).classList.add('active');
+
+    for (let i = 1; i <= 3; i++) {
+      const si = document.getElementById(`si${i}`);
+      const sn = document.getElementById(`sn${i}`);
+      si.classList.remove('active','done');
+      if (i < step) { si.classList.add('done');   sn.textContent = '✓'; }
+      else if (i === step) { si.classList.add('active'); sn.textContent = i; }
+      else { sn.textContent = i; }
+    }
+    for (let i = 1; i <= 2; i++) {
+      const line = document.getElementById(`sl${i}`);
+      i < step ? line.classList.add('done') : line.classList.remove('done');
+    }
+    currentStep = step;
+  }
+
+  function checkStrength(val) {
+    const bars = [document.getElementById('s1'),document.getElementById('s2'),
+                  document.getElementById('s3'),document.getElementById('s4')];
+    const label = document.getElementById('strength-label');
+    bars.forEach(b => { b.className = 'strength-bar'; });
+
+    let score = 0;
+    if (val.length >= 6)  score++;
+    if (val.length >= 10) score++;
+    if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
+    if (/[!@#$%^&*]/.test(val)) score++;
+
+    const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+    const labels = ['','Weak','Weak','Medium','Strong'];
+    for (let i = 0; i < score; i++) bars[i].classList.add(cls);
+    label.textContent = val ? (labels[score] || 'Strong') : 'Enter a password';
+    label.style.color = cls==='weak'?'var(--error)':cls==='medium'?'#f59e0b':'var(--success)';
+  }
+
+  function handleRegister() {
+    const pass = document.getElementById('reg_password').value;
+    const conf = document.getElementById('confirm_password').value;
+    const terms = document.getElementById('terms').checked;
+    if (!pass || !conf) { alert('Please fill in all password fields.'); return; }
+    if (pass !== conf)  { alert('Passwords do not match.'); return; }
+    if (!terms)         { alert('Please agree to the Terms of Service.'); return; }
+
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    document.getElementById('step-4').classList.add('active');
+    for (let i = 1; i <= 3; i++) {
+      const si = document.getElementById(`si${i}`);
+      const sn = document.getElementById(`sn${i}`);
+      si.classList.remove('active'); si.classList.add('done');
+      sn.textContent = '✓';
+    }
+    document.getElementById('sl1').classList.add('done');
+    document.getElementById('sl2').classList.add('done');
+  }
+</script>
+</body>
+</html>
