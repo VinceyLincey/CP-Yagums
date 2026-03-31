@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAGUMS – Facility Manager Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* ── Tabs ── */
+  .page-tabs { display:flex; gap:4px; padding:14px 28px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .tab-btn { padding:9px 18px; border-radius:10px 10px 0 0; font-family:'Syne',sans-serif; font-size:13px; font-weight:700; border:1px solid transparent; border-bottom:none; cursor:pointer; transition:all .2s; color:var(--muted); background:transparent; position:relative; bottom:-1px; -webkit-tap-highlight-color:transparent; }
+  .tab-btn:hover { color:var(--text); background:rgba(124,58,237,.08); }
+  .tab-btn.active { color:var(--accent); background:var(--card); border-color:var(--border); border-bottom-color:var(--card); }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+
+  /* ── Booking approval row ── */
+  .book-row { display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid rgba(37,37,64,.5); transition:background .2s; flex-wrap:wrap; }
+  .book-row:last-child { border-bottom:none; }
+  .book-row:hover { background:rgba(124,58,237,.04); }
+  .book-info { flex:1; min-width:0; }
+  .book-fac  { font-size:13px; font-weight:600; color:var(--text); }
+  .book-meta { font-size:12px; color:var(--muted); margin-top:2px; line-height:1.5; }
+  .book-actions { display:flex; gap:6px; flex-shrink:0; }
+  .btn-approve { font-size:11px; font-weight:700; padding:5px 12px; border-radius:8px; background:rgba(52,211,153,.15); border:1px solid rgba(52,211,153,.3); color:var(--green); cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; }
+  .btn-approve:hover { background:rgba(52,211,153,.25); }
+  .btn-reject  { font-size:11px; font-weight:700; padding:5px 12px; border-radius:8px; background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.3); color:var(--red); cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; }
+  .btn-reject:hover { background:rgba(248,113,113,.22); }
+
+  /* ── Announcement form ── */
+  .ann-form { padding:18px; display:flex; flex-direction:column; gap:12px; }
+  .ann-field { display:flex; flex-direction:column; gap:6px; }
+  .ann-field label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .ann-field input,.ann-field textarea,.ann-field select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); outline:none; transition:border-color .2s; -webkit-appearance:none; resize:none; }
+  .ann-field input:focus,.ann-field textarea:focus,.ann-field select:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  .ann-field select option { background:var(--surface); }
+  .btn-post { width:100%; background:linear-gradient(135deg,var(--purple),var(--purp2)); border:none; border-radius:10px; padding:12px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; cursor:pointer; transition:all .2s; box-shadow:0 4px 14px rgba(124,58,237,.28); -webkit-tap-highlight-color:transparent; }
+  .btn-post:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 22px rgba(124,58,237,.38); }
+  .btn-post:disabled { opacity:.6; cursor:not-allowed; }
+  .f-alert { display:none; padding:9px 13px; border-radius:9px; font-size:12px; margin-top:4px; line-height:1.5; }
+  .f-alert.show { display:block; }
+  .f-alert.error   { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.3); color:var(--red); }
+  .f-alert.success { background:rgba(52,211,153,.12);  border:1px solid rgba(52,211,153,.3);  color:var(--green); }
+  .spinner-sm { display:inline-block; width:12px; height:12px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:5px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* ── Ann list ── */
+  .ann-item { padding:13px 18px; border-bottom:1px solid rgba(37,37,64,.5); }
+  .ann-item:last-child { border-bottom:none; }
+  .ann-item-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
+  .ann-item-title { font-size:13px; font-weight:600; color:var(--text); }
+  .ann-item-msg   { font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:4px; }
+  .ann-item-meta  { font-size:11px; color:var(--dim); }
+  .ann-item-votes { font-size:11px; color:var(--muted); margin-top:4px; }
+  .ann-pri { font-size:10px; font-weight:700; padding:2px 8px; border-radius:100px; }
+  .ann-pri.high   { background:rgba(248,113,113,.15); color:var(--red); }
+  .ann-pri.medium { background:rgba(245,158,11,.15);  color:var(--amber); }
+  .ann-pri.low    { background:rgba(52,211,153,.15);  color:var(--green); }
+
+  /* ── Profile tab (same as admin) ── */
+  .profile-hero-fm { background:linear-gradient(135deg,rgba(52,211,153,.12),rgba(124,58,237,.06)); border-bottom:1px solid var(--border); padding:26px 28px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; position:relative; overflow:hidden; }
+  .profile-hero-fm::before { content:''; position:absolute; top:-40%; right:-5%; width:35%; height:200%; background:radial-gradient(ellipse,rgba(52,211,153,.12) 0%,transparent 70%); pointer-events:none; }
+  .fm-avatar { width:78px; height:78px; background:linear-gradient(135deg,#059669,#34d399); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:34px; border:3px solid rgba(52,211,153,.35); box-shadow:0 0 24px rgba(52,211,153,.2); flex-shrink:0; z-index:1; }
+  .fm-hero-info { z-index:1; flex:1; min-width:0; }
+  .fm-role-pill { display:inline-flex; align-items:center; gap:6px; background:rgba(52,211,153,.15); border:1px solid rgba(52,211,153,.3); border-radius:100px; padding:4px 13px; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--green); margin-bottom:8px; }
+  .fm-hero-name  { font-family:'Syne',sans-serif; font-size:clamp(18px,2.5vw,24px); font-weight:800; color:#fff; margin-bottom:4px; }
+  .fm-hero-email { font-size:14px; color:var(--muted); }
+  .fm-hero-phone { font-size:13px; color:var(--dim); margin-top:2px; }
+
+  .profile-grid-fm { display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:20px 28px 40px; }
+  .pcard { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .pcard-head { padding:14px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .pcard-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .pcard-icon.green  { background:rgba(52,211,153,.15); border:1px solid rgba(52,211,153,.25); }
+  .pcard-icon.purple { background:rgba(124,58,237,.18); border:1px solid rgba(124,58,237,.3); }
+  .pcard-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:#fff; }
+  .pcard-sub   { font-size:12px; color:var(--muted); margin-top:1px; }
+  .pcard-body  { padding:18px 20px; }
+  .fld { display:flex; flex-direction:column; gap:6px; margin-bottom:13px; }
+  .fld:last-of-type { margin-bottom:0; }
+  .fld label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .fld-wrap { position:relative; }
+  .fld-wrap .fi { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; pointer-events:none; }
+  .fld-wrap input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px 10px 36px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text); outline:none; transition:border-color .2s,box-shadow .2s; -webkit-appearance:none; }
+  .fld-wrap input::placeholder { color:var(--dim); }
+  .fld-wrap input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  .fld-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .section-sep { height:1px; background:var(--border); margin:13px 0; }
+  .btn-save-fm { width:100%; margin-top:14px; background:linear-gradient(135deg,#059669,#34d399); border:none; border-radius:10px; padding:12px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; cursor:pointer; transition:all .2s; box-shadow:0 4px 14px rgba(52,211,153,.25); display:flex; align-items:center; justify-content:center; gap:8px; -webkit-tap-highlight-color:transparent; }
+  .btn-save-fm:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 20px rgba(52,211,153,.35); }
+  .btn-save-fm:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+  .pw-bars { display:flex; gap:4px; margin-top:5px; }
+  .pw-bar { flex:1; height:3px; background:var(--border); border-radius:2px; transition:background .3s; }
+  .pw-bar.weak { background:var(--red); } .pw-bar.medium { background:var(--amber); } .pw-bar.strong { background:var(--green); }
+  .pw-hint { font-size:11px; color:var(--dim); margin-top:3px; text-align:right; }
+  .spin { width:13px; height:13px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+
+  /* ── Donut ── */
+  .donut-wrap { padding:16px 18px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .donut-legend { display:flex; flex-direction:column; gap:7px; flex:1; }
+  .legend-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+  .legend-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+  /* ── Responsive ── */
+  @media (max-width:900px) { .profile-grid-fm{grid-template-columns:1fr} }
+  @media (max-width:768px) {
+    .page-tabs{padding:10px 14px 0}
+    .tab-btn{padding:7px 12px;font-size:12px}
+    .profile-hero-fm{padding:18px 14px}
+    .profile-grid-fm{padding:14px 14px 80px;gap:14px}
+    .fld-grid2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">YA<span>GUMS</span></div>
+    <div class="logo-sub">Facility Manager Portal</div>
+  </div>
+  <div class="sidebar-user">
+    <div class="avatar" id="sb-avatar">🏢</div>
+    <div>
+      <div class="user-name" id="sb-name">Loading…</div>
+      <div class="user-role">Facility Manager</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a class="nav-item active" href="dashboard-facility.html"><span class="nav-icon">🏠</span>Dashboard</a>
+
+    <div class="nav-section">Bookings</div>
+    <a class="nav-item" href="#" onclick="switchTab('bookings')"><span class="nav-icon">📅</span>Manage Bookings <span class="nav-badge" id="nb-pending">0</span></a>
+    <a class="nav-item" href="#" onclick="switchTab('facilities')"><span class="nav-icon">🏛️</span>Facilities</a>
+
+    <div class="nav-section">Communications</div>
+    <a class="nav-item" href="#" onclick="switchTab('announce')"><span class="nav-icon">📢</span>Announcements</a>
+    <a class="nav-item" href="#"><span class="nav-icon">🔔</span>Notifications <span class="nav-badge" id="nb-notifs">0</span></a>
+
+    <div class="nav-section">Account</div>
+    <a class="nav-item" href="#" onclick="switchTab('profile')"><span class="nav-icon">👤</span>My Profile</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙️</span>Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()"><span class="nav-icon">🚪</span>Sign Out</button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="hamburger" onclick="toggleSidebar()">☰</div>
+      <div>
+        <h2 id="page-title">Facility Dashboard</h2>
+        <p id="greeting">Loading…</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <div class="notif-btn" id="notif-btn" onclick="YAGUMS.togglePanel()">
+        🔔<span class="notif-count hidden" id="notif-count">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head"><h4>🔔 Notifications</h4><button class="notif-mark-all" onclick="YAGUMS.markAllRead()">Mark all read</button></div>
+    <div class="notif-scroll" id="notif-list"></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="page-tabs">
+    <button class="tab-btn active" id="tab-btn-overview"   onclick="switchTab('overview')">🏠 Overview</button>
+    <button class="tab-btn" id="tab-btn-bookings"  onclick="switchTab('bookings')">📅 Bookings</button>
+    <button class="tab-btn" id="tab-btn-facilities" onclick="switchTab('facilities')">🏛️ Facilities</button>
+    <button class="tab-btn" id="tab-btn-announce"  onclick="switchTab('announce')">📢 Announce</button>
+    <button class="tab-btn" id="tab-btn-profile"   onclick="switchTab('profile')">👤 Profile</button>
+  </div>
+
+  <!-- ════ OVERVIEW ════ -->
+  <div class="tab-pane active" id="tab-overview">
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card" style="--glow:var(--amber)">
+          <div class="stat-head"><div class="stat-icon amber">⏳</div><span class="stat-trend down" id="pending-trend">—</span></div>
+          <div class="stat-value" id="ov-pending">—</div><div class="stat-label">Pending Bookings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon green">✅</div><span class="stat-trend up"></span></div>
+          <div class="stat-value" id="ov-approved">—</div><div class="stat-label">Approved Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon blue">🏛️</div><span class="stat-trend neu"></span></div>
+          <div class="stat-value" id="ov-facilities">5</div><div class="stat-label">Facilities</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon purple">📢</div><span class="stat-trend neu"></span></div>
+          <div class="stat-value" id="ov-announcements">—</div><div class="stat-label">Announcements</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Quick pending bookings -->
+        <div class="panel">
+          <div class="panel-head"><div><h3>Pending Approvals</h3><p id="pending-sub">Loading…</p></div><button class="panel-action" onclick="switchTab('bookings')">View All →</button></div>
+          <div id="pending-preview"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+
+        <!-- Quick actions + donut -->
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Booking Summary</h3></div></div>
+            <div class="donut-wrap">
+              <svg width="72" height="72" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#252540" stroke-width="3.2"/>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#34d399" stroke-width="3.2" stroke-dasharray="60 40" stroke-dashoffset="25"/>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f59e0b" stroke-width="3.2" stroke-dasharray="20 80" stroke-dashoffset="-35"/>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f87171" stroke-width="3.2" stroke-dasharray="20 80" stroke-dashoffset="-55"/>
+              </svg>
+              <div class="donut-legend">
+                <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div>Approved (<span id="cnt-approved">—</span>)</div>
+                <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Pending (<span id="cnt-pending">—</span>)</div>
+                <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div>Rejected (<span id="cnt-rejected">—</span>)</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>Quick Actions</h3></div></div>
+            <div class="quick-grid">
+              <div class="quick-btn" onclick="switchTab('bookings')"><span class="qi">📅</span><span>Approve Bookings</span></div>
+              <div class="quick-btn" onclick="switchTab('announce')"><span class="qi">📢</span><span>Post Announcement</span></div>
+              <div class="quick-btn" onclick="switchTab('facilities')"><span class="qi">🏛️</span><span>Facilities</span></div>
+              <div class="quick-btn" onclick="switchTab('profile')"><span class="qi">👤</span><span>My Profile</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ BOOKINGS ════ -->
+  <div class="tab-pane" id="tab-bookings">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head"><div><h3>All Bookings</h3><p id="all-bookings-sub">Loading…</p></div></div>
+        <div id="all-bookings-list"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading bookings…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ FACILITIES ════ -->
+  <div class="tab-pane" id="tab-facilities">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head"><div><h3>Facility Management</h3><p>All campus spaces</p></div></div>
+        <div class="table-wrap">
+          <table id="fac-table">
+            <thead><tr><th>Facility</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th></tr></thead>
+            <tbody id="fac-tbody"><tr><td colspan="5" style="text-align:center;color:var(--dim);padding:28px">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ANNOUNCE ════ -->
+  <div class="tab-pane" id="tab-announce">
+    <div class="content">
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>📢 Post Announcement</h3><p>Sent to all users</p></div></div>
+          <div class="ann-form">
+            <div class="ann-field"><label>Title</label><input type="text" id="ann-title-input" placeholder="e.g. Facility closure notice"></div>
+            <div class="ann-field"><label>Message</label><textarea id="ann-msg-input" rows="4" placeholder="Write your announcement…"></textarea></div>
+            <div class="ann-field">
+              <label>Priority</label>
+              <select id="ann-priority">
+                <option value="low">🟢 Low — general info</option>
+                <option value="medium" selected>🟡 Medium — important</option>
+                <option value="high">🔴 High — urgent</option>
+              </select>
+            </div>
+            <div class="f-alert" id="ann-alert"></div>
+            <button class="btn-post" id="ann-btn" onclick="postAnnouncement()">📢 Post Announcement</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Posted Announcements</h3><p id="ann-count-label">Loading…</p></div></div>
+          <div id="ann-list"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ PROFILE ════ -->
+  <div class="tab-pane" id="tab-profile">
+    <div class="profile-hero-fm">
+      <div class="fm-avatar" id="p-avatar">🏢</div>
+      <div class="fm-hero-info">
+        <div class="fm-role-pill">🏢 Facility Manager</div>
+        <div class="fm-hero-name"  id="p-name">Loading…</div>
+        <div class="fm-hero-email" id="p-email">—</div>
+        <div class="fm-hero-phone" id="p-phone">—</div>
+      </div>
+    </div>
+    <div class="profile-grid-fm">
+      <div class="pcard">
+        <div class="pcard-head"><div class="pcard-icon purple">👤</div><div><div class="pcard-title">Personal Information</div><div class="pcard-sub">No password required</div></div></div>
+        <div class="pcard-body">
+          <div class="f-alert" id="p-info-alert"></div>
+          <div class="fld-grid2">
+            <div class="fld"><label>First Name</label><div class="fld-wrap"><span class="fi">✏️</span><input type="text" id="p_first_name" placeholder="First name"></div></div>
+            <div class="fld"><label>Last Name</label><div class="fld-wrap"><span class="fi">✏️</span><input type="text" id="p_last_name" placeholder="Last name"></div></div>
+          </div>
+          <div class="fld"><label>Email</label><div class="fld-wrap"><span class="fi">📧</span><input type="email" id="p_email" placeholder="email@university.edu"></div></div>
+          <div class="fld"><label>Phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(optional)</span></label><div class="fld-wrap"><span class="fi">📱</span><input type="tel" id="p_phone" placeholder="+6017-3334444"></div></div>
+          <button class="btn-save-fm" id="p-info-btn" onclick="saveFMInfo()">Save Changes</button>
+        </div>
+      </div>
+      <div class="pcard">
+        <div class="pcard-head"><div class="pcard-icon green">🔒</div><div><div class="pcard-title">Change Password</div><div class="pcard-sub">Current password required</div></div></div>
+        <div class="pcard-body">
+          <div class="f-alert" id="p-pw-alert"></div>
+          <div class="fld"><label>Current Password</label><div class="fld-wrap"><span class="fi">🔒</span><input type="password" id="p_curr_pw" placeholder="Enter current password"></div></div>
+          <div class="section-sep"></div>
+          <div class="fld">
+            <label>New Password</label>
+            <div class="fld-wrap"><span class="fi">🔑</span><input type="password" id="p_new_pw" placeholder="Min. 6 characters" oninput="fmPwStrength(this.value)"></div>
+            <div class="pw-bars"><div class="pw-bar" id="fpb1"></div><div class="pw-bar" id="fpb2"></div><div class="pw-bar" id="fpb3"></div><div class="pw-bar" id="fpb4"></div></div>
+            <div class="pw-hint" id="f-pw-hint">Enter a new password</div>
+          </div>
+          <div class="fld"><label>Confirm New Password</label><div class="fld-wrap"><span class="fi">🔑</span><input type="password" id="p_conf_pw" placeholder="Re-enter new password"></div></div>
+          <button class="btn-save-fm" id="p-pw-btn" onclick="saveFMPassword()" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);box-shadow:0 4px 14px rgba(59,130,246,.25);">Update Password</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<nav class="bottom-nav">
+  <a class="bnav-item active" href="dashboard-facility.html"><span class="bi">🏠</span>Home</a>
+  <a class="bnav-item" href="#" onclick="switchTab('bookings')"><span class="bi">📅</span>Bookings</a>
+  <a class="bnav-item" href="#" onclick="switchTab('announce')"><span class="bi">📢</span>Announce</a>
+  <a class="bnav-item" href="#" onclick="switchTab('profile')"><span class="bi">👤</span>Profile</a>
+  <a class="bnav-item" href="#" onclick="YAGUMS.togglePanel()"><span class="bi">🔔</span>Alerts</a>
+</nav>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="notifications.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+let _token = localStorage.getItem('yagums_token');
+let _user  = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = 'login.html'; }
+if (_user.role !== 'Facility Manager') { window.location.href = 'login.html'; }
+
+document.getElementById('sb-name').textContent  = _user.name || (_user.first_name+' '+(_user.last_name||''));
+document.getElementById('greeting').textContent = 'Welcome back, ' + (_user.first_name||'Manager') + '!';
+document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+YAGUMS.init('manager');
+
+// ════════════════════════════════════════════════
+//  Helpers
+// ════════════════════════════════════════════════
+async function apiGet(url) {
+  const res = await fetch(url, { headers:{ 'Authorization':'Bearer '+_token } });
+  try { return await res.json(); } catch { return { success:false }; }
+}
+async function apiPost(url, body) {
+  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_token}, body:JSON.stringify(body) });
+  try { return await res.json(); } catch { return { success:false }; }
+}
+
+// ════════════════════════════════════════════════
+//  Tab switching
+// ════════════════════════════════════════════════
+let activeTab = 'overview';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const btn = document.getElementById('tab-btn-'+tab);
+  if (btn) btn.classList.add('active');
+  activeTab = tab;
+  const titles = { overview:'Facility Dashboard', bookings:'Booking Management', facilities:'Facilities', announce:'Announcements', profile:'My Profile' };
+  document.getElementById('page-title').textContent = titles[tab] || 'Dashboard';
+  if (tab==='announce')   loadAnnouncements();
+  if (tab==='facilities') loadFacilities();
+  if (tab==='bookings')   loadAllBookings();
+  if (tab==='profile')    populateProfile();
+  if (window.innerWidth<=768) closeSidebar();
+}
+
+// ════════════════════════════════════════════════
+//  Load all bookings (FM sees all)
+// ════════════════════════════════════════════════
+async function loadAllBookings() {
+  try {
+    const data = await apiGet('api/bookings.php');
+    if (!data.success) { document.getElementById('all-bookings-list').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load bookings.</div>'; return; }
+
+    // Update stat cards
+    document.getElementById('ov-pending').textContent   = data.counts.pending;
+    document.getElementById('ov-approved').textContent  = data.counts.approved;
+    document.getElementById('cnt-approved').textContent = data.counts.approved;
+    document.getElementById('cnt-pending').textContent  = data.counts.pending;
+    document.getElementById('cnt-rejected').textContent = data.counts.rejected;
+    document.getElementById('nb-pending').textContent   = data.counts.pending;
+    document.getElementById('pending-trend').textContent = data.counts.pending > 0 ? data.counts.pending+' need review' : 'None pending';
+
+    if (!data.bookings.length) {
+      const empty = '<div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">No bookings found.</div>';
+      document.getElementById('all-bookings-list').innerHTML = empty;
+      document.getElementById('pending-preview').innerHTML   = empty;
+      document.getElementById('pending-sub').textContent = 'No pending bookings';
+      return;
+    }
+
+    document.getElementById('all-bookings-sub').textContent = data.counts.total + ' total bookings';
+
+    const statusIcons = { approved:'✅', pending:'⏳', rejected:'❌', cancelled:'🚫' };
+    const allHtml = data.bookings.map(b => {
+      const st = b.status_name.toLowerCase();
+      const isPending = st === 'pending';
+      return `
+        <div class="book-row" id="brow-${b.booking_id}">
+          <div class="book-info">
+            <div class="book-fac">${b.facility_name}</div>
+            <div class="book-meta">
+              👤 ${b.user_name||'Unknown'} · 📅 ${b.booking_date} · 🕐 ${b.start_time}–${b.end_time}<br>
+              📍 ${b.location}${b.purpose?` · 📝 ${b.purpose}`:''}
+            </div>
+          </div>
+          <span class="badge ${st}">${b.status_name}</span>
+          ${isPending ? `
+            <div class="book-actions">
+              <button class="btn-approve" onclick="approveBooking(${b.booking_id})">✓ Approve</button>
+              <button class="btn-reject"  onclick="rejectBooking(${b.booking_id})">✕ Reject</button>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+    document.getElementById('all-bookings-list').innerHTML = allHtml;
+
+    // Pending preview for overview tab
+    const pending = data.bookings.filter(b => b.status_name.toLowerCase()==='pending').slice(0,4);
+    document.getElementById('pending-sub').textContent = pending.length + ' awaiting approval';
+    document.getElementById('pending-preview').innerHTML = pending.length ? pending.map(b=>`
+      <div class="book-row" id="brow-prev-${b.booking_id}">
+        <div class="book-info">
+          <div class="book-fac">${b.facility_name}</div>
+          <div class="book-meta">👤 ${b.user_name} · 📅 ${b.booking_date} · ${b.start_time}–${b.end_time}</div>
+        </div>
+        <div class="book-actions">
+          <button class="btn-approve" onclick="approveBooking(${b.booking_id})">✓</button>
+          <button class="btn-reject"  onclick="rejectBooking(${b.booking_id})">✕</button>
+        </div>
+      </div>`).join('') :
+      '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No pending bookings.</div>';
+
+  } catch { document.getElementById('all-bookings-list').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not connect to server.</div>'; }
+}
+
+async function approveBooking(id) { await updateBookingStatus(id, 2, 'Approved'); }
+async function rejectBooking(id)  { await updateBookingStatus(id, 3, 'Rejected'); }
+
+async function updateBookingStatus(id, statusId, label) {
+  try {
+    const data = await apiPost('api/booking_status.php', { booking_id:id, status_id:statusId });
+    if (data.success) {
+      YAGUMS.addNotif({ icon: statusId===2?'✅':'❌', title:`Booking ${label}`, msg:`Booking #${id} has been ${label.toLowerCase()}.`, type: statusId===2?'success':'warning' });
+      await loadAllBookings();
+    }
+  } catch {}
+}
+
+// ════════════════════════════════════════════════
+//  Facilities
+// ════════════════════════════════════════════════
+async function loadFacilities() {
+  try {
+    const data = await apiGet('api/facilities.php');
+    if (!data.success) return;
+    document.getElementById('ov-facilities').textContent = data.facilities.length;
+    const tbody = data.facilities.map(f=>`
+      <tr>
+        <td><strong>${f.facility_name}</strong></td>
+        <td>${f.type_name||'—'}</td>
+        <td>${f.location}</td>
+        <td>${f.capacity} pax</td>
+        <td><span class="badge ${f.is_available?'approved':'rejected'}">${f.is_available?'Available':'Unavailable'}</span></td>
+      </tr>`).join('');
+    document.getElementById('fac-tbody').innerHTML = tbody;
+  } catch {}
+}
+
+// ════════════════════════════════════════════════
+//  Announcements
+// ════════════════════════════════════════════════
+async function loadAnnouncements() {
+  try {
+    const data = await apiGet('api/announcements.php');
+    if (!data.success) { renderDemoAnn(); return; }
+    const list = data.announcements || [];
+    document.getElementById('ov-announcements').textContent  = list.length;
+    document.getElementById('ann-count-label').textContent   = list.length + ' active';
+    renderAnnouncements(list);
+  } catch { renderDemoAnn(); }
+}
+
+function renderAnnouncements(list) {
+  const el = document.getElementById('ann-list');
+  if (!list.length) { el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No announcements yet.</div>'; return; }
+  el.innerHTML = list.slice(0,6).map(a=>`
+    <div class="ann-item">
+      <div class="ann-item-head"><div class="ann-item-title">${a.title}</div><span class="ann-pri ${a.priority}">${a.priority}</span></div>
+      <div class="ann-item-msg">${a.message}</div>
+      <div class="ann-item-meta">Posted ${a.created_at}</div>
+      <div class="ann-item-votes">👍 ${a.upvotes} · 👎 ${a.downvotes}</div>
+    </div>`).join('');
+}
+function renderDemoAnn() {
+  document.getElementById('ov-announcements').textContent = '—';
+  document.getElementById('ann-count-label').textContent  = 'Demo data';
+  renderAnnouncements([
+    { title:'Welcome to YAGUMS', message:'System is now live.', priority:'low', created_at:'30 Mar 2026', upvotes:3, downvotes:0 },
+    { title:'New Booking Policy', message:'Bookings need 24h advance notice.', priority:'high', created_at:'29 Mar 2026', upvotes:8, downvotes:1 },
+  ]);
+}
+
+async function postAnnouncement() {
+  const title    = document.getElementById('ann-title-input').value.trim();
+  const message  = document.getElementById('ann-msg-input').value.trim();
+  const priority = document.getElementById('ann-priority').value;
+  const alertEl  = document.getElementById('ann-alert');
+  alertEl.className = 'f-alert';
+  if (!title)   { alertEl.textContent='✕ Title is required.';   alertEl.className='f-alert show error'; return; }
+  if (!message) { alertEl.textContent='✕ Message is required.'; alertEl.className='f-alert show error'; return; }
+  const btn = document.getElementById('ann-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner-sm"></span>Posting…';
+  try {
+    const data = await apiPost('api/announcements.php', { action:'post', title, message, priority });
+    if (!data.success) { alertEl.textContent='✕ '+(data.message||'Failed.'); alertEl.className='f-alert show error'; return; }
+    alertEl.textContent='✓ Announcement posted to all users!';
+    alertEl.className='f-alert show success';
+    document.getElementById('ann-title-input').value='';
+    document.getElementById('ann-msg-input').value='';
+    loadAnnouncements();
+  } catch { alertEl.textContent='✕ Could not connect.'; alertEl.className='f-alert show error'; }
+  finally { btn.disabled=false; btn.innerHTML='📢 Post Announcement'; }
+}
+
+// ════════════════════════════════════════════════
+//  Profile
+// ════════════════════════════════════════════════
+function populateProfile() {
+  document.getElementById('p-name').textContent  = _user.name||(_user.first_name+' '+(_user.last_name||''));
+  document.getElementById('p-email').textContent = _user.email||'—';
+  document.getElementById('p-phone').textContent = _user.phone_number ? '📱 '+_user.phone_number : '📱 No phone on file';
+  document.getElementById('p_first_name').value  = _user.first_name||'';
+  document.getElementById('p_last_name').value   = _user.last_name||'';
+  document.getElementById('p_email').value       = _user.email||'';
+  document.getElementById('p_phone').value       = _user.phone_number||'';
+}
+
+function showPAlert(id,msg,type) {
+  const el=document.getElementById(id);
+  el.textContent=(type==='success'?'✓ ':'✕ ')+msg;
+  el.className='f-alert show '+type;
+  if(type==='success') setTimeout(()=>el.className='f-alert',5000);
+}
+function setBtn(id,loading,lbl) {
+  const b=document.getElementById(id);
+  b.disabled=loading;
+  b.innerHTML=loading?'<div class="spin"></div> Saving…':lbl;
+}
+
+async function saveFMInfo() {
+  const fn=document.getElementById('p_first_name').value.trim(),
+        ln=document.getElementById('p_last_name').value.trim(),
+        em=document.getElementById('p_email').value.trim(),
+        ph=document.getElementById('p_phone').value.trim();
+  if (!fn||!ln||!em) { showPAlert('p-info-alert','First name, last name and email are required.'); return; }
+  setBtn('p-info-btn',true,'Save Changes');
+  try {
+    const data=await apiPost('api/profile.php',{action:'info',first_name:fn,last_name:ln,email:em,phone_number:ph});
+    if (!data.success) { showPAlert('p-info-alert',data.message); return; }
+    _token=data.token; _user=data.user;
+    localStorage.setItem('yagums_token',data.token);
+    localStorage.setItem('yagums_user',JSON.stringify(data.user));
+    document.cookie=`yagums_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+    document.getElementById('sb-name').textContent=data.user.name;
+    populateProfile();
+    showPAlert('p-info-alert','Profile saved!','success');
+  } catch { showPAlert('p-info-alert','Could not connect.'); }
+  finally { setBtn('p-info-btn',false,'Save Changes'); }
+}
+
+async function saveFMPassword() {
+  const curr=document.getElementById('p_curr_pw').value,
+        nw  =document.getElementById('p_new_pw').value,
+        conf=document.getElementById('p_conf_pw').value;
+  if (!curr)       { showPAlert('p-pw-alert','Current password required.'); return; }
+  if (!nw||nw.length<6) { showPAlert('p-pw-alert','New password must be at least 6 characters.'); return; }
+  if (nw!==conf)   { showPAlert('p-pw-alert','New passwords do not match.'); return; }
+  setBtn('p-pw-btn',true,'Update Password');
+  try {
+    const data=await apiPost('api/profile.php',{action:'password',current_password:curr,new_password:nw,confirm_password:conf});
+    if (!data.success) { showPAlert('p-pw-alert',data.message); return; }
+    _token=data.token;
+    localStorage.setItem('yagums_token',data.token);
+    localStorage.setItem('yagums_user',JSON.stringify(data.user));
+    document.getElementById('p_curr_pw').value='';
+    document.getElementById('p_new_pw').value='';
+    document.getElementById('p_conf_pw').value='';
+    ['fpb1','fpb2','fpb3','fpb4'].forEach(id=>document.getElementById(id).className='pw-bar');
+    showPAlert('p-pw-alert','Password changed!','success');
+  } catch { showPAlert('p-pw-alert','Could not connect.'); }
+  finally { setBtn('p-pw-btn',false,'Update Password'); }
+}
+
+function fmPwStrength(val) {
+  const bars=['fpb1','fpb2','fpb3','fpb4'].map(id=>document.getElementById(id));
+  const hint=document.getElementById('f-pw-hint');
+  bars.forEach(b=>b.className='pw-bar');
+  let s=0;
+  if(val.length>=6)s++; if(val.length>=10)s++;
+  if(/[A-Z]/.test(val)&&/[0-9]/.test(val))s++; if(/[!@#$%^&*_\-]/.test(val))s++;
+  const cls=s<=1?'weak':s<=2?'medium':'strong';
+  for(let i=0;i<s;i++)bars[i].classList.add(cls);
+  hint.textContent=val?(['','Weak','Fair','Good','Strong'][s]||'Strong'):'Enter a new password';
+  hint.style.color=cls==='weak'?'var(--red)':cls==='medium'?'var(--amber)':'var(--green)';
+}
+
+// ════════════════════════════════════════════════
+//  Sidebar / logout
+// ════════════════════════════════════════════════
+document.querySelectorAll('.nav-item').forEach(item=>{ item.addEventListener('click',function(e){ if(this.getAttribute('href')==='#')e.preventDefault(); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active'); if(window.innerWidth<=768)closeSidebar(); }); });
+document.querySelectorAll('.bnav-item').forEach(i=>i.addEventListener('click',function(e){ if(this.getAttribute('href')==='#')e.preventDefault(); document.querySelectorAll('.bnav-item').forEach(n=>n.classList.remove('active')); this.classList.add('active'); }));
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
+function logout(){ localStorage.removeItem('yagums_token'); localStorage.removeItem('yagums_user'); document.cookie='yagums_token=; path=/; max-age=0'; window.location.href='login.html'; }
+
+// ════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════
+loadAllBookings();
+loadAnnouncements();
+loadFacilities();
+</script>
+</body>
+</html>

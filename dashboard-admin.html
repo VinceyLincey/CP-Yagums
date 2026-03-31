@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAGUMS – Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* ── Tabs ── */
+  .page-tabs {
+    display: flex; gap: 4px;
+    padding: 16px 28px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 10px 20px; border-radius: 10px 10px 0 0;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+    border: 1px solid transparent; border-bottom: none;
+    cursor: pointer; transition: all .2s; color: var(--muted);
+    background: transparent; position: relative; bottom: -1px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab-btn:hover { color: var(--text); background: rgba(124,58,237,.08); }
+  .tab-btn.active {
+    color: var(--accent); background: var(--card);
+    border-color: var(--border); border-bottom-color: var(--card);
+  }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── Role chips ── */
+  .role-chip { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px; border-radius:100px; font-weight:600; white-space:nowrap; }
+  .role-chip.student    { background:rgba(96,165,250,.15);  color:var(--blue); }
+  .role-chip.lecturer   { background:rgba(192,132,252,.15); color:var(--accent); }
+  .role-chip.manager    { background:rgba(52,211,153,.15);  color:var(--green); }
+  .role-chip.staff      { background:rgba(52,211,153,.1);   color:#6ee7b7; }
+  .role-chip.maint      { background:rgba(245,158,11,.15);  color:var(--amber); }
+  .role-chip.sysadmin   { background:rgba(248,113,113,.15); color:var(--red); }
+
+  /* ── User list ── */
+  .user-row { display:flex; align-items:center; gap:12px; padding:11px 18px; border-bottom:1px solid rgba(37,37,64,.5); transition:background .2s; }
+  .user-row:last-child { border-bottom:none; }
+  .user-row:hover { background:rgba(124,58,237,.04); }
+  .u-av { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; background:rgba(124,58,237,.18); }
+  .u-name { font-size:13px; font-weight:500; color:var(--text); }
+  .u-email { font-size:11px; color:var(--muted); margin-top:1px; }
+  .u-actions { margin-left:auto; display:flex; gap:6px; flex-shrink:0; }
+  .btn-xs { font-size:11px; padding:4px 10px; border-radius:7px; border:1px solid var(--border2); background:transparent; color:var(--muted); cursor:pointer; transition:all .2s; font-family:'DM Sans',sans-serif; }
+  .btn-xs:hover { border-color:var(--purple); color:var(--text); }
+
+  /* ── Live log ── */
+  .log-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+  }
+  .log-panel-head h3 { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; }
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.25);
+    border-radius: 100px; padding: 3px 10px;
+    font-size: 11px; font-weight: 600; color: var(--green);
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: livepulse 1.5s ease-in-out infinite;
+  }
+  @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .log-scroll { max-height: 340px; overflow-y: auto; }
+  .log-scroll::-webkit-scrollbar { width: 4px; }
+  .log-scroll::-webkit-scrollbar-track { background: transparent; }
+  .log-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .log-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 18px; border-bottom: 1px solid rgba(37,37,64,.4);
+    transition: background .15s;
+    animation: logSlide .4s ease both;
+  }
+  @keyframes logSlide { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+  .log-row:last-child { border-bottom: none; }
+  .log-row:hover { background: rgba(124,58,237,.04); }
+  .log-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+  .log-dot.green  { background:var(--green); }
+  .log-dot.amber  { background:var(--amber); }
+  .log-dot.blue   { background:var(--blue); }
+  .log-dot.purple { background:var(--purp2); }
+  .log-dot.red    { background:var(--red); }
+  .log-dot.teal   { background:#2dd4bf; }
+  .log-icon { font-size:16px; flex-shrink:0; }
+  .log-body { flex:1; min-width:0; }
+  .log-action { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin-bottom:2px; }
+  .log-desc { font-size:13px; color:var(--muted); line-height:1.4; }
+  .log-desc strong { color:var(--text); font-weight:500; }
+  .log-meta { font-size:11px; color:var(--dim); margin-top:3px; }
+  .log-time { font-size:11px; color:var(--dim); white-space:nowrap; flex-shrink:0; }
+
+  /* Log action colours */
+  .action-LOGIN    { color:var(--green); }
+  .action-LOGOUT   { color:var(--amber); }
+  .action-APPROVE  { color:var(--green); }
+  .action-REJECT   { color:var(--red); }
+  .action-ANNOUNCE { color:var(--purp2); }
+  .action-CREATE   { color:var(--blue); }
+  .action-UPDATE   { color:var(--blue); }
+  .action-DELETE   { color:var(--red); }
+  .action-ASSIGN   { color:#2dd4bf; }
+  .action-VIEW     { color:var(--dim); }
+
+  /* ── Announcement form ── */
+  .ann-form { padding:18px; display:flex; flex-direction:column; gap:12px; }
+  .ann-field { display:flex; flex-direction:column; gap:6px; }
+  .ann-field label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .ann-field input,
+  .ann-field textarea,
+  .ann-field select { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); outline:none; transition:border-color .2s; -webkit-appearance:none; resize:none; }
+  .ann-field input:focus,.ann-field textarea:focus,.ann-field select:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  .ann-field select option { background:var(--surface); }
+
+  .ann-item { padding:13px 18px; border-bottom:1px solid rgba(37,37,64,.5); animation:logSlide .35s ease both; }
+  .ann-item:last-child { border-bottom:none; }
+  .ann-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
+  .ann-item-title { font-size:13px; font-weight:600; color:var(--text); }
+  .ann-item-msg   { font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:4px; }
+  .ann-item-meta  { font-size:11px; color:var(--dim); }
+  .ann-pri { font-size:10px; font-weight:700; padding:2px 8px; border-radius:100px; }
+  .ann-pri.high   { background:rgba(248,113,113,.15); color:var(--red); }
+  .ann-pri.medium { background:rgba(245,158,11,.15);  color:var(--amber); }
+  .ann-pri.low    { background:rgba(52,211,153,.15);  color:var(--green); }
+
+  /* ── Btn post ── */
+  .btn-post { width:100%; background:linear-gradient(135deg,var(--purple),var(--purp2)); border:none; border-radius:10px; padding:12px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; cursor:pointer; transition:all .2s; box-shadow:0 4px 16px rgba(124,58,237,.3); -webkit-tap-highlight-color:transparent; }
+  .btn-post:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 24px rgba(124,58,237,.4); }
+  .btn-post:disabled { opacity:.6; cursor:not-allowed; }
+  .f-alert { display:none; padding:9px 13px; border-radius:9px; font-size:12px; margin-top:4px; line-height:1.5; }
+  .f-alert.show { display:block; }
+  .f-alert.error   { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.3); color:var(--red); }
+  .f-alert.success { background:rgba(52,211,153,.12);  border:1px solid rgba(52,211,153,.3);  color:var(--green); }
+
+  /* ── Donut ── */
+  .donut-wrap { padding:16px 18px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+  .donut-legend { display:flex; flex-direction:column; gap:7px; flex:1; }
+  .legend-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+  .legend-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+  /* ── Profile tab ── */
+  .profile-hero-admin {
+    background: linear-gradient(135deg,rgba(124,58,237,.18),rgba(168,85,247,.06));
+    border-bottom: 1px solid var(--border);
+    padding: 28px; display:flex; align-items:center; gap:22px; flex-wrap:wrap;
+    position:relative; overflow:hidden;
+  }
+  .profile-hero-admin::before { content:''; position:absolute; top:-40%; right:-5%; width:35%; height:200%; background:radial-gradient(ellipse,rgba(124,58,237,.15) 0%,transparent 70%); pointer-events:none; }
+  .admin-avatar { width:80px; height:80px; background:linear-gradient(135deg,var(--purple),var(--accent)); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:36px; border:3px solid rgba(124,58,237,.4); box-shadow:0 0 28px rgba(124,58,237,.3); flex-shrink:0; position:relative; z-index:1; }
+  .admin-hero-info { z-index:1; flex:1; min-width:0; }
+  .admin-role-pill { display:inline-flex; align-items:center; gap:6px; background:rgba(248,113,113,.15); border:1px solid rgba(248,113,113,.3); border-radius:100px; padding:4px 13px; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--red); margin-bottom:8px; }
+  .admin-hero-name { font-family:'Syne',sans-serif; font-size:clamp(18px,2.5vw,24px); font-weight:800; color:#fff; margin-bottom:4px; }
+  .admin-hero-email { font-size:14px; color:var(--muted); }
+  .admin-hero-phone { font-size:13px; color:var(--dim); margin-top:2px; }
+
+  .profile-grid-admin { display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:22px 28px 32px; }
+  .pcard { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .pcard-head { padding:15px 20px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .pcard-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .pcard-icon.purple { background:rgba(124,58,237,.18); border:1px solid rgba(124,58,237,.3); }
+  .pcard-icon.green  { background:rgba(52,211,153,.15);  border:1px solid rgba(52,211,153,.25); }
+  .pcard-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:#fff; }
+  .pcard-sub { font-size:12px; color:var(--muted); margin-top:1px; }
+  .pcard-body { padding:18px 20px; }
+
+  .fld { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .fld:last-of-type { margin-bottom:0; }
+  .fld label { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .fld-wrap { position:relative; }
+  .fld-wrap .fi { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; pointer-events:none; }
+  .fld-wrap input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 14px 11px 36px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text); outline:none; transition:border-color .2s,box-shadow .2s; -webkit-appearance:none; }
+  .fld-wrap input::placeholder { color:var(--dim); }
+  .fld-wrap input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  .fld-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .section-sep { height:1px; background:var(--border); margin:14px 0; }
+
+  .btn-save-admin { width:100%; margin-top:16px; background:linear-gradient(135deg,var(--purple),var(--purp2)); border:none; border-radius:10px; padding:12px; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; cursor:pointer; transition:all .2s; box-shadow:0 4px 16px rgba(124,58,237,.28); display:flex; align-items:center; justify-content:center; gap:8px; -webkit-tap-highlight-color:transparent; }
+  .btn-save-admin:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 22px rgba(124,58,237,.38); }
+  .btn-save-admin:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+
+  .spin { width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .pw-bars { display:flex; gap:4px; margin-top:5px; }
+  .pw-bar { flex:1; height:3px; background:var(--border); border-radius:2px; transition:background .3s; }
+  .pw-bar.weak { background:var(--red); } .pw-bar.medium { background:var(--amber); } .pw-bar.strong { background:var(--green); }
+  .pw-hint { font-size:11px; color:var(--dim); margin-top:3px; text-align:right; }
+
+  /* ── Responsive ── */
+  @media (max-width:900px) { .profile-grid-admin { grid-template-columns:1fr; } }
+  @media (max-width:768px) {
+    .page-tabs { padding:12px 14px 0; gap:2px; }
+    .tab-btn { padding:8px 14px; font-size:12px; }
+    .profile-grid-admin { padding:14px 14px 80px; gap:14px; }
+    .profile-hero-admin { padding:18px 14px; }
+    .fld-grid2 { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">YA<span>GUMS</span></div>
+    <div class="logo-sub">Admin Control Panel</div>
+  </div>
+  <div class="sidebar-user">
+    <div class="avatar" id="sb-avatar">⚙️</div>
+    <div>
+      <div class="user-name" id="sb-name">Admin</div>
+      <div class="user-role" id="sb-role">Loading…</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a class="nav-item active" href="dashboard-admin.html"><span class="nav-icon">🏠</span>Dashboard</a>
+    <a class="nav-item" href="#" onclick="switchTab('analytics')"><span class="nav-icon">📊</span>Analytics</a>
+
+    <div class="nav-section">Management</div>
+    <a class="nav-item" href="#" onclick="switchTab('users')"><span class="nav-icon">👥</span>Users <span class="nav-badge">7</span></a>
+    <a class="nav-item" href="#"><span class="nav-icon">🏛️</span>Facilities</a>
+    <a class="nav-item" href="#"><span class="nav-icon">📅</span>Bookings <span class="nav-badge">5</span></a>
+    <a class="nav-item" href="#"><span class="nav-icon">🔧</span>Maintenance <span class="nav-badge">3</span></a>
+
+    <div class="nav-section">Communications</div>
+    <a class="nav-item" href="#" onclick="switchTab('announce')"><span class="nav-icon">📢</span>Announcements</a>
+    <a class="nav-item" href="#"><span class="nav-icon">🔔</span>Notifications <span class="nav-badge" id="nb-notifs">0</span></a>
+
+    <div class="nav-section">System</div>
+    <a class="nav-item" href="#" onclick="switchTab('logs')"><span class="nav-icon">📋</span>Admin Logs</a>
+    <a class="nav-item" href="#" onclick="switchTab('profile')"><span class="nav-icon">👤</span>My Profile</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚙️</span>Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()"><span class="nav-icon">🚪</span>Sign Out</button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="hamburger" onclick="toggleSidebar()">☰</div>
+      <div>
+        <h2 id="page-title">Admin Dashboard</h2>
+        <p id="greeting">System overview</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <div class="notif-btn" id="notif-btn" onclick="YAGUMS.togglePanel()">
+        🔔<span class="notif-count hidden" id="notif-count">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification panel -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head">
+      <h4>🔔 Notifications</h4>
+      <button class="notif-mark-all" onclick="YAGUMS.markAllRead()">Mark all read</button>
+    </div>
+    <div class="notif-scroll" id="notif-list"></div>
+  </div>
+
+  <!-- ── PAGE TABS ── -->
+  <div class="page-tabs">
+    <button class="tab-btn active" id="tab-btn-overview"  onclick="switchTab('overview')">🏠 Overview</button>
+    <button class="tab-btn" id="tab-btn-users"     onclick="switchTab('users')">👥 Users</button>
+    <button class="tab-btn" id="tab-btn-announce"  onclick="switchTab('announce')">📢 Announce</button>
+    <button class="tab-btn" id="tab-btn-logs"      onclick="switchTab('logs')">📋 Live Log</button>
+    <button class="tab-btn" id="tab-btn-profile"   onclick="switchTab('profile')">👤 Profile</button>
+  </div>
+
+  <!-- ════ TAB: OVERVIEW ════ -->
+  <div class="tab-pane active" id="tab-overview">
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card" style="--glow:var(--purp2)">
+          <div class="stat-head"><div class="stat-icon purple">👥</div><span class="stat-trend neu">Total</span></div>
+          <div class="stat-value">7</div><div class="stat-label">Registered Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon blue">🏛️</div><span class="stat-trend neu">Live</span></div>
+          <div class="stat-value">5</div><div class="stat-label">Facilities</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon green">📅</div><span class="stat-trend up">+2</span></div>
+          <div class="stat-value">5</div><div class="stat-label">Total Bookings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon amber">🔧</div><span class="stat-trend down">Open</span></div>
+          <div class="stat-value">3</div><div class="stat-label">Maintenance Requests</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>All Bookings</h3><p>Full system view</p></div><a href="#" class="panel-action">Export</a></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Facility</th><th>User</th><th>Date</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Study Room 5</strong></td><td>Alice Tan</td><td>1 Apr</td><td><span class="badge approved">Approved</span></td></tr>
+                <tr><td><strong>Study Room 5</strong></td><td>Ben Lee</td><td>1 Apr</td><td><span class="badge pending">Pending</span></td></tr>
+                <tr><td><strong>Lecture Hall A</strong></td><td>Dr. Kumar</td><td>2 Apr</td><td><span class="badge approved">Approved</span></td></tr>
+                <tr><td><strong>Computer Lab 1</strong></td><td>Dr. Kumar</td><td>3 Apr</td><td><span class="badge approved">Approved</span></td></tr>
+                <tr><td><strong>Basketball Court</strong></td><td>Alice Tan</td><td>4 Apr</td><td><span class="badge rejected">Rejected</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Booking Status</h3></div></div>
+            <div class="donut-wrap">
+              <svg width="74" height="74" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#252540" stroke-width="3.2"/>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#34d399" stroke-width="3.2" stroke-dasharray="60 40" stroke-dashoffset="25"/>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f59e0b" stroke-width="3.2" stroke-dasharray="20 80" stroke-dashoffset="-35"/>
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f87171" stroke-width="3.2" stroke-dasharray="20 80" stroke-dashoffset="-55"/>
+              </svg>
+              <div class="donut-legend">
+                <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div>Approved (3)</div>
+                <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Pending (1)</div>
+                <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div>Rejected (1)</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>Quick Actions</h3></div></div>
+            <div class="quick-grid">
+              <div class="quick-btn" onclick="switchTab('users')"><span class="qi">👤</span><span>Manage Users</span></div>
+              <div class="quick-btn" onclick="switchTab('announce')"><span class="qi">📢</span><span>Post Announcement</span></div>
+              <div class="quick-btn" onclick="switchTab('logs')"><span class="qi">📋</span><span>View Logs</span></div>
+              <div class="quick-btn" onclick="switchTab('profile')"><span class="qi">⚙️</span><span>My Profile</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB: USERS ════ -->
+  <div class="tab-pane" id="tab-users">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>All Users</h3><p>7 registered accounts across 6 roles</p></div>
+          <a href="#" class="panel-action">+ Add User</a>
+        </div>
+        <div id="users-list">
+          <div class="user-row"><div class="u-av">⚙️</div><div><div class="u-name">Super Admin</div><div class="u-email">admin@yagums.edu</div></div><span class="role-chip sysadmin">System Admin</span><div class="u-actions"><button class="btn-xs">Edit</button></div></div>
+          <div class="user-row"><div class="u-av">🏢</div><div><div class="u-name">Ms. Lim</div><div class="u-email">lim@admin.edu</div></div><span class="role-chip manager">Fac. Manager</span><div class="u-actions"><button class="btn-xs">Edit</button></div></div>
+          <div class="user-row"><div class="u-av">🏛️</div><div><div class="u-name">Raj Singh</div><div class="u-email">raj@facility.edu</div></div><span class="role-chip staff">Fac. Staff</span><div class="u-actions"><button class="btn-xs">Edit</button></div></div>
+          <div class="user-row"><div class="u-av">🎓</div><div><div class="u-name">Dr. Kumar</div><div class="u-email">kumar@staff.edu</div></div><span class="role-chip lecturer">Lecturer</span><div class="u-actions"><button class="btn-xs">Edit</button></div></div>
+          <div class="user-row"><div class="u-av">🔧</div><div><div class="u-name">Ahmad Rahman</div><div class="u-email">ahmad@maintenance.edu</div></div><span class="role-chip maint">Maintenance</span><div class="u-actions"><button class="btn-xs">Edit</button></div></div>
+          <div class="user-row"><div class="u-av">👤</div><div><div class="u-name">Alice Tan</div><div class="u-email">alice@student.edu</div></div><span class="role-chip student">Student</span><div class="u-actions"><button class="btn-xs">Edit</button></div></div>
+          <div class="user-row"><div class="u-av">👤</div><div><div class="u-name">Ben Lee</div><div class="u-email">ben@student.edu</div></div><span class="role-chip student">Student</span><div class="u-actions"><button class="btn-xs">Edit</button></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB: ANNOUNCEMENTS ════ -->
+  <div class="tab-pane" id="tab-announce">
+    <div class="content">
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>📢 Post Announcement</h3><p>Sent to all users instantly</p></div></div>
+          <div class="ann-form">
+            <div class="ann-field"><label>Title</label><input type="text" id="ann-title-input" placeholder="e.g. Library closure notice"></div>
+            <div class="ann-field"><label>Message</label><textarea id="ann-msg-input" rows="4" placeholder="Write your announcement here…"></textarea></div>
+            <div class="ann-field">
+              <label>Priority</label>
+              <select id="ann-priority">
+                <option value="low">🟢 Low — general info</option>
+                <option value="medium" selected>🟡 Medium — important</option>
+                <option value="high">🔴 High — urgent</option>
+              </select>
+            </div>
+            <div class="f-alert" id="ann-alert"></div>
+            <button class="btn-post" id="ann-btn" onclick="postAnnouncement()">📢 Post Announcement</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Posted Announcements</h3><p id="ann-count-label">Loading…</p></div></div>
+          <div id="ann-list"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB: LIVE LOG ════ -->
+  <div class="tab-pane" id="tab-logs">
+    <div class="content">
+      <div class="panel" style="overflow:hidden;">
+        <div class="log-panel-head">
+          <div>
+            <h3>Admin Action Log</h3>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px;">Updates automatically every 5 seconds</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="live-badge" id="live-status">
+              <div class="live-dot"></div> LIVE
+            </div>
+            <div style="font-size:11px;color:var(--dim);" id="log-last-updated">—</div>
+          </div>
+        </div>
+        <div class="log-scroll" id="log-container">
+          <div style="padding:32px;text-align:center;font-size:13px;color:var(--dim);">Connecting to live log…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB: PROFILE ════ -->
+  <div class="tab-pane" id="tab-profile">
+    <div class="profile-hero-admin">
+      <div class="admin-avatar" id="p-avatar">⚙️</div>
+      <div class="admin-hero-info">
+        <div class="admin-role-pill" id="p-role-pill">⚙️ System Admin</div>
+        <div class="admin-hero-name" id="p-name">Loading…</div>
+        <div class="admin-hero-email" id="p-email">—</div>
+        <div class="admin-hero-phone" id="p-phone">—</div>
+      </div>
+    </div>
+    <div class="profile-grid-admin">
+
+      <!-- Personal info (no password required) -->
+      <div class="pcard">
+        <div class="pcard-head">
+          <div class="pcard-icon purple">👤</div>
+          <div><div class="pcard-title">Personal Information</div><div class="pcard-sub">No password required to update</div></div>
+        </div>
+        <div class="pcard-body">
+          <div class="f-alert" id="p-info-alert"></div>
+          <div class="fld-grid2">
+            <div class="fld"><label>First Name</label><div class="fld-wrap"><span class="fi">✏️</span><input type="text" id="p_first_name" placeholder="First name"></div></div>
+            <div class="fld"><label>Last Name</label><div class="fld-wrap"><span class="fi">✏️</span><input type="text" id="p_last_name" placeholder="Last name"></div></div>
+          </div>
+          <div class="fld"><label>Email Address</label><div class="fld-wrap"><span class="fi">📧</span><input type="email" id="p_email" placeholder="your@email.com"></div></div>
+          <div class="fld"><label>Phone Number <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(optional)</span></label><div class="fld-wrap"><span class="fi">📱</span><input type="tel" id="p_phone" placeholder="+6017-3334444"></div></div>
+          <button class="btn-save-admin" id="p-info-btn" onclick="saveAdminInfo()">Save Changes</button>
+        </div>
+      </div>
+
+      <!-- Change password -->
+      <div class="pcard">
+        <div class="pcard-head">
+          <div class="pcard-icon green">🔒</div>
+          <div><div class="pcard-title">Change Password</div><div class="pcard-sub">Current password required</div></div>
+        </div>
+        <div class="pcard-body">
+          <div class="f-alert" id="p-pw-alert"></div>
+          <div class="fld"><label>Current Password</label><div class="fld-wrap"><span class="fi">🔒</span><input type="password" id="p_curr_pw" placeholder="Enter current password"></div></div>
+          <div class="section-sep"></div>
+          <div class="fld">
+            <label>New Password</label>
+            <div class="fld-wrap"><span class="fi">🔑</span><input type="password" id="p_new_pw" placeholder="Min. 6 characters" oninput="adminPwStrength(this.value)"></div>
+            <div class="pw-bars"><div class="pw-bar" id="apb1"></div><div class="pw-bar" id="apb2"></div><div class="pw-bar" id="apb3"></div><div class="pw-bar" id="apb4"></div></div>
+            <div class="pw-hint" id="a-pw-hint">Enter a new password</div>
+          </div>
+          <div class="fld"><label>Confirm New Password</label><div class="fld-wrap"><span class="fi">🔑</span><input type="password" id="p_conf_pw" placeholder="Re-enter new password"></div></div>
+          <button class="btn-save-admin" id="p-pw-btn" onclick="saveAdminPassword()" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);box-shadow:0 4px 14px rgba(59,130,246,.28);">Update Password</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<nav class="bottom-nav">
+  <a class="bnav-item active" href="dashboard-admin.html"><span class="bi">🏠</span>Home</a>
+  <a class="bnav-item" href="#" onclick="switchTab('users')"><span class="bi">👥</span>Users</a>
+  <a class="bnav-item" href="#" onclick="switchTab('announce')"><span class="bi">📢</span>Announce</a>
+  <a class="bnav-item" href="#" onclick="switchTab('logs')"><span class="bi">📋</span>Logs</a>
+  <a class="bnav-item" href="#" onclick="switchTab('profile')"><span class="bi">👤</span>Profile</a>
+</nav>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="notifications.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+let _token = localStorage.getItem('yagums_token');
+let _user  = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = 'login.html'; }
+
+const DEMO = !_token || _token.endsWith('.demo');
+
+// Populate sidebar + topbar
+document.getElementById('sb-name').textContent   = _user.name  || (_user.first_name + ' ' + (_user.last_name||''));
+document.getElementById('sb-role').textContent   = _user.role  || 'Admin';
+document.getElementById('greeting').textContent  = 'Welcome back, ' + (_user.first_name || 'Admin') + ' — full system control';
+document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+// Role avatar
+const roleAvatars = { 'System Admin':'⚙️','Facility Manager':'🏢','Facility Staff':'🏛️' };
+const av = roleAvatars[_user.role] || '⚙️';
+document.getElementById('sb-avatar').textContent = av;
+
+YAGUMS.init('manager');
+
+// ════════════════════════════════════════════════
+//  Tab switching
+// ════════════════════════════════════════════════
+let activeTab = 'overview';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  const btn = document.getElementById('tab-btn-' + tab);
+  if (btn) btn.classList.add('active');
+  activeTab = tab;
+
+  // Update topbar title
+  const titles = { overview:'Admin Dashboard', users:'User Management', announce:'Announcements', logs:'Live Admin Log', profile:'My Profile' };
+  document.getElementById('page-title').textContent = titles[tab] || 'Admin Dashboard';
+
+  if (tab === 'logs')     { startLiveLog(); }
+  if (tab === 'announce') { loadAnnouncements(); }
+  if (tab === 'profile')  { populateProfileTab(); }
+
+  if (window.innerWidth <= 768) closeSidebar();
+}
+
+// ════════════════════════════════════════════════
+//  Live Log  (polls every 5s)
+// ════════════════════════════════════════════════
+let logInterval  = null;
+let lastLogId    = 0;
+let logRunning   = false;
+
+const LOG_ICONS = { LOGIN:'🔓',LOGOUT:'🔒',APPROVE:'✅',REJECT:'❌',ANNOUNCE:'📢',CREATE:'➕',UPDATE:'✏️',DELETE:'🗑️',ASSIGN:'📋',VIEW:'👁️' };
+const LOG_DOTS  = { LOGIN:'green',LOGOUT:'amber',APPROVE:'green',REJECT:'red',ANNOUNCE:'purple',CREATE:'blue',UPDATE:'blue',DELETE:'red',ASSIGN:'teal',VIEW:'amber' };
+
+function startLiveLog() {
+  if (logRunning) return;
+  logRunning = true;
+  fetchLog(); // immediate first load
+  logInterval = setInterval(fetchLog, 5000);
+}
+
+function stopLiveLog() {
+  if (logInterval) { clearInterval(logInterval); logInterval = null; }
+  logRunning = false;
+}
+
+async function fetchLog() {
+  if (DEMO) { renderDemoLog(); return; }
+  try {
+    const res  = await fetch('api/admin_log.php', { headers:{ 'Authorization':'Bearer '+_token } });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { return; }
+    if (!data.success) return;
+    renderLog(data.logs || []);
+    updateLiveStatus(true);
+  } catch {
+    updateLiveStatus(false);
+    if (DEMO) renderDemoLog();
+  }
+}
+
+function updateLiveStatus(online) {
+  const el = document.getElementById('live-status');
+  const ts = document.getElementById('log-last-updated');
+  el.innerHTML  = `<div class="live-dot" style="background:${online?'var(--green)':'var(--amber)'}"></div> ${online?'LIVE':'OFFLINE'}`;
+  el.style.color = online ? 'var(--green)' : 'var(--amber)';
+  ts.textContent = 'Updated ' + new Date().toLocaleTimeString('en-MY', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function renderLog(logs) {
+  const container = document.getElementById('log-container');
+  if (!logs.length) {
+    container.innerHTML = '<div style="padding:32px;text-align:center;font-size:13px;color:var(--dim);">No log entries yet.</div>';
+    return;
+  }
+  container.innerHTML = logs.map(l => {
+    const icon = LOG_ICONS[l.action] || '📝';
+    const dot  = LOG_DOTS[l.action]  || 'blue';
+    const cls  = 'action-' + l.action;
+    return `
+      <div class="log-row">
+        <div class="log-dot ${dot}"></div>
+        <span class="log-icon">${icon}</span>
+        <div class="log-body">
+          <div class="log-action ${cls}">${l.action}</div>
+          <div class="log-desc">${l.description}</div>
+          ${l.ip_address ? `<div class="log-meta">IP: ${l.ip_address}${l.target_type ? ' · '+l.target_type+(l.target_id?` #${l.target_id}`:'') : ''}</div>` : ''}
+        </div>
+        <div class="log-time">${l.created_at}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderDemoLog() {
+  updateLiveStatus(false);
+  const demoLogs = [
+    { action:'LOGIN',    description:'Ms. Lim (Facility Manager) logged in',                 created_at:'Just now',   ip_address:'127.0.0.1' },
+    { action:'APPROVE',  description:'Approved booking #1 — Study Room 5 (Alice Tan)',       created_at:'2m ago',     ip_address:'127.0.0.1' },
+    { action:'REJECT',   description:'Rejected booking #5 — Basketball Court (Alice Tan)',   created_at:'5m ago',     ip_address:'127.0.0.1' },
+    { action:'ANNOUNCE', description:'Posted announcement: "New Booking Policy"',            created_at:'15m ago',    ip_address:'127.0.0.1' },
+    { action:'CREATE',   description:'Created new Facility Staff account — Raj Singh',       created_at:'1h ago',     ip_address:'127.0.0.1' },
+    { action:'APPROVE',  description:'Approved booking #3 — Lecture Hall A (Dr. Kumar)',     created_at:'2h ago',     ip_address:'127.0.0.1' },
+    { action:'LOGOUT',   description:'Ms. Lim logged out',                                  created_at:'5h ago',     ip_address:'127.0.0.1' },
+    { action:'LOGIN',    description:'Ms. Lim (Facility Manager) logged in',                 created_at:'5h ago',     ip_address:'127.0.0.1' },
+  ];
+  renderLog(demoLogs);
+}
+
+// Stop polling when user leaves the log tab
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopLiveLog();
+  else if (activeTab === 'logs') startLiveLog();
+});
+
+// ════════════════════════════════════════════════
+//  Announcements
+// ════════════════════════════════════════════════
+async function loadAnnouncements() {
+  if (DEMO) { renderDemoAnn(); return; }
+  try {
+    const res  = await fetch('api/announcements.php', { headers:{'Authorization':'Bearer '+_token} });
+    const data = await res.json();
+    if (!data.success) { renderDemoAnn(); return; }
+    renderAnnouncements(data.announcements || []);
+    document.getElementById('ann-count-label').textContent = (data.announcements||[]).length + ' active';
+  } catch { renderDemoAnn(); }
+}
+
+function renderAnnouncements(list) {
+  const el = document.getElementById('ann-list');
+  if (!list.length) { el.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--dim);">No announcements yet. Post one!</div>'; return; }
+  el.innerHTML = list.slice(0,6).map(a => `
+    <div class="ann-item">
+      <div class="ann-header"><div class="ann-item-title">${a.title}</div><span class="ann-pri ${a.priority}">${a.priority}</span></div>
+      <div class="ann-item-msg">${a.message}</div>
+      <div class="ann-item-meta">Posted by ${a.posted_by_name || 'Admin'} · ${a.created_at}</div>
+    </div>`).join('');
+}
+
+function renderDemoAnn() {
+  document.getElementById('ann-count-label').textContent = '3 active (demo)';
+  renderAnnouncements([
+    { title:'Welcome to YAGUMS',      message:'The new university management system is live.',              priority:'low',    created_at:'30 Mar 2026', posted_by_name:'Ms. Lim' },
+    { title:'New Booking Policy',     message:'All bookings must be made at least 24 hours in advance.',   priority:'high',   created_at:'29 Mar 2026', posted_by_name:'Ms. Lim' },
+    { title:'Library Closure Notice', message:'The library will be closed on 5 April for maintenance.',    priority:'medium', created_at:'28 Mar 2026', posted_by_name:'Ms. Lim' },
+  ]);
+}
+
+async function postAnnouncement() {
+  const title    = document.getElementById('ann-title-input').value.trim();
+  const message  = document.getElementById('ann-msg-input').value.trim();
+  const priority = document.getElementById('ann-priority').value;
+  const alertEl  = document.getElementById('ann-alert');
+  alertEl.className = 'f-alert';
+
+  if (!title)   { alertEl.textContent='✕ Title is required.';   alertEl.className='f-alert show error'; return; }
+  if (!message) { alertEl.textContent='✕ Message is required.'; alertEl.className='f-alert show error'; return; }
+
+  const btn = document.getElementById('ann-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px;"></span>Posting…';
+
+  if (DEMO) {
+    await new Promise(r => setTimeout(r,600));
+    alertEl.textContent = '✓ Posted! (demo — not saved to DB)';
+    alertEl.className = 'f-alert show success';
+    const el = document.getElementById('ann-list');
+    const row = document.createElement('div');
+    row.className = 'ann-item';
+    row.innerHTML = `<div class="ann-header"><div class="ann-item-title">${title}</div><span class="ann-pri ${priority}">${priority}</span></div><div class="ann-item-msg">${message}</div><div class="ann-item-meta">Just now (demo)</div>`;
+    el.insertBefore(row, el.firstChild);
+    document.getElementById('ann-title-input').value = '';
+    document.getElementById('ann-msg-input').value = '';
+    btn.disabled = false; btn.innerHTML = '📢 Post Announcement';
+    return;
+  }
+
+  try {
+    const res  = await fetch('api/announcements.php', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_token}, body:JSON.stringify({title,message,priority}) });
+    const data = await res.json();
+    if (!data.success) { alertEl.textContent='✕ '+data.message; alertEl.className='f-alert show error'; return; }
+    alertEl.textContent = '✓ Announcement posted to all users!';
+    alertEl.className = 'f-alert show success';
+    document.getElementById('ann-title-input').value = '';
+    document.getElementById('ann-msg-input').value = '';
+    loadAnnouncements();
+    // new log entry will appear on next poll
+  } catch { alertEl.textContent='✕ Could not connect.'; alertEl.className='f-alert show error'; }
+  finally { btn.disabled=false; btn.innerHTML='📢 Post Announcement'; }
+}
+
+// ════════════════════════════════════════════════
+//  Profile tab
+// ════════════════════════════════════════════════
+function populateProfileTab() {
+  if (!_user) return;
+  const name = _user.name || (_user.first_name + ' ' + (_user.last_name||''));
+  document.getElementById('p-name').textContent  = name;
+  document.getElementById('p-email').textContent = _user.email || '—';
+  document.getElementById('p-phone').textContent = _user.phone_number ? '📱 ' + _user.phone_number : '📱 No phone on file';
+  document.getElementById('p-role-pill').textContent = (roleAvatars[_user.role]||'⚙️') + ' ' + (_user.role||'Admin');
+  document.getElementById('p-avatar').textContent = roleAvatars[_user.role] || '⚙️';
+  document.getElementById('p_first_name').value = _user.first_name || '';
+  document.getElementById('p_last_name').value  = _user.last_name  || '';
+  document.getElementById('p_email').value      = _user.email      || '';
+  document.getElementById('p_phone').value      = _user.phone_number || '';
+}
+
+function showProfileAlert(id, msg, type='error') {
+  const el = document.getElementById(id);
+  el.textContent = (type==='success'?'✓ ':'✕ ') + msg;
+  el.className = 'f-alert show ' + type;
+  if (type === 'success') setTimeout(() => el.className='f-alert', 5000);
+}
+
+function setBtn(id, loading, label) {
+  const b = document.getElementById(id);
+  b.disabled = loading;
+  b.innerHTML = loading ? '<div class="spin"></div> Saving…' : label;
+}
+
+async function saveAdminInfo() {
+  const fn    = document.getElementById('p_first_name').value.trim();
+  const ln    = document.getElementById('p_last_name').value.trim();
+  const email = document.getElementById('p_email').value.trim();
+  const phone = document.getElementById('p_phone').value.trim();
+  if (!fn)    { showProfileAlert('p-info-alert','First name is required.'); return; }
+  if (!ln)    { showProfileAlert('p-info-alert','Last name is required.'); return; }
+  if (!email) { showProfileAlert('p-info-alert','Email is required.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showProfileAlert('p-info-alert','Invalid email format.'); return; }
+
+  setBtn('p-info-btn', true, 'Save Changes');
+  if (DEMO) {
+    await new Promise(r=>setTimeout(r,600));
+    const upd = {..._user, first_name:fn, last_name:ln, email, phone_number:phone, name:fn+' '+ln };
+    localStorage.setItem('yagums_user', JSON.stringify(upd)); _user = upd;
+    populateProfileTab();
+    document.getElementById('sb-name').textContent = upd.name;
+    showProfileAlert('p-info-alert','Profile updated! (demo — not saved to DB)','success');
+    setBtn('p-info-btn', false, 'Save Changes'); return;
+  }
+
+  try {
+    const res  = await fetch('api/profile.php', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_token}, body:JSON.stringify({action:'info',first_name:fn,last_name:ln,email,phone_number:phone}) });
+    const data = await res.json();
+    if (!data.success) { showProfileAlert('p-info-alert', data.message); return; }
+    _token = data.token;
+    _user  = data.user;
+    localStorage.setItem('yagums_token', data.token);
+    localStorage.setItem('yagums_user',  JSON.stringify(data.user));
+    document.cookie = `yagums_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+    populateProfileTab();
+    document.getElementById('sb-name').textContent = data.user.name;
+    showProfileAlert('p-info-alert','Profile saved successfully!','success');
+    // Log the action
+    fetch('api/admin_log.php',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+_token},body:JSON.stringify({action:'UPDATE',target_type:'user',target_id:_user.user_id,description:'Admin updated their own profile'})}).catch(()=>{});
+  } catch { showProfileAlert('p-info-alert','Could not connect to server.'); }
+  finally { setBtn('p-info-btn', false, 'Save Changes'); }
+}
+
+async function saveAdminPassword() {
+  const curr = document.getElementById('p_curr_pw').value;
+  const nw   = document.getElementById('p_new_pw').value;
+  const conf = document.getElementById('p_conf_pw').value;
+  if (!curr)        { showProfileAlert('p-pw-alert','Current password is required.'); return; }
+  if (!nw)          { showProfileAlert('p-pw-alert','New password is required.'); return; }
+  if (nw.length<6)  { showProfileAlert('p-pw-alert','New password must be at least 6 characters.'); return; }
+  if (nw !== conf)  { showProfileAlert('p-pw-alert','New passwords do not match.'); return; }
+
+  setBtn('p-pw-btn', true, 'Update Password');
+  if (DEMO) {
+    await new Promise(r=>setTimeout(r,700));
+    document.getElementById('p_curr_pw').value=''; document.getElementById('p_new_pw').value=''; document.getElementById('p_conf_pw').value='';
+    resetAdminPwStrength();
+    showProfileAlert('p-pw-alert','Password changed! (demo — not saved to DB)','success');
+    setBtn('p-pw-btn', false, 'Update Password'); return;
+  }
+
+  try {
+    const res  = await fetch('api/profile.php', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+_token}, body:JSON.stringify({action:'password',current_password:curr,new_password:nw,confirm_password:conf}) });
+    const data = await res.json();
+    if (!data.success) { showProfileAlert('p-pw-alert', data.message); return; }
+    _token = data.token;
+    localStorage.setItem('yagums_token', data.token);
+    localStorage.setItem('yagums_user',  JSON.stringify(data.user));
+    document.getElementById('p_curr_pw').value=''; document.getElementById('p_new_pw').value=''; document.getElementById('p_conf_pw').value='';
+    resetAdminPwStrength();
+    showProfileAlert('p-pw-alert','Password updated successfully!','success');
+    fetch('api/admin_log.php',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+_token},body:JSON.stringify({action:'UPDATE',target_type:'user',target_id:_user.user_id,description:'Admin changed their own password'})}).catch(()=>{});
+  } catch { showProfileAlert('p-pw-alert','Could not connect to server.'); }
+  finally { setBtn('p-pw-btn', false, 'Update Password'); }
+}
+
+function adminPwStrength(val) {
+  const bars=['apb1','apb2','apb3','apb4'].map(id=>document.getElementById(id));
+  const hint=document.getElementById('a-pw-hint');
+  bars.forEach(b=>b.className='pw-bar');
+  let score=0;
+  if(val.length>=6) score++; if(val.length>=10) score++;
+  if(/[A-Z]/.test(val)&&/[0-9]/.test(val)) score++; if(/[!@#$%^&*_\-]/.test(val)) score++;
+  const cls=score<=1?'weak':score<=2?'medium':'strong';
+  const labels=['','Weak','Fair','Good','Strong'];
+  for(let i=0;i<score;i++) bars[i].classList.add(cls);
+  hint.textContent=val?(labels[score]||'Strong'):'Enter a new password';
+  hint.style.color=cls==='weak'?'var(--red)':cls==='medium'?'var(--amber)':'var(--green)';
+}
+function resetAdminPwStrength() {
+  ['apb1','apb2','apb3','apb4'].forEach(id=>document.getElementById(id).className='pw-bar');
+  document.getElementById('a-pw-hint').textContent='Enter a new password';
+  document.getElementById('a-pw-hint').style.color='';
+}
+
+// ════════════════════════════════════════════════
+//  Logout (logs the action first)
+// ════════════════════════════════════════════════
+function logout() {
+  stopLiveLog();
+  if (!DEMO) {
+    navigator.sendBeacon && navigator.sendBeacon('api/admin_log.php',
+      new Blob([JSON.stringify({action:'LOGOUT',description:(_user.name||'Admin')+' logged out',token:_token})],{type:'application/json'})
+    );
+  }
+  localStorage.removeItem('yagums_token');
+  localStorage.removeItem('yagums_user');
+  document.cookie = 'yagums_token=; path=/; max-age=0';
+  window.location.href = 'login.html';
+}
+
+// ════════════════════════════════════════════════
+//  Sidebar helpers
+// ════════════════════════════════════════════════
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    if (this.getAttribute('href') === '#') e.preventDefault();
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    this.classList.add('active');
+    if (window.innerWidth<=768) closeSidebar();
+  });
+});
+document.querySelectorAll('.bnav-item').forEach(i => i.addEventListener('click', function(e) {
+  if (this.getAttribute('href')==='#') e.preventDefault();
+  document.querySelectorAll('.bnav-item').forEach(n=>n.classList.remove('active'));
+  this.classList.add('active');
+}));
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarOverlay').classList.remove('show'); }
+</script>
+</body>
+</html>
