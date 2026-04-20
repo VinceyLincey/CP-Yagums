@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAGUMS – Facility Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── Tabs ── */
+.page-tabs{display:flex;gap:3px;padding:12px 28px 0;border-bottom:1px solid var(--border);flex-wrap:nowrap;overflow-x:auto;background:var(--deep);scrollbar-width:none;}
+.page-tabs::-webkit-scrollbar{display:none;}
+.tab-btn{padding:8px 14px;border-radius:10px 10px 0 0;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;border:1px solid transparent;border-bottom:none;cursor:pointer;transition:all .2s;color:var(--muted);background:transparent;position:relative;bottom:-1px;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.tab-btn:hover{color:var(--text);background:rgba(52,211,153,.06);}
+.tab-btn.active{color:#34d399;background:var(--card);border-color:var(--border);border-bottom-color:var(--card);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* ── Nicer sidebar overrides ── */
+.sb-user-wrap{display:flex;align-items:center;gap:12px;padding:14px 18px;margin:8px 10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:14px;cursor:pointer;transition:all .2s;text-decoration:none;}
+.sb-user-wrap:hover{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.4);}
+.sb-avatar-img{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,#059669,#34d399);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;border:2px solid rgba(52,211,153,.4);}
+.sb-avatar-img img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+.sb-info{flex:1;min-width:0;}
+.sb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-role-lbl{font-size:10px;color:var(--muted);margin-top:1px;}
+.sb-edit-hint{font-size:9px;color:var(--dim);margin-top:2px;}
+.nav-section{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 14px;margin:14px 0 4px;}
+.nav-divider{height:1px;background:rgba(37,37,64,.7);margin:10px 14px;}
+
+/* ── Booking rows ── */
+.book-row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid rgba(37,37,64,.5);transition:background .2s;flex-wrap:wrap;}
+.book-row:last-child{border-bottom:none;}
+.book-row:hover{background:rgba(52,211,153,.03);}
+.book-info{flex:1;min-width:0;}
+.book-fac{font-size:13px;font-weight:600;color:var(--text);}
+.book-meta{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.book-actions{display:flex;gap:6px;flex-shrink:0;}
+.btn-approve{font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);color:var(--green);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-approve:hover{background:rgba(52,211,153,.25);}
+.btn-reject{font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-reject:hover{background:rgba(248,113,113,.22);}
+
+/* ── Facility cards ── */
+.fac-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;padding:18px;}
+.fac-card-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 16px;position:relative;transition:all .22s;}
+.fac-card-item:hover{border-color:var(--border2);transform:translateY(-2px);}
+.fac-card-item.unavailable{opacity:.55;}
+.fci-emoji{font-size:32px;margin-bottom:10px;display:block;}
+.fci-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.fci-meta{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;}
+.fci-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.btn-fci{font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-fci:hover{border-color:var(--purple);color:var(--text);}
+.btn-fci.edit{border-color:rgba(96,165,250,.3);color:var(--blue);}
+.btn-fci.edit:hover{background:rgba(96,165,250,.08);}
+.btn-fci.del{border-color:rgba(248,113,113,.3);color:var(--red);}
+.btn-fci.del:hover{background:rgba(248,113,113,.1);}
+.btn-fci.disable{border-color:rgba(248,113,113,.3);color:var(--red);}
+.btn-fci.disable:hover{background:rgba(248,113,113,.08);}
+.btn-fci.enable{border-color:rgba(52,211,153,.3);color:var(--green);}
+.btn-fci.enable:hover{background:rgba(52,211,153,.08);}
+.fci-avail{position:absolute;top:12px;right:12px;}
+.add-fac-card{background:transparent;border:2px dashed var(--border2);border-radius:14px;padding:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .22s;min-height:160px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.add-fac-card:hover{border-color:var(--green);background:rgba(52,211,153,.05);}
+.add-fac-card:hover .add-icon,.add-fac-card:hover .add-lbl{color:var(--green);}
+.add-icon{font-size:26px;color:var(--dim);}
+.add-lbl{font-size:13px;font-weight:600;color:var(--dim);}
+
+/* ── Modals ── */
+.modal-backdrop{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:26px;width:100%;max-width:500px;position:relative;max-height:90vh;overflow-y:auto;animation:modalIn .3s cubic-bezier(.16,1,.3,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-close{position:absolute;top:14px;right:16px;background:transparent;border:none;font-size:20px;color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.modal-close:hover{color:var(--text);}
+.modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+.mf{display:flex;flex-direction:column;gap:6px;margin-bottom:13px;}
+.mf label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.mf input,.mf select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.mf input:focus,.mf select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(52,211,153,.1);}
+.mf select option{background:var(--surface);}
+.mf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.m-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-bottom:12px;line-height:1.5;}
+.m-alert.show{display:block;}
+.m-alert.error{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.m-alert.success{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.btn-modal-ok{flex:1;background:linear-gradient(135deg,#059669,#34d399);border:none;border-radius:10px;padding:12px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-modal-ok:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(52,211,153,.3);}
+.btn-modal-ok:disabled{opacity:.6;cursor:not-allowed;}
+.btn-modal-cancel{background:transparent;border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+.btn-modal-cancel:hover{border-color:var(--purple);color:var(--text);}
+
+/* ── Emoji picker ── */
+.emoji-picker-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block;}
+.emoji-grid-picker{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:130px;overflow-y:auto;margin-bottom:14px;}
+.emoji-opt{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:8px;cursor:pointer;transition:background .15s;border:2px solid transparent;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.emoji-opt:hover{background:rgba(124,58,237,.15);}
+.emoji-opt.selected{border-color:var(--green);background:rgba(52,211,153,.15);}
+.emoji-preview-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:10px;padding:10px 14px;}
+.emoji-preview-row span:first-child{font-size:28px;}
+.emoji-preview-text{font-size:13px;color:var(--muted);}
+
+/* ── Announcements tab layout ── */
+.ann-tab-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+.ann-form{padding:18px;display:flex;flex-direction:column;gap:12px;}
+.ann-field{display:flex;flex-direction:column;gap:6px;}
+.ann-field label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.ann-field input,.ann-field textarea,.ann-field select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;resize:none;}
+.ann-field input:focus,.ann-field textarea:focus,.ann-field select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(52,211,153,.1);}
+.ann-field select option{background:var(--surface);}
+.btn-post{width:100%;background:linear-gradient(135deg,#059669,#34d399);border:none;border-radius:10px;padding:12px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(52,211,153,.22);-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-post:hover:not(:disabled){transform:translateY(-1px);}
+.btn-post:disabled{opacity:.6;cursor:not-allowed;}
+.f-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-top:4px;line-height:1.5;}
+.f-alert.show{display:block;}
+.f-alert.error{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.f-alert.success{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);}
+
+/* ── Announcement items (recent posts list) ── */
+.ann-item{padding:13px 18px;border-bottom:1px solid rgba(37,37,64,.5);}
+.ann-item:last-child{border-bottom:none;}
+.ann-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.ann-item-title{font-size:13px;font-weight:600;color:var(--text);}
+.ann-item-msg{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:4px;}
+.ann-item-meta{font-size:11px;color:var(--dim);}
+.ann-item-votes{display:flex;gap:6px;margin-top:4px;}
+.vote-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600;}
+.vote-pill.up{background:rgba(52,211,153,.12);color:var(--green);}
+.vote-pill.dn{background:rgba(248,113,113,.12);color:var(--red);}
+.ann-pri{font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px;text-transform:uppercase;letter-spacing:.04em;}
+.ann-pri.high  {background:rgba(248,113,113,.15);color:var(--red);}
+.ann-pri.medium{background:rgba(245,158,11,.15); color:var(--amber);}
+.ann-pri.low   {background:rgba(52,211,153,.15); color:var(--green);}
+
+/* ── Misc ── */
+.donut-wrap{padding:16px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.donut-legend{display:flex;flex-direction:column;gap:7px;flex:1;}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pw-bars{display:flex;gap:4px;margin-top:5px;}
+.pw-bar{flex:1;height:3px;background:var(--border);border-radius:2px;transition:background .3s;}
+.pw-bar.weak{background:var(--red);}.pw-bar.medium{background:var(--amber);}.pw-bar.strong{background:var(--green);}
+.pw-hint{font-size:11px;color:var(--dim);margin-top:3px;text-align:right;}
+
+@media(max-width:960px){.ann-tab-grid{grid-template-columns:1fr;}}
+@media(max-width:768px){
+  .page-tabs{padding:10px 14px 0;}
+  .fac-cards-grid{grid-template-columns:1fr 1fr;padding:12px;}
+  .mf-grid2{grid-template-columns:1fr;}
+  .ann-top{flex-direction:column;gap:6px;}
+}
+@media(max-width:480px){.fac-cards-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ── Add / Edit Facility Modal ── -->
+<div class="modal-backdrop" id="fac-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeFacModal()">✕</button>
+    <div class="modal-title" id="fac-modal-title">Add New Facility</div>
+    <div class="modal-sub"   id="fac-modal-sub">Choose an emoji and fill in the details.</div>
+    <div class="m-alert" id="fac-alert"></div>
+    <div class="emoji-preview-row"><span id="emoji-preview-val">🏛️</span><div class="emoji-preview-text">Tap below to change</div></div>
+    <label class="emoji-picker-label">Choose Emoji</label>
+    <div class="emoji-grid-picker" id="emoji-grid"></div>
+    <div class="mf"><label>Facility Name</label><input type="text" id="fac-name" placeholder="e.g. Lecture Hall A"></div>
+    <div class="mf-grid2">
+      <div class="mf"><label>Type</label>
+        <select id="fac-type">
+          <option value="1">Lecture Hall</option><option value="2">Laboratory</option>
+          <option value="3">Sports Facility</option><option value="4">Meeting Room</option><option value="5">Study Room</option>
+        </select>
+      </div>
+      <div class="mf"><label>Capacity (pax)</label><input type="number" id="fac-capacity" placeholder="50" min="1"></div>
+    </div>
+    <div class="mf"><label>Location</label><input type="text" id="fac-location" placeholder="e.g. Block A, Level 2"></div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeFacModal()">Cancel</button>
+      <button class="btn-modal-ok" id="fac-submit-btn" onclick="submitFacility()">Add Facility</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Generic Confirm Modal ── -->
+<div class="modal-backdrop" id="confirm-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title" id="confirm-title">Confirm</div>
+    <div class="modal-sub"   id="confirm-msg"   style="margin-bottom:18px;">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-modal-ok"     id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">YA<span>GUMS</span></div>
+    <div class="logo-sub">Facility Manager</div>
+  </div>
+
+  <!-- Clickable avatar → profile.html -->
+  <a class="sb-user-wrap" href="profile.html" title="Edit your profile">
+    <div class="sb-avatar-img" id="sb-avatar-wrap">🏢</div>
+    <div class="sb-info">
+      <div class="sb-name"    id="sb-name">Loading…</div>
+      <div class="sb-role-lbl">Facility Manager</div>
+      <div class="sb-edit-hint">Tap to edit profile →</div>
+    </div>
+  </a>
+
+  <nav class="sidebar-nav" style="padding:6px 10px;">
+    <div class="nav-section">Overview</div>
+    <button class="nav-item" id="snav-overview"   onclick="switchTab('overview')"><span class="nav-icon">🏠</span>Dashboard</button>
+
+    <div class="nav-section">Management</div>
+    <button class="nav-item" id="snav-bookings"   onclick="switchTab('bookings')"><span class="nav-icon">📅</span>Bookings <span class="nav-badge" id="nb-pending">0</span></button>
+    <button class="nav-item" id="snav-facilities" onclick="switchTab('facilities')"><span class="nav-icon">🏛️</span>Facilities</button>
+    <button class="nav-item"                      onclick="openAddModal()"><span class="nav-icon">➕</span>Add Facility</button>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section">Communications</div>
+    <button class="nav-item" id="snav-announce"   onclick="switchTab('announce')"><span class="nav-icon">📢</span>Announcements</button>
+    <a      class="nav-item" href="notifications.html"><span class="nav-icon">🔔</span>Notifications</a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section">Account</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span>My Profile</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()"><span class="nav-icon">🚪</span>Sign Out</button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
+      <div>
+        <h2 id="page-title">Facility Dashboard</h2>
+        <p  id="greeting">Loading…</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="notif-btn" id="notif-bell">🔔<span class="notif-count hidden" id="notif-count">0</span></button>
+    </div>
+  </div>
+
+  <!-- Notification panel -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head">
+      <h4>🔔 Notifications</h4>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+        <a href="notifications.html" style="font-size:12px;color:var(--accent);text-decoration:none;border:1px solid rgba(192,132,252,.3);padding:3px 10px;border-radius:7px;transition:background .2s;" onmouseover="this.style.background='rgba(124,58,237,.15)'" onmouseout="this.style.background=''">History →</a>
+      </div>
+    </div>
+    <div class="notif-scroll" id="notif-list"><div class="notif-empty">No notifications.</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="page-tabs">
+    <button class="tab-btn active" id="tab-btn-overview"   onclick="switchTab('overview')">🏠 Overview</button>
+    <button class="tab-btn"        id="tab-btn-bookings"   onclick="switchTab('bookings')">📅 Bookings</button>
+    <button class="tab-btn"        id="tab-btn-facilities" onclick="switchTab('facilities')">🏛️ Facilities</button>
+    <button class="tab-btn"        id="tab-btn-announce"   onclick="switchTab('announce')">📢 Announcements</button>
+  </div>
+
+  <!-- ════ OVERVIEW ════ -->
+  <div class="tab-pane active" id="tab-overview">
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon amber">⏳</div><span class="stat-trend down">Waiting</span></div><div class="stat-value" id="ov-pending">0</div><div class="stat-label">Pending Bookings</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon green">✅</div></div><div class="stat-value" id="ov-approved">0</div><div class="stat-label">Approved</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon blue">🏛️</div></div><div class="stat-value" id="ov-facilities">0</div><div class="stat-label">Facilities</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon purple">📢</div></div><div class="stat-value" id="ov-ann">0</div><div class="stat-label">Announcements</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>Pending Approvals</h3><p id="pending-sub">Loading…</p></div><button class="panel-action" onclick="switchTab('bookings')">View All →</button></div>
+          <div id="pending-preview"><div style="padding:24px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Booking Status</h3></div></div>
+            <div class="donut-wrap">
+              <div id="donut-svg">
+                <!-- Rendered by updateDonut() once data loads -->
+                <svg width="72" height="72" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#252540" stroke-width="3.2"/>
+                </svg>
+              </div>
+              <div class="donut-legend">
+                <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div>Approved (<span id="cnt-approved">0</span>)</div>
+                <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Pending (<span id="cnt-pending">0</span>)</div>
+                <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div>Rejected (<span id="cnt-rejected">0</span>)</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>Quick Actions</h3></div></div>
+            <div class="quick-grid">
+              <div class="quick-btn" onclick="switchTab('bookings')"><span class="qi">📅</span><span>Approve Bookings</span></div>
+              <div class="quick-btn" onclick="openAddModal()"><span class="qi">➕</span><span>Add Facility</span></div>
+              <div class="quick-btn" onclick="switchTab('announce')"><span class="qi">📢</span><span>Announce</span></div>
+              <div class="quick-btn" onclick="window.location.href='profile.html'"><span class="qi">👤</span><span>My Profile</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ BOOKINGS ════ -->
+  <div class="tab-pane" id="tab-bookings">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head"><div><h3>All Bookings</h3><p id="all-bookings-sub">Loading…</p></div><button class="panel-action" onclick="loadAllBookings()">↻ Refresh</button></div>
+        <div id="all-bookings-list"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ FACILITIES ════ -->
+  <div class="tab-pane" id="tab-facilities">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head"><div><h3>Facility Management</h3><p id="fac-sub">Loading…</p></div><button class="panel-action" onclick="openAddModal()">+ Add Facility</button></div>
+        <div class="fac-cards-grid" id="fac-grid">
+          <div class="skeleton" style="height:160px;border-radius:14px;"></div>
+          <div class="skeleton" style="height:160px;border-radius:14px;"></div>
+          <div class="skeleton" style="height:160px;border-radius:14px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ANNOUNCEMENTS ════ -->
+  <div class="tab-pane" id="tab-announce">
+    <div class="content">
+      <div class="ann-tab-grid">
+
+        <!-- Left: Post form -->
+        <div class="panel">
+          <div class="panel-head"><div><h3>📢 Post Announcement</h3><p>Sent to all users</p></div></div>
+          <div class="ann-form">
+            <div class="ann-field"><label>Title</label><input type="text" id="ann-title" placeholder="e.g. Facility closure notice"></div>
+            <div class="ann-field"><label>Message</label><textarea id="ann-msg" rows="5" placeholder="Write your announcement…"></textarea></div>
+            <div class="ann-field"><label>Priority</label>
+              <select id="ann-priority">
+                <option value="low">🟢 General — low priority</option>
+                <option value="medium" selected>🟡 Medium — important</option>
+                <option value="high">🔴 Important — urgent</option>
+              </select>
+            </div>
+            <div class="f-alert" id="ann-alert"></div>
+            <button class="btn-post" id="ann-btn" onclick="postAnnouncement()">📢 Post Announcement</button>
+          </div>
+        </div>
+
+        <!-- Right: Recent posts + View History link -->
+        <div class="panel">
+          <div class="panel-head">
+            <div><h3>Recent Posts</h3><p id="ann-count-label">Loading…</p></div>
+            <a href="announcements.html" class="panel-action" style="text-decoration:none;">View History →</a>
+          </div>
+          <div id="ann-list"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="bnav-item active" id="bnav-overview"   onclick="switchTab('overview')">  <span class="bi">🏠</span>Home</button>
+  <button class="bnav-item"        id="bnav-bookings"   onclick="switchTab('bookings')">  <span class="bi">📅</span>Bookings</button>
+  <button class="bnav-item"        id="bnav-facilities" onclick="switchTab('facilities')"><span class="bi">🏛️</span>Spaces</button>
+  <button class="bnav-item"        id="bnav-announce"   onclick="switchTab('announce')">  <span class="bi">📢</span>Announce</button>
+  <button class="bnav-item"                             onclick="window.location.href='profile.html'"><span class="bi">👤</span>Profile</button>
+</nav>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="mobile.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+let _token = localStorage.getItem('yagums_token');
+let _user  = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = 'login.html'; }
+if (_user.role !== 'Facility Manager') { window.location.href = 'login.html'; }
+
+const fn = _user.first_name || (_user.name||'Manager').split(' ')[0];
+document.getElementById('sb-name').textContent    = _user.name || (_user.first_name+' '+(_user.last_name||''));
+document.getElementById('greeting').textContent   = 'Welcome back, '+fn+'!';
+document.getElementById('topbar-date').textContent= new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+// Profile picture in sidebar
+(function initAvatar() {
+  if (_user.profile_picture) {
+    const w = document.getElementById('sb-avatar-wrap');
+    w.innerHTML = `<img src="${_user.profile_picture}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='🏢'">`;
+  }
+})();
+window.addEventListener('focus', () => {
+  const fresh = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+  if (!fresh) return;
+  _user = fresh;
+  document.getElementById('sb-name').textContent = fresh.name || (fresh.first_name+' '+(fresh.last_name||''));
+  const w = document.getElementById('sb-avatar-wrap');
+  if (fresh.profile_picture) {
+    w.innerHTML = `<img src="${fresh.profile_picture}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='🏢'">`;
+  } else { w.textContent = '🏢'; }
+});
+
+// ════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════
+async function api(url, method='GET', body) {
+  try {
+    const o = { headers:{'Authorization':'Bearer '+_token} };
+    if (method==='POST') { o.method='POST'; o.headers['Content-Type']='application/json'; o.body=JSON.stringify(body); }
+    return await (await fetch(url, o)).json();
+  } catch { return {success:false, message:'Network error'}; }
+}
+
+// ════════════════════════════════════════════════
+//  Custom confirm — no native dialogs
+// ════════════════════════════════════════════════
+function showConfirm(title, msg, okLabel, onOk, danger=false) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  const ok = document.getElementById('confirm-ok');
+  ok.textContent  = okLabel;
+  ok.style.background = danger ? 'linear-gradient(135deg,#dc2626,#f87171)' : 'linear-gradient(135deg,#059669,#34d399)';
+  ok.onclick = () => { closeConfirm(); onOk(); };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+
+// ════════════════════════════════════════════════
+//  Tab switching
+// ════════════════════════════════════════════════
+let _activeTab = 'overview';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tb=document.getElementById('tab-btn-'+tab); if(tb) tb.classList.add('active');
+  const sn=document.getElementById('snav-'+tab);    if(sn) sn.classList.add('active');
+  const bn=document.getElementById('bnav-'+tab);    if(bn) bn.classList.add('active');
+  const titles={overview:'Facility Dashboard',bookings:'Booking Management',facilities:'Facility Management',announce:'Announcements'};
+  document.getElementById('page-title').textContent = titles[tab]||'Dashboard';
+  _activeTab = tab;
+  if (tab==='bookings')   loadAllBookings();
+  if (tab==='facilities') loadFacilities();
+  if (tab==='announce')   loadAnnouncements();
+  if (window.innerWidth<=768) closeSidebar();
+}
+document.getElementById('snav-overview').classList.add('active');
+
+// ════════════════════════════════════════════════
+//  Dynamic donut chart — updates from real booking counts
+// ════════════════════════════════════════════════
+function updateDonut(approved, pending, rejected) {
+  const total = approved + pending + rejected;
+  const CIRC  = 100; // circumference units for our r=15.9 circle (2π×15.9 ≈ 99.9)
+  const R = 15.9, CX = 18, CY = 18, SW = 3.2;
+
+  // All zero → show single grey ring
+  if (total === 0) {
+    document.getElementById('donut-svg').innerHTML = `
+      <svg width="72" height="72" viewBox="0 0 36 36">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#252540" stroke-width="${SW}"/>
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#3a3a5c" stroke-width="${SW}"
+                stroke-dasharray="${CIRC} 0" stroke-dashoffset="25"/>
+      </svg>`;
+    return;
+  }
+
+  // Build segments — each segment: { pct, color }
+  const slices = [
+    { val: approved, color: '#34d399' },
+    { val: pending,  color: '#f59e0b' },
+    { val: rejected, color: '#f87171' },
+  ].filter(s => s.val > 0);
+
+  let offset = 25; // start at top (25 = quarter-circle offset for our coord system)
+  const circles = slices.map(s => {
+    const dash = (s.val / total) * CIRC;
+    const gap  = CIRC - dash;
+    const circle = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
+      stroke="${s.color}" stroke-width="${SW}"
+      stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
+      stroke-dashoffset="${offset.toFixed(2)}"/>`;
+    offset -= dash; // move offset backwards for next slice
+    return circle;
+  }).join('');
+
+  document.getElementById('donut-svg').innerHTML = `
+    <svg width="72" height="72" viewBox="0 0 36 36">
+      <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#252540" stroke-width="${SW}"/>
+      ${circles}
+    </svg>`;
+}
+
+// ════════════════════════════════════════════════
+//  Bookings — approve / reject
+// ════════════════════════════════════════════════
+async function loadAllBookings() {
+  const data = await api('api/bookings.php');
+  if (!data.success) { document.getElementById('all-bookings-list').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">'+esc(data.message)+'</div>'; return; }
+  const total=data.counts?.total||0, pending=data.counts?.pending||0, approved=data.counts?.approved||0, rejected=data.counts?.rejected||0;
+  document.getElementById('ov-pending').textContent   = pending;
+  document.getElementById('ov-approved').textContent  = approved;
+  document.getElementById('cnt-approved').textContent = approved;
+  document.getElementById('cnt-pending').textContent  = pending;
+  document.getElementById('cnt-rejected').textContent = rejected;
+  document.getElementById('nb-pending').textContent   = pending;
+  document.getElementById('all-bookings-sub').textContent = total+' bookings · '+pending+' pending';
+  updateDonut(approved, pending, rejected);
+  const rows = data.bookings||[];
+  document.getElementById('all-bookings-list').innerHTML = rows.length ? rows.map(b => {
+    const st=(b.status_name||'').toLowerCase(), isPending=st==='pending';
+    return `<div class="book-row" id="brow-${b.booking_id}">
+      <div class="book-info">
+        <div class="book-fac">${esc(b.facility_name)}</div>
+        <div class="book-meta">👤 ${esc(b.user_name||'—')} · 📅 ${b.booking_date} · 🕐 ${b.start_time}–${b.end_time}${b.purpose?' · 📝 '+esc(b.purpose):''}</div>
+      </div>
+      <span class="badge ${st}">${esc(b.status_name)}</span>
+      ${isPending?`<div class="book-actions">
+        <button class="btn-approve" onclick="updateBooking(${b.booking_id},2,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✓ Approve</button>
+        <button class="btn-reject"  onclick="updateBooking(${b.booking_id},3,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✕ Reject</button>
+      </div>`:''}
+    </div>`;
+  }).join('') : '<div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">No bookings yet.</div>';
+
+  const pendingRows = rows.filter(b=>(b.status_name||'').toLowerCase()==='pending').slice(0,4);
+  document.getElementById('pending-sub').textContent = pendingRows.length ? pendingRows.length+' awaiting approval' : 'No pending bookings';
+  document.getElementById('pending-preview').innerHTML = pendingRows.length ? pendingRows.map(b=>`
+    <div class="book-row">
+      <div class="book-info">
+        <div class="book-fac">${esc(b.facility_name)}</div>
+        <div class="book-meta">👤 ${esc(b.user_name||'—')} · 📅 ${b.booking_date}</div>
+      </div>
+      <div class="book-actions">
+        <button class="btn-approve" onclick="updateBooking(${b.booking_id},2,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✓</button>
+        <button class="btn-reject"  onclick="updateBooking(${b.booking_id},3,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✕</button>
+      </div>
+    </div>`).join('') : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No pending bookings ✓</div>';
+}
+
+function updateBooking(id, statusId, facility, user) {
+  const action = statusId===2 ? 'Approve' : 'Reject';
+  showConfirm(action+' Booking', `${action} the booking by ${user} for ${facility}?`, action,
+    async () => {
+      const d = await api('api/booking_status.php','POST',{booking_id:id,status_id:statusId});
+      if (d.success) loadAllBookings();
+      else showConfirm('Error', d.message||'Failed.','OK',()=>{});
+    }, statusId===3);
+}
+
+// ════════════════════════════════════════════════
+//  Facilities — add + edit + toggle + delete
+// ════════════════════════════════════════════════
+const FAC_EMOJIS = ['🏛️','📚','💻','🔬','🎨','🏀','⚽','🏊','🎭','🎵','🏋️','🍽️','☕','🏥','🔧','📋','🎓','🖥️','🧪','📐','🏟️','🎤','📖','🛠️','🏫','🌿','🧘','🎯','🎲','🔭','📡','🚗','🏗️','💡','🧠','🎪'];
+let selectedEmoji = '🏛️';
+let editingFacId  = null;
+
+function buildEmojiGrid() {
+  document.getElementById('emoji-grid').innerHTML = FAC_EMOJIS.map(e =>
+    `<div class="emoji-opt ${e===selectedEmoji?'selected':''}" onclick="selectEmoji('${e}')">${e}</div>`
+  ).join('');
+}
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.getElementById('emoji-preview-val').textContent = e;
+  document.querySelectorAll('.emoji-opt').forEach(el => el.classList.toggle('selected', el.textContent.trim()===e));
+}
+
+function openAddModal() {
+  editingFacId  = null;
+  selectedEmoji = '🏛️';
+  document.getElementById('fac-modal-title').textContent = 'Add New Facility';
+  document.getElementById('fac-modal-sub').textContent   = 'Choose an emoji and fill in the details.';
+  document.getElementById('fac-submit-btn').textContent  = 'Add Facility';
+  document.getElementById('fac-alert').className = 'm-alert';
+  document.getElementById('fac-name').value = '';
+  document.getElementById('fac-capacity').value = '';
+  document.getElementById('fac-location').value = '';
+  document.getElementById('fac-type').value = '1';
+  document.getElementById('emoji-preview-val').textContent = '🏛️';
+  buildEmojiGrid();
+  document.getElementById('fac-modal').classList.add('open');
+  if (window.innerWidth<=768) closeSidebar();
+}
+
+function openEditModal(fac) {
+  editingFacId  = fac.facility_id;
+  selectedEmoji = fac.emoji || '🏛️';
+  document.getElementById('fac-modal-title').textContent = 'Edit Facility';
+  document.getElementById('fac-modal-sub').textContent   = 'Update the details below.';
+  document.getElementById('fac-submit-btn').textContent  = 'Save Changes';
+  document.getElementById('fac-alert').className = 'm-alert';
+  document.getElementById('fac-name').value     = fac.facility_name || '';
+  document.getElementById('fac-capacity').value = fac.capacity || '';
+  document.getElementById('fac-location').value = fac.location || '';
+  const typeMap = {'Lecture Hall':'1','Laboratory':'2','Sports Facility':'3','Meeting Room':'4','Study Room':'5'};
+  document.getElementById('fac-type').value = fac.type_id || typeMap[fac.type_name] || '1';
+  document.getElementById('emoji-preview-val').textContent = selectedEmoji;
+  buildEmojiGrid();
+  document.getElementById('fac-modal').classList.add('open');
+}
+
+function closeFacModal() { document.getElementById('fac-modal').classList.remove('open'); editingFacId=null; }
+
+async function submitFacility() {
+  const name=document.getElementById('fac-name').value.trim(), capacity=document.getElementById('fac-capacity').value;
+  const location=document.getElementById('fac-location').value.trim(), typeId=document.getElementById('fac-type').value;
+  const alertEl=document.getElementById('fac-alert'); alertEl.className='m-alert';
+  if (!name)     { alertEl.textContent='✕ Facility name required.'; alertEl.className='m-alert show error'; return; }
+  if (!capacity) { alertEl.textContent='✕ Capacity required.';      alertEl.className='m-alert show error'; return; }
+  if (!location) { alertEl.textContent='✕ Location required.';      alertEl.className='m-alert show error'; return; }
+  const btn=document.getElementById('fac-submit-btn'); btn.disabled=true; btn.textContent='Saving…';
+  const body = editingFacId
+    ? {action:'update',facility_id:editingFacId,facility_name:name,type_id:parseInt(typeId),capacity:parseInt(capacity),location,emoji:selectedEmoji}
+    : {action:'create',facility_name:name,type_id:parseInt(typeId),capacity:parseInt(capacity),location,emoji:selectedEmoji};
+  const data = await api('api/facilities.php','POST',body);
+  if (!data.success) { alertEl.textContent='✕ '+(data.message||'Failed.'); alertEl.className='m-alert show error'; btn.disabled=false; btn.textContent=editingFacId?'Save Changes':'Add Facility'; return; }
+  alertEl.textContent = editingFacId ? '✓ Facility updated!' : '✓ Facility added!';
+  alertEl.className = 'm-alert show success';
+  setTimeout(()=>{ closeFacModal(); loadFacilities(); }, 700);
+  btn.disabled=false; btn.textContent=editingFacId?'Save Changes':'Add Facility';
+}
+
+async function loadFacilities() {
+  const data = await api('api/facilities.php');
+  if (!data.success) { document.getElementById('fac-grid').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load facilities.</div>'; return; }
+  const list = data.facilities||[];
+  document.getElementById('fac-sub').textContent      = list.length+' facilities · '+list.filter(f=>f.is_available).length+' available';
+  document.getElementById('ov-facilities').textContent= list.length;
+  if (!list.length) { document.getElementById('fac-grid').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No facilities yet.</div>'; return; }
+  let html = list.map(f => `
+    <div class="fac-card-item ${f.is_available?'':'unavailable'}" id="fcard-${f.facility_id}">
+      <div class="fci-avail"><span class="badge ${f.is_available?'approved':'rejected'}">${f.is_available?'Available':'Unavailable'}</span></div>
+      <span class="fci-emoji">${esc(f.emoji||'🏛️')}</span>
+      <div class="fci-name">${esc(f.facility_name)}</div>
+      <div class="fci-meta">📍 ${esc(f.location||'—')}<br>👥 ${f.capacity} pax · ${esc(f.type_name||'—')}</div>
+      <div class="fci-actions">
+        <button class="btn-fci edit"    onclick='openEditModal(${JSON.stringify(f)})'>✏️ Edit</button>
+        <button class="btn-fci ${f.is_available?'disable':'enable'}" onclick="toggleFacility(${f.facility_id},${f.is_available?0:1},'${esc(f.facility_name)}')">
+          ${f.is_available?'⛔ Disable':'✅ Enable'}
+        </button>
+        <button class="btn-fci del" onclick="deleteFacility(${f.facility_id},'${esc(f.facility_name)}')">🗑️</button>
+      </div>
+    </div>`).join('');
+  html += `<div class="add-fac-card" onclick="openAddModal()"><div class="add-icon">➕</div><div class="add-lbl">Add Facility</div></div>`;
+  document.getElementById('fac-grid').innerHTML = html;
+}
+
+function toggleFacility(id, newState, name) {
+  const action=newState?'Enable':'Disable';
+  showConfirm(action+' Facility', `${action} "${name}"?${newState?' Users can book again.':" Won't be bookable until re-enabled."}`, action,
+    async()=>{ const d=await api('api/facilities.php','POST',{action:'toggle',facility_id:id,is_available:newState}); if(d.success)loadFacilities(); else showConfirm('Error',d.message||'Failed.','OK',()=>{}); });
+}
+function deleteFacility(id, name) {
+  showConfirm('🗑️ Delete Facility', `Delete "${name}"? This cannot be undone. All related bookings will be removed.`, 'Delete',
+    async()=>{ const d=await api('api/facilities.php','POST',{action:'delete',facility_id:id}); if(d.success)loadFacilities(); else showConfirm('Error',d.message||'Failed.','OK',()=>{}); }, true);
+}
+
+// ════════════════════════════════════════════════
+//  Announcements — post + recent 5
+// ════════════════════════════════════════════════
+const PRI_LABEL = { high:'Important', medium:'Medium', low:'General' };
+
+async function loadAnnouncements() {
+  const el = document.getElementById('ann-list');
+  const data = await api('api/announcements.php');
+  if (!data.success) {
+    el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load announcements — check server connection.</div>';
+    return;
+  }
+  const list = data.announcements || [];
+  document.getElementById('ov-ann').textContent          = list.length;
+  document.getElementById('ann-count-label').textContent = list.length + ' active';
+  if (!list.length) { el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No announcements yet.</div>'; return; }
+  el.innerHTML = list.slice(0, 5).map(a => `
+    <div class="ann-item">
+      <div class="ann-item-head">
+        <div class="ann-item-title">${esc(a.title)}</div>
+        <span class="ann-pri ${a.priority}">${PRI_LABEL[a.priority]||a.priority}</span>
+      </div>
+      <div class="ann-item-msg">${esc(a.message)}</div>
+      <div class="ann-item-meta">📅 ${a.created_at}</div>
+      <div class="ann-item-votes">
+        <span class="vote-pill up">👍 ${a.upvotes||0}</span>
+        <span class="vote-pill dn">👎 ${a.downvotes||0}</span>
+      </div>
+    </div>`).join('');
+}
+
+async function postAnnouncement() {
+  const title=document.getElementById('ann-title').value.trim(), msg=document.getElementById('ann-msg').value.trim(), priority=document.getElementById('ann-priority').value;
+  const alertEl=document.getElementById('ann-alert'); alertEl.className='f-alert';
+  if (!title) { alertEl.textContent='✕ Title required.';   alertEl.className='f-alert show error'; return; }
+  if (!msg)   { alertEl.textContent='✕ Message required.'; alertEl.className='f-alert show error'; return; }
+  const btn=document.getElementById('ann-btn'); btn.disabled=true; btn.textContent='Posting…';
+  const data = await api('api/announcements.php','POST',{action:'post',title,message:msg,priority});
+  if (!data.success) { alertEl.textContent='✕ '+(data.message||'Failed.'); alertEl.className='f-alert show error'; }
+  else {
+    alertEl.textContent='✓ Posted to all users!'; alertEl.className='f-alert show success';
+    document.getElementById('ann-title').value=''; document.getElementById('ann-msg').value='';
+    loadAnnouncements();
+    setTimeout(()=>alertEl.className='f-alert', 4000);
+  }
+  btn.disabled=false; btn.textContent='📢 Post Announcement';
+}
+
+// ════════════════════════════════════════════════
+//  Notifications
+// ════════════════════════════════════════════════
+const _notifPanel=document.getElementById('notif-panel');
+let _notifOpen=false;
+document.getElementById('notif-bell').addEventListener('click',e=>{
+  e.stopPropagation(); _notifOpen=!_notifOpen;
+  _notifPanel.classList.toggle('open',_notifOpen);
+  if(_notifOpen)loadNotifications();
+});
+document.addEventListener('click',e=>{
+  if(_notifOpen&&!_notifPanel.contains(e.target)&&e.target.id!=='notif-bell'){_notifOpen=false;_notifPanel.classList.remove('open');}
+});
+async function loadNotifications(){
+  const data=await api('api/notifications.php'); if(!data.success)return;
+  const list=data.notifications||[],unread=data.unread_count||0;
+  document.getElementById('notif-count').textContent=unread;
+  document.getElementById('notif-count').classList.toggle('hidden',unread===0);
+  const el=document.getElementById('notif-list');
+  if(!list.length){el.innerHTML='<div class="notif-empty">No notifications.</div>';return;}
+  el.innerHTML=list.map(n=>`<div class="notif-row ${n.is_read?'':'unread'}" onclick="markOneRead(${n.notification_id})"><div class="notif-dot ${n.is_read?'read':'unread'}"></div><div><div class="notif-text">${esc(n.message)}</div><div class="notif-time">${n.created_at}</div></div></div>`).join('');
+}
+async function markAllRead(){await api('api/notifications.php','POST',{action:'read_all'});loadNotifications();}
+async function markOneRead(id){await api('api/notifications.php','POST',{action:'read_one',notification_id:id});loadNotifications();}
+
+// ════════════════════════════════════════════════
+//  Utility
+// ════════════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function logout(){localStorage.removeItem('yagums_token');localStorage.removeItem('yagums_user');document.cookie='yagums_token=; path=/; max-age=0';window.location.href='login.html';}
+
+// ════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════
+loadAllBookings();
+loadFacilities();
+loadAnnouncements();
+loadNotifications();
+</script>
+</body>
+</html>

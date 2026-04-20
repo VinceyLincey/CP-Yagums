@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAGUMS – Student</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── Tabs ── */
+.page-tabs{display:flex;gap:3px;padding:12px 28px 0;border-bottom:1px solid var(--border);flex-wrap:nowrap;overflow-x:auto;background:var(--deep);scrollbar-width:none;}
+.page-tabs::-webkit-scrollbar{display:none;}
+.tab-btn{padding:8px 14px;border-radius:10px 10px 0 0;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;border:1px solid transparent;border-bottom:none;cursor:pointer;transition:all .2s;color:var(--muted);background:transparent;position:relative;bottom:-1px;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.tab-btn:hover{color:var(--text);background:rgba(124,58,237,.08);}
+.tab-btn.active{color:var(--accent);background:var(--card);border-color:var(--border);border-bottom-color:var(--card);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* ── Nicer sidebar ── */
+.sb-user-wrap{display:flex;align-items:center;gap:12px;padding:14px 18px;margin:8px 10px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:14px;cursor:pointer;transition:all .2s;text-decoration:none;}
+.sb-user-wrap:hover{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);}
+.sb-avatar-img{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,var(--purple),var(--purp2));display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;border:2px solid rgba(124,58,237,.4);}
+.sb-avatar-img img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+.sb-info{flex:1;min-width:0;}
+.sb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-role-lbl{font-size:10px;color:var(--muted);margin-top:1px;}
+.sb-edit-hint{font-size:9px;color:var(--dim);margin-top:2px;}
+.nav-section{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 14px;margin:14px 0 4px;}
+.nav-divider{height:1px;background:rgba(37,37,64,.7);margin:10px 14px;}
+
+/* ── Booking form ── */
+.bf{display:flex;flex-direction:column;gap:5px;}
+.bf label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.bf select,.bf input,.bf textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;resize:none;}
+.bf select option{background:var(--surface);}
+.bf select:focus,.bf input:focus,.bf textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.12);}
+.bf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.booking-form{padding:16px 18px;display:flex;flex-direction:column;gap:11px;}
+.btn-book{width:100%;background:linear-gradient(135deg,var(--purple),var(--purp2));border:none;border-radius:10px;padding:13px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 18px rgba(124,58,237,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-book:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 26px rgba(124,58,237,.45);}
+.btn-book:disabled{opacity:.6;cursor:not-allowed;}
+.bf-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-top:2px;line-height:1.5;}
+.bf-alert.show{display:block;}
+.bf-alert.error{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.bf-alert.success{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);}
+.btn-spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Booking timeline ── */
+.tl-item{display:flex;align-items:flex-start;gap:12px;padding:13px 18px;border-bottom:1px solid rgba(37,37,64,.4);transition:background .2s;}
+.tl-item:last-child{border-bottom:none;}
+.tl-item:hover{background:rgba(124,58,237,.04);}
+.tl-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.tl-icon.approved{background:rgba(52,211,153,.15);}
+.tl-icon.pending{background:rgba(245,158,11,.15);}
+.tl-icon.rejected{background:rgba(248,113,113,.15);}
+.tl-icon.cancelled{background:rgba(107,114,128,.15);}
+.tl-body{flex:1;min-width:0;}
+.tl-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.tl-meta{font-size:12px;color:var(--muted);line-height:1.5;}
+
+/* ── Facility cards ── */
+.fac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:14px 18px;}
+.fac-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:14px 12px;text-align:center;position:relative;overflow:hidden;transition:all .22s;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.fac-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.15),transparent 70%);opacity:0;transition:opacity .22s;}
+.fac-card:hover{border-color:rgba(124,58,237,.5);transform:translateY(-3px);box-shadow:0 10px 28px rgba(124,58,237,.12);}
+.fac-card:hover::before{opacity:1;}
+.fac-card:active{transform:scale(.97);}
+.fac-card.unavailable{opacity:.45;cursor:not-allowed;pointer-events:none;}
+.fac-emoji{font-size:26px;margin-bottom:8px;display:block;}
+.fac-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.fac-cap{font-size:11px;color:var(--muted);margin-bottom:7px;}
+
+/* ── Announcement cards ── */
+.ann-card{padding:16px 18px;border-bottom:1px solid rgba(37,37,64,.5);transition:background .2s;}
+.ann-card:last-child{border-bottom:none;}
+.ann-card:hover{background:rgba(124,58,237,.03);}
+.ann-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.ann-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;}
+.ann-pri{font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px;flex-shrink:0;text-transform:uppercase;letter-spacing:.04em;}
+.ann-pri.high  {background:rgba(248,113,113,.15);color:var(--red);}
+.ann-pri.medium{background:rgba(245,158,11,.15); color:var(--amber);}
+.ann-pri.low   {background:rgba(52,211,153,.15); color:var(--green);}
+.ann-msg{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px;}
+.ann-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.ann-meta{font-size:11px;color:var(--dim);}
+.vote-row{display:flex;gap:6px;}
+.vote-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;border:1px solid var(--border2);background:transparent;cursor:pointer;transition:all .18s;color:var(--muted);font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.vote-btn.up:hover  {border-color:var(--green);color:var(--green);background:rgba(52,211,153,.1);}
+.vote-btn.down:hover{border-color:var(--red);  color:var(--red);  background:rgba(248,113,113,.1);}
+.vote-btn.voted-up  {border-color:var(--green);color:var(--green);background:rgba(52,211,153,.12);}
+.vote-btn.voted-down{border-color:var(--red);  color:var(--red);  background:rgba(248,113,113,.12);}
+.vote-btn:disabled{opacity:.5;cursor:not-allowed;}
+.vote-btn:active{transform:scale(.96);}
+
+/* ── Misc ── */
+.empty-state{padding:36px 20px;text-align:center;}
+.es-icon{font-size:42px;margin-bottom:12px;}
+.es-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.es-msg{font-size:13px;color:var(--muted);}
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+@media(max-width:768px){
+  .page-tabs{padding:10px 14px 0;}
+  .bf-grid2{grid-template-columns:1fr;}
+  .fac-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:400px){.fac-grid{grid-template-columns:1fr 1fr;gap:7px;padding:10px;}}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">YA<span>GUMS</span></div>
+    <div class="logo-sub">Student Portal</div>
+  </div>
+
+  <!-- Clickable avatar → profile.html -->
+  <a class="sb-user-wrap" href="profile.html" title="Edit profile">
+    <div class="sb-avatar-img" id="sb-avatar-wrap">👤</div>
+    <div class="sb-info">
+      <div class="sb-name"    id="sb-name">Loading…</div>
+      <div class="sb-role-lbl">Student</div>
+      <div class="sb-edit-hint">Tap to edit profile →</div>
+    </div>
+  </a>
+
+  <nav class="sidebar-nav" style="padding:6px 10px;">
+    <div class="nav-section">Dashboard</div>
+    <button class="nav-item active" id="snav-home"        onclick="switchTab('home')">       <span class="nav-icon">🏠</span>Home</button>
+    <button class="nav-item"        id="snav-book"        onclick="switchTab('book')">       <span class="nav-icon">➕</span>Book a Space</button>
+    <button class="nav-item"        id="snav-mybookings"  onclick="switchTab('mybookings')"> <span class="nav-icon">📅</span>My Bookings <span class="nav-badge" id="nb-bookings">0</span></button>
+    <button class="nav-item"        id="snav-maintenance" onclick="switchTab('maintenance')"><span class="nav-icon">🔧</span>Report Issue</button>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section">Communications</div>
+    <button class="nav-item"        id="snav-announce"    onclick="switchTab('announce')">   <span class="nav-icon">📢</span>Announcements</button>
+    <a      class="nav-item"        href="notifications.html">                               <span class="nav-icon">🔔</span>Notifications</a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section">Account</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span>My Profile</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()"><span class="nav-icon">🚪</span>Sign Out</button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
+      <a href="profile.html" class="mobile-avatar" id="mob-avatar" title="My Profile" style="display:none">👤</a>
+      <div>
+        <h2 id="page-title">Student Dashboard</h2>
+        <p id="greeting">Welcome back!</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="notif-btn" id="notif-bell" aria-label="Notifications">
+        🔔<span class="notif-count hidden" id="notif-count">0</span>
+      </button>
+      <button class="mobile-logout-btn" id="mob-logout-btn" onclick="logout()" title="Sign Out" aria-label="Sign Out" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification panel -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head">
+      <h4>🔔 Notifications</h4>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+        <a href="notifications.html" style="font-size:12px;color:var(--accent);text-decoration:none;border:1px solid rgba(192,132,252,.3);padding:3px 10px;border-radius:7px;transition:background .2s;" onmouseover="this.style.background='rgba(124,58,237,.15)'" onmouseout="this.style.background=''">History →</a>
+      </div>
+    </div>
+    <div class="notif-scroll" id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
+  </div>
+
+  <!-- ── TABS ── -->
+  <div class="page-tabs">
+    <button class="tab-btn active" id="tab-btn-home"        onclick="switchTab('home')">        🏠 Home</button>
+    <button class="tab-btn"        id="tab-btn-book"        onclick="switchTab('book')">        ➕ Book</button>
+    <button class="tab-btn"        id="tab-btn-mybookings"  onclick="switchTab('mybookings')">  📅 My Bookings</button>
+    <button class="tab-btn"        id="tab-btn-maintenance" onclick="switchTab('maintenance')">  🔧 Report Issue</button>
+    <button class="tab-btn"        id="tab-btn-announce"    onclick="switchTab('announce')">    📢 Announcements</button>
+  </div>
+
+  <!-- ════ HOME ════ -->
+  <div class="tab-pane active" id="tab-home">
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card" style="--glow:var(--purp2)">
+          <div class="stat-head"><div class="stat-icon purple">📅</div><span class="stat-trend neu">Mine</span></div>
+          <div class="stat-value" id="stat-total">0</div><div class="stat-label">My Bookings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon green">✅</div><span class="stat-trend up">Active</span></div>
+          <div class="stat-value" id="stat-approved">0</div><div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon amber">⏳</div><span class="stat-trend down">Waiting</span></div>
+          <div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon blue">🏛️</div><span class="stat-trend neu">Open</span></div>
+          <div class="stat-value" id="stat-fac">0</div><div class="stat-label">Available Spaces</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h3>Quick Actions</h3></div></div>
+        <div class="quick-grid">
+          <div class="quick-btn" onclick="switchTab('book')">        <span class="qi">➕</span><span>New Booking</span></div>
+          <div class="quick-btn" onclick="switchTab('mybookings')">  <span class="qi">📅</span><span>My Bookings</span></div>
+          <div class="quick-btn" onclick="switchTab('maintenance')"> <span class="qi">🔧</span><span>Report Issue</span></div>
+          <div class="quick-btn" onclick="switchTab('announce')">    <span class="qi">📢</span><span>Announcements</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ BOOK ════ -->
+  <div class="tab-pane" id="tab-book">
+    <div class="content">
+      <div class="grid-2">
+        <!-- Booking form -->
+        <div class="panel">
+          <div class="panel-head"><div><h3>New Booking</h3><p>Reserve a facility</p></div></div>
+          <div class="booking-form">
+            <div class="bf"><label>Facility</label><select id="fac-select"><option value="">— Select a facility —</option></select></div>
+            <div class="bf-grid2">
+              <div class="bf"><label>Date</label><input type="date" id="book-date"></div>
+              <div class="bf"><label>Start Time</label><input type="time" id="book-start" value="10:00"></div>
+            </div>
+            <div class="bf"><label>End Time</label><input type="time" id="book-end" value="12:00"></div>
+            <div class="bf"><label>Purpose <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--dim)">(optional)</span></label><textarea id="book-purpose" rows="2" placeholder="e.g. Study group session…"></textarea></div>
+            <div class="bf-alert" id="book-alert"></div>
+            <button class="btn-book" id="book-btn" onclick="submitBooking()">Submit Booking →</button>
+          </div>
+        </div>
+        <!-- Browse grid -->
+        <div class="panel">
+          <div class="panel-head"><div><h3>Browse Facilities</h3><p>Tap to select</p></div></div>
+          <div class="fac-grid" id="fac-browse">
+            <div class="skeleton" style="height:100px;border-radius:13px;"></div>
+            <div class="skeleton" style="height:100px;border-radius:13px;"></div>
+            <div class="skeleton" style="height:100px;border-radius:13px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MY BOOKINGS ════ -->
+  <div class="tab-pane" id="tab-mybookings">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>My Bookings</h3><p id="bookings-sub">Loading…</p></div>
+          <button class="panel-action" onclick="switchTab('book')">+ New Booking</button>
+        </div>
+        <div id="bookings-list">
+          <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
+            <div class="skeleton" style="height:52px;border-radius:10px;"></div>
+            <div class="skeleton" style="height:52px;border-radius:10px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MAINTENANCE ════ -->
+  <div class="tab-pane" id="tab-maintenance">
+    <div class="content">
+      <div class="grid-2" style="align-items:start;">
+        <div class="panel">
+          <div class="panel-head"><div><h3>🔧 Report an Issue</h3><p>Notify maintenance staff</p></div></div>
+          <div class="booking-form">
+            <div class="bf"><label>Facility</label><select id="mr-facility"><option value="">Select a facility…</option></select></div>
+            <div class="bf"><label>Priority</label>
+              <select id="mr-priority">
+                <option value="Low">🟢 Low — minor issue</option>
+                <option value="Medium" selected>🟡 Medium — needs attention</option>
+                <option value="High">🔴 High — urgent / safety risk</option>
+              </select>
+            </div>
+            <div class="bf"><label>Description</label><textarea id="mr-desc" rows="4" placeholder="Describe the issue — what's wrong, where exactly, how long it's been happening…"></textarea></div>
+            <div class="bf-alert" id="mr-alert"></div>
+            <button class="btn-book" id="mr-btn" onclick="submitReport()">🔧 Submit Report</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>My Reports</h3><p id="mr-sub">Loading…</p></div><button class="panel-action" onclick="loadMyReports()">↻ Refresh</button></div>
+          <div id="mr-list"><div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ANNOUNCEMENTS ════ -->
+  <div class="tab-pane" id="tab-announce">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>📢 Announcements</h3><p id="ann-sub">Loading…</p></div>
+          <a href="announcements.html" class="panel-action" style="text-decoration:none;">View All →</a>
+        </div>
+        <div id="ann-list">
+          <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
+            <div class="skeleton" style="height:14px;width:55%"></div>
+            <div class="skeleton" style="height:12px;width:90%"></div>
+            <div class="skeleton" style="height:12px;width:70%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── MOBILE-ONLY UI ── Each element hidden by default via inline style.
+     JS shows them on mobile. position:fixed elements cannot be hidden via parent display:none. -->
+
+<div class="slide-nav-backdrop" id="slide-backdrop" style="display:none" onclick="closeSlideNav()"></div>
+
+<div class="slide-nav" id="slide-nav" style="display:none">
+  <div class="slide-nav-handle"></div>
+  <div class="slide-nav-title">Navigation</div>
+  <div class="slide-nav-grid">
+    <button class="slide-nav-item" id="snav-m-home"        onclick="mobileNav('home')">        <span class="slide-nav-icon">🏠</span>Home</button>
+    <button class="slide-nav-item" id="snav-m-book"        onclick="mobileNav('book')">        <span class="slide-nav-icon">➕</span>Book Space</button>
+    <button class="slide-nav-item" id="snav-m-mybookings"  onclick="mobileNav('mybookings')">  <span class="slide-nav-icon">📅</span>My Bookings</button>
+    <button class="slide-nav-item" id="snav-m-maintenance" onclick="mobileNav('maintenance')"> <span class="slide-nav-icon">🔧</span>Report Issue</button>
+    <button class="slide-nav-item" id="snav-m-announce"    onclick="mobileNav('announce')">    <span class="slide-nav-icon">📢</span>Announcements</button>
+    <button class="slide-nav-item"                          onclick="closeSlideNav();window.location.href='profile.html'"> <span class="slide-nav-icon">👤</span>My Profile</button>
+    <button class="slide-nav-item"                          onclick="closeSlideNav();window.location.href='notifications.html'"><span class="slide-nav-icon">🔔</span>Notifications</button>
+    <button class="slide-nav-item"                          onclick="logout()">                <span class="slide-nav-icon">🚪</span>Sign Out</button>
+  </div>
+</div>
+
+<button class="slide-trigger" id="slide-trigger" style="display:none" onclick="toggleSlideNav()" aria-label="Menu">
+  <svg id="slide-trigger-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .35s cubic-bezier(.16,1,.3,1)"><polyline points="18 15 12 9 6 15"/></svg>
+  <span id="slide-trigger-label">Menu</span>
+</button>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="mobile.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+const _token = localStorage.getItem('yagums_token');
+let _user    = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = 'login.html'; }
+
+const fn = _user.first_name || (_user.name||'Student').split(' ')[0];
+const hr = new Date().getHours();
+document.getElementById('sb-name').textContent    = _user.name || (_user.first_name+' '+(_user.last_name||''));
+document.getElementById('greeting').textContent   = (hr<12?'Good morning':hr<17?'Good afternoon':'Good evening')+', '+fn+'!';
+document.getElementById('topbar-date').textContent= new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+// Profile picture in sidebar + mobile avatar — single consolidated init
+(function initAvatar() {
+  const pic = _user.profile_picture;
+  // Sidebar avatar (desktop)
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap && pic) sbWrap.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='👤'">`;
+  // Mobile avatar (topbar)
+  const mob = document.getElementById('mob-avatar');
+  if (mob && pic) mob.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='👤'">`;
+})();
+
+// Refresh avatar + name when returning from profile.html
+window.addEventListener('focus', () => {
+  const fresh = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+  if (!fresh) return;
+  _user = fresh;
+  const name = fresh.name || (fresh.first_name+' '+(fresh.last_name||''));
+  const el = document.getElementById('sb-name'); if (el) el.textContent = name;
+  const pic = fresh.profile_picture;
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap) sbWrap.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='👤'">` : '👤';
+  const mob = document.getElementById('mob-avatar');
+  if (mob) mob.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='👤'">` : '👤';
+});
+
+// Booking date defaults
+const tmr = new Date(); tmr.setDate(tmr.getDate()+1);
+document.getElementById('book-date').value = tmr.toISOString().split('T')[0];
+document.getElementById('book-date').min   = new Date().toISOString().split('T')[0];
+
+// ════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════
+async function api(url, method='GET', body) {
+  try {
+    const opts = { headers:{'Authorization':'Bearer '+_token} };
+    if (method==='POST') { opts.method='POST'; opts.headers['Content-Type']='application/json'; opts.body=JSON.stringify(body); }
+    return await (await fetch(url, opts)).json();
+  } catch { return {success:false, message:'Network error'}; }
+}
+
+// ════════════════════════════════════════════════
+//  Slide-up nav — all elements controlled directly via style.display
+//  (position:fixed children escape parent display:none — must control individually)
+// ════════════════════════════════════════════════
+let _slideOpen = false;
+
+function openSlideNav() {
+  _slideOpen = true;
+  const sn = document.getElementById('slide-nav');
+  const sb = document.getElementById('slide-backdrop');
+  const si = document.getElementById('slide-trigger-icon');
+  const sl = document.getElementById('slide-trigger-label');
+  if (sn) { sn.style.display='block'; requestAnimationFrame(()=>sn.classList.add('open')); }
+  if (sb) { sb.style.display='block'; }
+  if (si) si.style.transform = 'rotate(180deg)';
+  if (sl) sl.textContent = 'Close';
+  document.getElementById('slide-trigger')?.classList.add('open');
+}
+
+function closeSlideNav() {
+  _slideOpen = false;
+  const sn = document.getElementById('slide-nav');
+  const sb = document.getElementById('slide-backdrop');
+  const si = document.getElementById('slide-trigger-icon');
+  const sl = document.getElementById('slide-trigger-label');
+  if (sn) {
+    sn.classList.remove('open');
+    setTimeout(() => { if (!_slideOpen) sn.style.display='none'; }, 360);
+  }
+  if (sb) sb.style.display = 'none';
+  if (si) si.style.transform = 'rotate(0deg)';
+  if (sl) sl.textContent = 'Menu';
+  document.getElementById('slide-trigger')?.classList.remove('open');
+}
+
+function toggleSlideNav() { _slideOpen ? closeSlideNav() : openSlideNav(); }
+function mobileNav(tab) { closeSlideNav(); switchTab(tab); }
+function updateSlideNavActive(tab) {
+  document.querySelectorAll('.slide-nav-item[id^="snav-m-"]').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('snav-m-'+tab); if (el) el.classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+//  Mobile detection — show/hide each element directly
+// ════════════════════════════════════════════════
+function applyMobileMode() {
+  const isMobile = window.innerWidth <= 768;
+  const mobAvatar = document.getElementById('mob-avatar');
+  const mobLogout = document.getElementById('mob-logout-btn');
+  const hamburger = document.getElementById('hamburger-btn');
+  const trigger   = document.getElementById('slide-trigger');
+  if (mobAvatar) mobAvatar.style.display = isMobile ? 'flex' : 'none';
+  if (mobLogout) mobLogout.style.display = isMobile ? 'flex' : 'none';
+  if (hamburger) hamburger.style.display = isMobile ? 'none' : '';
+  if (trigger)   trigger.style.display   = isMobile ? 'flex' : 'none';
+  // On desktop, force close and hide slide nav too
+  if (!isMobile) {
+    _slideOpen = false;
+    const sn = document.getElementById('slide-nav');
+    const sb = document.getElementById('slide-backdrop');
+    if (sn) { sn.style.display='none'; sn.classList.remove('open'); }
+    if (sb) sb.style.display = 'none';
+  }
+}
+applyMobileMode();
+window.addEventListener('resize', applyMobileMode);
+
+// ════════════════════════════════════════════════
+//  Tab switching
+// ════════════════════════════════════════════════
+let _activeTab = 'home';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tb=document.getElementById('tab-btn-'+tab); if(tb) tb.classList.add('active');
+  const sn=document.getElementById('snav-'+tab);    if(sn) sn.classList.add('active');
+  const titles={home:'Student Dashboard',book:'Book a Space',mybookings:'My Bookings',maintenance:'Report Issue',announce:'Announcements'};
+  document.getElementById('page-title').textContent = titles[tab] || 'Dashboard';
+  _activeTab = tab;
+  updateSlideNavActive(tab);
+  if (tab==='mybookings')  loadBookings();
+  if (tab==='announce')    loadAnnouncements();
+  if (tab==='maintenance') loadMyReports();
+}
+document.getElementById('snav-home').classList.add('active');
+
+// ════════════════════════════════════════════════
+//  Notifications
+// ════════════════════════════════════════════════
+const notifPanel = document.getElementById('notif-panel');
+let _notifOpen = false;
+document.getElementById('notif-bell').addEventListener('click', e => {
+  e.stopPropagation();
+  _notifOpen = !_notifOpen;
+  notifPanel.classList.toggle('open', _notifOpen);
+  if (_notifOpen) loadNotifications();
+});
+document.addEventListener('click', e => {
+  if (_notifOpen && !notifPanel.contains(e.target) && e.target.id !== 'notif-bell') {
+    _notifOpen = false; notifPanel.classList.remove('open');
+  }
+});
+async function loadNotifications() {
+  const data = await api('api/notifications.php');
+  if (!data.success) return;
+  const list = data.notifications || [], unread = data.unread_count || 0;
+  document.getElementById('notif-count').textContent = unread;
+  document.getElementById('notif-count').classList.toggle('hidden', unread===0);
+  const el = document.getElementById('notif-list');
+  el.innerHTML = list.length ? list.map(n=>`
+    <div class="notif-row ${n.is_read?'':'unread'}" onclick="markOneRead(${n.notification_id})">
+      <div class="notif-dot ${n.is_read?'read':'unread'}"></div>
+      <div><div class="notif-text">${esc(n.message)}</div><div class="notif-time">${n.created_at}</div></div>
+    </div>`).join('') : '<div class="notif-empty">No notifications yet.</div>';
+}
+async function markAllRead()  { await api('api/notifications.php','POST',{action:'read_all'}); _notifOpen=false; notifPanel.classList.remove('open'); loadNotifications(); }
+async function markOneRead(id){ await api('api/notifications.php','POST',{action:'read_one',notification_id:id}); loadNotifications(); }
+
+// ════════════════════════════════════════════════
+//  Bookings
+// ════════════════════════════════════════════════
+async function loadBookings() {
+  const data = await api('api/bookings.php');
+  if (!data.success) return;
+  const c = data.counts || {};
+  document.getElementById('stat-total').textContent   = c.total    || 0;
+  document.getElementById('stat-approved').textContent= c.approved || 0;
+  document.getElementById('stat-pending').textContent = c.pending  || 0;
+  document.getElementById('nb-bookings').textContent  = c.pending  || 0;
+  document.getElementById('bookings-sub').textContent = (c.total||0)+' booking'+((c.total||0)!==1?'s':'');
+  const rows = data.bookings || [];
+  const el   = document.getElementById('bookings-list');
+  if (!rows.length) {
+    el.innerHTML=`<div class="empty-state"><div class="es-icon">📅</div><div class="es-title">No bookings yet</div><div class="es-msg">Book your first facility space to get started.</div></div>`;
+    return;
+  }
+  el.innerHTML = rows.map(b => {
+    const st = (b.status_name||'').toLowerCase();
+    const icons = {approved:'✅',pending:'⏳',rejected:'✕',cancelled:'⊘'};
+    return `<div class="tl-item">
+      <div class="tl-icon ${st}">${icons[st]||'📅'}</div>
+      <div class="tl-body">
+        <div class="tl-name">${esc(b.facility_name)}</div>
+        <div class="tl-meta">📅 ${b.booking_date} · 🕐 ${b.start_time}–${b.end_time}${b.purpose?' · '+esc(b.purpose):''}</div>
+      </div>
+      <span class="badge ${st}">${esc(b.status_name)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+//  Facilities
+// ════════════════════════════════════════════════
+const TYPE_ICONS = {'Lecture Hall':'🏛️','Laboratory':'💻','Sports Facility':'🏀','Meeting Room':'🗂️','Study Room':'📚'};
+
+async function loadFacilities() {
+  const data = await api('api/facilities.php');
+  if (!data.success||!data.facilities) return;
+  const facs = data.facilities;
+  document.getElementById('stat-fac').textContent = facs.filter(f=>f.is_available).length;
+
+  // Booking dropdown — available only
+  const sel = document.getElementById('fac-select');
+  sel.innerHTML = '<option value="">— Select a facility —</option>';
+  facs.filter(f=>f.is_available).forEach(f=>{
+    const o=document.createElement('option');
+    o.value=f.facility_id; o.textContent=(f.emoji||'🏛️')+' '+f.facility_name; sel.appendChild(o);
+  });
+
+  // Browse cards
+  document.getElementById('fac-browse').innerHTML = facs.map(f=>{
+    const e=f.emoji||TYPE_ICONS[f.type_name]||'🏛️';
+    return `<div class="fac-card${f.is_available?'':' unavailable'}" onclick="${f.is_available?`selectFac(${f.facility_id})`:''}">
+      <span class="fac-emoji">${e}</span>
+      <div class="fac-name">${esc(f.facility_name)}</div>
+      <div class="fac-cap">${f.capacity} pax · ${esc(f.type_name||'')}</div>
+      <span class="badge ${f.is_available?'approved':'rejected'}" style="font-size:10px">${f.is_available?'Available':'Unavailable'}</span>
+    </div>`;
+  }).join('');
+
+  // Maintenance report dropdown — all facilities
+  const mrSel = document.getElementById('mr-facility');
+  mrSel.innerHTML = '<option value="">Select a facility…</option>';
+  facs.forEach(f=>{
+    const o=document.createElement('option');
+    o.value=f.facility_id; o.textContent=(f.emoji||'🏛️')+' '+f.facility_name+' — '+(f.location||'');
+    mrSel.appendChild(o);
+  });
+}
+
+function selectFac(id) {
+  const sel=document.getElementById('fac-select');
+  for(let i=0;i<sel.options.length;i++){if(parseInt(sel.options[i].value)===id){sel.selectedIndex=i;break;}}
+  switchTab('book');
+}
+
+// ════════════════════════════════════════════════
+//  Submit booking
+// ════════════════════════════════════════════════
+async function submitBooking() {
+  const facId  =document.getElementById('fac-select').value;
+  const date   =document.getElementById('book-date').value;
+  const start  =document.getElementById('book-start').value;
+  const end    =document.getElementById('book-end').value;
+  const purpose=document.getElementById('book-purpose').value.trim();
+  const alertEl=document.getElementById('book-alert'); alertEl.className='bf-alert';
+  if(!facId) {alertEl.textContent='✕ Please select a facility.';     alertEl.className='bf-alert show error';return;}
+  if(!date)  {alertEl.textContent='✕ Please choose a date.';         alertEl.className='bf-alert show error';return;}
+  if(!start||!end){alertEl.textContent='✕ Start and end time required.';alertEl.className='bf-alert show error';return;}
+  if(start>=end)  {alertEl.textContent='✕ End time must be after start.';alertEl.className='bf-alert show error';return;}
+  const btn=document.getElementById('book-btn');
+  btn.disabled=true;btn.innerHTML='<div class="btn-spin"></div> Submitting…';
+  const data=await api('api/bookings.php','POST',{facility_id:parseInt(facId),booking_date:date,start_time:start,end_time:end,purpose});
+  if(!data.success){alertEl.textContent='✕ '+(data.message||'Booking failed.');alertEl.className='bf-alert show error';}
+  else{
+    alertEl.textContent='✓ Booking submitted! Awaiting approval.';alertEl.className='bf-alert show success';
+    document.getElementById('fac-select').selectedIndex=0;
+    document.getElementById('book-purpose').value='';
+    loadBookings();
+    setTimeout(()=>alertEl.className='bf-alert',5000);
+  }
+  btn.disabled=false;btn.innerHTML='Submit Booking →';
+}
+
+// ════════════════════════════════════════════════
+//  Announcements + voting
+// ════════════════════════════════════════════════
+const PRI_LABEL = { high:'Important', medium:'Medium', low:'General' };
+let _anns = [];
+
+async function loadAnnouncements() {
+  const data=await api('api/announcements.php');
+  const list=data.success?(data.announcements||[]):[];
+  _anns=list;
+  const el=document.getElementById('ann-list');
+  document.getElementById('ann-sub').textContent = list.length+' active announcement'+(list.length!==1?'s':'');
+  if(!list.length){el.innerHTML='<div class="empty-state"><div class="es-icon">📢</div><div class="es-title">No announcements</div><div class="es-msg">Nothing posted yet.</div></div>';return;}
+  el.innerHTML=list.map(a=>{
+    const uv=a.user_vote||null;
+    return `<div class="ann-card" id="ann-${a.announcement_id}">
+      <div class="ann-head">
+        <div class="ann-title">${esc(a.title)}</div>
+        <span class="ann-pri ${a.priority}">${PRI_LABEL[a.priority]||a.priority}</span>
+      </div>
+      <div class="ann-msg">${esc(a.message)}</div>
+      <div class="ann-footer">
+        <div class="ann-meta">📅 ${a.created_at} · By: ${esc(a.posted_by_name||'Admin')}</div>
+        <div class="vote-row">
+          <button class="vote-btn up ${uv==='up'?'voted-up':''}" id="vup-${a.announcement_id}" onclick="vote(${a.announcement_id},'up')">
+            👍 <span id="vc-up-${a.announcement_id}">${a.upvotes||0}</span>
+          </button>
+          <button class="vote-btn down ${uv==='down'?'voted-down':''}" id="vdn-${a.announcement_id}" onclick="vote(${a.announcement_id},'down')">
+            👎 <span id="vc-dn-${a.announcement_id}">${a.downvotes||0}</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function vote(annId, voteType) {
+  const upBtn=document.getElementById('vup-'+annId), dnBtn=document.getElementById('vdn-'+annId);
+  if(!upBtn||!dnBtn)return; upBtn.disabled=true; dnBtn.disabled=true;
+  try {
+    const d=await api('api/announcements.php','POST',{action:'vote',announcement_id:annId,vote:voteType});
+    if(!d.success)return;
+    document.getElementById('vc-up-'+annId).textContent=d.upvotes;
+    document.getElementById('vc-dn-'+annId).textContent=d.downvotes;
+    upBtn.className='vote-btn up' +(d.vote==='up' ?' voted-up':'');
+    dnBtn.className='vote-btn down'+(d.vote==='down'?' voted-down':'');
+    const a=_anns.find(x=>x.announcement_id==annId);
+    if(a){a.upvotes=d.upvotes;a.downvotes=d.downvotes;a.user_vote=d.vote;}
+  } finally { upBtn.disabled=false; dnBtn.disabled=false; }
+}
+
+// ════════════════════════════════════════════════
+//  Maintenance — report + view own reports
+// ════════════════════════════════════════════════
+const MR_STATUS_CLS = { 'Pending':'pending', 'In Progress':'progress', 'Completed':'approved' };
+const MR_PRI_CLS    = { 'High':'high', 'Medium':'medium', 'Low':'low' };
+
+async function loadMyReports() {
+  const el = document.getElementById('mr-list');
+  const data = await api('api/maintenance.php?my_reports=1');
+  if (!data.success) { el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load reports.</div>'; return; }
+  const list = data.requests || [];
+  document.getElementById('mr-sub').textContent = list.length+' report'+(list.length!==1?'s':'');
+  if (!list.length) { el.innerHTML='<div style="padding:24px;text-align:center;font-size:13px;color:var(--dim);">No reports submitted yet.</div>'; return; }
+  el.innerHTML = list.map(r => {
+    const stCls  = MR_STATUS_CLS[r.status_name] || 'pending';
+    const priCls = MR_PRI_CLS[r.priority]        || 'medium';
+    return `<div style="padding:13px 18px;border-bottom:1px solid rgba(37,37,64,.5);">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${esc(r.emoji||'🏛️')} ${esc(r.facility_name)}</div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <span class="badge ${priCls}" style="font-size:10px;">${esc(r.priority)}</span>
+          <span class="badge ${stCls}"  style="font-size:10px;">${esc(r.status_name)}</span>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">${esc(r.description)}</div>
+      <div style="font-size:11px;color:var(--dim);">📅 ${r.created_at} · 📍 ${esc(r.location||'—')}</div>
+    </div>`;
+  }).join('');
+}
+
+async function submitReport() {
+  const facId=document.getElementById('mr-facility').value, pri=document.getElementById('mr-priority').value;
+  const desc =document.getElementById('mr-desc').value.trim();
+  const alertEl=document.getElementById('mr-alert'); alertEl.className='bf-alert';
+  if(!facId){alertEl.textContent='✕ Please select a facility.';alertEl.className='bf-alert show error';return;}
+  if(!desc) {alertEl.textContent='✕ Please describe the issue.';alertEl.className='bf-alert show error';return;}
+  if(desc.length<10){alertEl.textContent='✕ Description too short — please add more detail.';alertEl.className='bf-alert show error';return;}
+  const btn=document.getElementById('mr-btn');
+  btn.disabled=true;btn.innerHTML='<span class="btn-spin"></span> Submitting…';
+  const data=await api('api/maintenance.php','POST',{action:'report',facility_id:parseInt(facId),priority:pri,description:desc});
+  if(!data.success){alertEl.textContent='✕ '+(data.message||'Failed.');alertEl.className='bf-alert show error';btn.disabled=false;btn.innerHTML='🔧 Submit Report';return;}
+  alertEl.textContent='✓ Report submitted! Maintenance team has been notified.';alertEl.className='bf-alert show success';
+  document.getElementById('mr-desc').value='';
+  document.getElementById('mr-priority').value='Medium';
+  loadMyReports(); loadNotifications();
+  setTimeout(()=>alertEl.className='bf-alert',5000);
+  btn.disabled=false;btn.innerHTML='🔧 Submit Report';
+}
+
+// ════════════════════════════════════════════════
+//  Logout & util
+// ════════════════════════════════════════════════
+function logout(){localStorage.removeItem('yagums_token');localStorage.removeItem('yagums_user');document.cookie='yagums_token=; path=/; max-age=0';window.location.href='login.html';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Init ──────────────────────────────────────────
+document.getElementById('snav-home').classList.add('active');
+updateSlideNavActive('home');
+loadBookings();
+loadFacilities();
+loadNotifications();
+loadMyReports();
+</script>
+</body>
+</html>

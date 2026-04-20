@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAGUMS – Notifications</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --black:#0a0a0f; --deep:#0f0f1a; --surface:#13131f; --card:#16162a;
+  --border:#252540; --border2:#2e2e50;
+  --purple:#7c3aed; --purp2:#9d5bff; --accent:#c084fc;
+  --text:#e8e6ff; --muted:#7b7a9d; --dim:#4a4a6a;
+  --green:#34d399; --amber:#f59e0b; --red:#f87171; --blue:#60a5fa;
+}
+body { font-family:'DM Sans',sans-serif; background:var(--black); color:var(--text); min-height:100vh; min-height:100dvh; }
+
+/* ── Topbar ── */
+.topbar { position:sticky; top:0; z-index:50; background:var(--deep); border-bottom:1px solid var(--border); padding:0 20px; height:58px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.topbar-left  { display:flex; align-items:center; gap:10px; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.topbar-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#fff; }
+.back-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:10px; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; color:var(--muted); border:1px solid var(--border2); background:transparent; cursor:pointer; text-decoration:none; transition:all .2s; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.back-btn:hover { border-color:var(--purple); color:var(--text); background:rgba(124,58,237,.08); }
+.logout-link { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:500; color:var(--muted); cursor:pointer; padding:7px 14px; border-radius:9px; border:1px solid var(--border); background:none; font-family:'DM Sans',sans-serif; transition:all .2s; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.logout-link:hover { color:var(--red); border-color:rgba(248,113,113,.3); background:rgba(248,113,113,.06); }
+
+/* ── Page ── */
+.page { max-width:680px; margin:0 auto; padding:32px 20px 60px; }
+.page-header { margin-bottom:22px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:#fff; margin-bottom:4px; }
+.page-header p  { font-size:13px; color:var(--muted); }
+
+/* ── Controls bar ── */
+.controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.filter-btn { padding:6px 15px; border-radius:100px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; border:1px solid var(--border2); background:transparent; color:var(--muted); cursor:pointer; transition:all .18s; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.filter-btn:hover { border-color:var(--purple); color:var(--text); }
+.filter-btn.active           { background:rgba(124,58,237,.18); border-color:var(--purple); color:var(--accent); }
+.filter-btn.f-unread.active  { background:rgba(157,91,255,.2); border-color:var(--purp2); color:var(--purp2); }
+.filter-btn.f-ann.active     { background:rgba(192,132,252,.15); border-color:var(--accent); color:var(--accent); }
+
+.mark-all-btn { margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; font-family:'DM Sans',sans-serif; color:var(--accent); border:1px solid rgba(192,132,252,.3); background:none; padding:6px 14px; border-radius:100px; cursor:pointer; transition:all .18s; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.mark-all-btn:hover { background:rgba(124,58,237,.12); }
+
+/* ── Notification list ── */
+.notif-list { display:flex; flex-direction:column; gap:1px; background:var(--border); border-radius:16px; overflow:hidden; }
+.notif-card { background:var(--card); padding:16px 18px; display:flex; align-items:flex-start; gap:14px; cursor:pointer; transition:background .18s; position:relative; }
+.notif-card:hover  { background:rgba(124,58,237,.06); }
+.notif-card.unread { background:rgba(124,58,237,.07); }
+.notif-card.unread::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--purp2); border-radius:0; }
+
+/* Type icon circle */
+.notif-icon { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+.notif-icon.success     { background:rgba(52,211,153,.15); }
+.notif-icon.warning     { background:rgba(245,158,11,.15); }
+.notif-icon.error       { background:rgba(248,113,113,.15); }
+.notif-icon.info        { background:rgba(96,165,250,.15); }
+.notif-icon.announcement{ background:rgba(192,132,252,.15); }
+
+.notif-body  { flex:1; min-width:0; }
+.notif-msg   { font-size:13px; color:var(--muted); line-height:1.55; margin-bottom:5px; }
+.notif-card.unread .notif-msg { color:var(--text); }
+.notif-time  { font-size:11px; color:var(--dim); }
+
+.notif-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.notif-dot.unread { background:var(--purp2); box-shadow:0 0 5px rgba(157,91,255,.5); }
+.notif-dot.read   { background:transparent; }
+
+/* ── Pagination ── */
+.pagination { display:flex; align-items:center; justify-content:space-between; margin-top:24px; gap:12px; flex-wrap:wrap; }
+.page-info  { font-size:13px; color:var(--muted); }
+.page-info b { color:var(--text); }
+.page-btns  { display:flex; gap:8px; }
+.page-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border-radius:10px; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; border:1px solid var(--border2); background:transparent; color:var(--muted); cursor:pointer; transition:all .2s; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+.page-btn:hover:not(:disabled) { border-color:var(--purple); color:var(--text); background:rgba(124,58,237,.08); }
+.page-btn:disabled { opacity:.35; cursor:not-allowed; }
+.page-btn.primary { background:linear-gradient(135deg,var(--purple),var(--purp2)); border-color:transparent; color:#fff; box-shadow:0 4px 14px rgba(124,58,237,.28); }
+.page-btn.primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(124,58,237,.4); }
+
+/* ── Empty ── */
+.empty-state { padding:60px 20px; text-align:center; }
+.empty-icon  { font-size:48px; margin-bottom:14px; }
+.empty-state h3 { font-family:'Syne',sans-serif; font-size:18px; color:var(--text); margin-bottom:8px; }
+.empty-state p  { font-size:13px; color:var(--muted); }
+
+/* ── Skeleton ── */
+.skeleton { background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:8px; }
+@keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+.skel-row { height:72px; margin-bottom:1px; border-radius:0; }
+.skel-row:first-child { border-radius:16px 16px 0 0; }
+.skel-row:last-child  { border-radius:0 0 16px 16px; }
+
+/* ── Responsive ── */
+@media (max-width:500px) {
+  .page { padding:20px 14px 60px; }
+  .topbar { padding:0 14px; }
+  .page-btn span { display:none; }
+  .page-header { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <a id="back-btn" href="#" class="back-btn">← Back</a>
+    <div class="topbar-title">🔔 Notifications</div>
+  </div>
+  <div class="topbar-right">
+    <button class="logout-link" onclick="logout()">🚪 Sign Out</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Notification History</h1>
+      <p id="page-desc">Loading…</p>
+    </div>
+  </div>
+
+  <!-- Filters + mark all -->
+  <div class="controls">
+    <button class="filter-btn active"   id="f-all"    onclick="setFilter('all')">All</button>
+    <button class="filter-btn f-unread" id="f-unread" onclick="setFilter('unread')">🔵 Unread</button>
+    <button class="filter-btn f-ann"    id="f-ann"    onclick="setFilter('announcement')">📢 Announcements</button>
+    <button class="mark-all-btn" onclick="markAll()">✓ Mark all read</button>
+  </div>
+
+  <!-- List -->
+  <div id="notif-list">
+    <div class="skel-row skeleton"></div>
+    <div class="skel-row skeleton"></div>
+    <div class="skel-row skeleton"></div>
+    <div class="skel-row skeleton"></div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination" style="display:none;">
+    <div class="page-info" id="page-info">—</div>
+    <div class="page-btns">
+      <button class="page-btn" id="btn-prev" onclick="goPage(-1)" disabled>← <span>Previous</span></button>
+      <button class="page-btn primary" id="btn-next" onclick="goPage(1)"  disabled><span>Next</span> →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  Auth + role routing
+// ════════════════════════════════════════════════
+const _token = localStorage.getItem('yagums_token');
+const _user  = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = 'login.html'; }
+
+const DASHBOARDS = {
+  'Admin':'dashboard-admin.html', 'Facility Manager':'dashboard-facility.html',
+  'Maintenance Staff':'dashboard-maintenance.html', 'Lecturer':'dashboard-lecturer.html',
+  'Student':'dashboard-student.html',
+};
+const homeDash = DASHBOARDS[_user.role] || 'dashboard-student.html';
+document.getElementById('back-btn').href = homeDash;
+
+// ════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════
+const PER_PAGE = 10;
+let allData      = [];
+let filtered     = [];
+let currentPage  = 1;
+let activeFilter = 'all';
+
+// ════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════
+async function api(url, method='GET', body) {
+  try {
+    const o = { headers:{'Authorization':'Bearer '+_token} };
+    if (method==='POST') { o.method='POST'; o.headers['Content-Type']='application/json'; o.body=JSON.stringify(body); }
+    return await (await fetch(url, o)).json();
+  } catch { return {success:false}; }
+}
+
+// ════════════════════════════════════════════════
+//  Load + render
+// ════════════════════════════════════════════════
+async function load() {
+  const data = await api('api/notifications.php?history=1');
+  if (!data.success) {
+    showEmpty('Could not load notifications. Make sure XAMPP is running and you are logged in.');
+    document.getElementById('page-desc').textContent = 'Unable to connect to server';
+    return;
+  }
+  allData = data.notifications || [];
+  const unread = allData.filter(n => !n.is_read).length;
+  document.getElementById('page-desc').textContent =
+    allData.length + ' notification' + (allData.length!==1?'s':'') +
+    (unread ? ' · ' + unread + ' unread' : ' · all read');
+  applyFilter();
+}
+
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('f-'+f).classList.add('active');
+  currentPage = 1;
+  applyFilter();
+}
+
+function applyFilter() {
+  switch (activeFilter) {
+    case 'unread':       filtered = allData.filter(n => !n.is_read);          break;
+    case 'announcement': filtered = allData.filter(n => n.is_announcement);   break;
+    default:             filtered = allData;
+  }
+  render();
+}
+
+function render() {
+  const total = filtered.length;
+  const pages = Math.ceil(total / PER_PAGE) || 1;
+  const start = (currentPage - 1) * PER_PAGE;
+  const items = filtered.slice(start, start + PER_PAGE);
+  const listEl = document.getElementById('notif-list');
+  const pagEl  = document.getElementById('pagination');
+
+  if (!total) {
+    showEmpty(activeFilter !== 'all' ? 'No notifications match this filter.' : 'Your notification history is empty.');
+    pagEl.style.display = 'none';
+    return;
+  }
+
+  // Type → icon + class
+  const ICONS = {
+    success:      { icon:'✅', cls:'success' },
+    warning:      { icon:'⚠️', cls:'warning' },
+    error:        { icon:'❌', cls:'error' },
+    info:         { icon:'ℹ️', cls:'info' },
+    announcement: { icon:'📢', cls:'announcement' },
+  };
+
+  listEl.innerHTML = `<div class="notif-list">
+    ${items.map(n => {
+      const t    = n.is_announcement ? 'announcement' : (n.type || 'info');
+      const ic   = ICONS[t] || ICONS.info;
+      const read = n.is_read;
+      return `
+        <div class="notif-card ${read?'':'unread'}" onclick="markOne(${n.notification_id})">
+          <div class="notif-icon ${ic.cls}">${ic.icon}</div>
+          <div class="notif-body">
+            <div class="notif-msg">${esc(n.message)}</div>
+            <div class="notif-time">🕐 ${n.created_at}</div>
+          </div>
+          <div class="notif-dot ${read?'read':'unread'}"></div>
+        </div>`;
+    }).join('')}
+  </div>`;
+
+  // Pagination
+  pagEl.style.display = 'flex';
+  const from = start + 1;
+  const to   = Math.min(start + PER_PAGE, total);
+  document.getElementById('page-info').innerHTML =
+    'Showing <b>' + from + '–' + to + '</b> of <b>' + total + '</b>';
+  document.getElementById('btn-prev').disabled = currentPage <= 1;
+  document.getElementById('btn-next').disabled = currentPage >= pages;
+}
+
+function goPage(dir) {
+  const pages = Math.ceil(filtered.length / PER_PAGE) || 1;
+  currentPage = Math.max(1, Math.min(currentPage + dir, pages));
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showEmpty(msg) {
+  document.getElementById('notif-list').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">🔔</div>
+      <h3>No Notifications</h3>
+      <p>${esc(msg)}</p>
+    </div>`;
+  document.getElementById('pagination').style.display = 'none';
+}
+
+// ════════════════════════════════════════════════
+//  Mark read
+// ════════════════════════════════════════════════
+async function markOne(id) {
+  const n = allData.find(x => x.notification_id === id);
+  if (!n || n.is_read) return; // already read, skip API call
+  n.is_read = true;
+  await api('api/notifications.php', 'POST', { action:'read_one', notification_id:id });
+  applyFilter(); // re-render in place — no full reload
+}
+
+async function markAll() {
+  allData.forEach(n => n.is_read = true);
+  applyFilter(); // instant UI update
+  await api('api/notifications.php', 'POST', { action:'read_all' });
+  // Refresh count in description
+  document.getElementById('page-desc').textContent =
+    allData.length + ' notification' + (allData.length!==1?'s':'') + ' · all read';
+}
+
+// ════════════════════════════════════════════════
+//  Utility
+// ════════════════════════════════════════════════
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function logout() {
+  localStorage.removeItem('yagums_token'); localStorage.removeItem('yagums_user');
+  document.cookie = 'yagums_token=; path=/; max-age=0'; window.location.href = 'login.html';
+}
+
+// ── Init ──────────────────────────────────────────
+load();
+</script>
+</body>
+</html>
