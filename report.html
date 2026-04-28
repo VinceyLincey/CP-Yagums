@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>YAGUMS – My Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --black:#0a0a0f; --deep:#0f0f1a; --surface:#13131f; --card:#16162a;
+  --border:#252540; --border2:#2e2e50;
+  --purple:#7c3aed; --purp2:#9d5bff; --accent:#c084fc;
+  --text:#e8e6ff; --muted:#7b7a9d; --dim:#4a4a6a;
+  --green:#34d399; --amber:#f59e0b; --red:#f87171; --blue:#60a5fa;
+}
+body { font-family:'DM Sans',sans-serif; background:var(--black); color:var(--text); min-height:100vh; }
+
+/* ── Topbar ── */
+.topbar { position:sticky;top:0;z-index:50;background:var(--deep);border-bottom:1px solid var(--border);padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden; }
+.topbar-left  { display:flex;align-items:center;gap:8px;min-width:0;flex:1;overflow:hidden; }
+.topbar-right { display:flex;align-items:center;gap:8px;flex-shrink:0; }
+.topbar-title { font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.back-btn { display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--muted);border:1px solid var(--border2);background:transparent;cursor:pointer;text-decoration:none;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;white-space:nowrap;flex-shrink:0; }
+.back-btn:hover { border-color:var(--purple);color:var(--text);background:rgba(124,58,237,.08); }
+.logout-link { display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;padding:6px 12px;border-radius:9px;border:1px solid var(--border);background:none;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex-shrink:0; }
+.logout-link:hover { color:var(--red);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06); }
+
+/* ── Page ── */
+.page { max-width:780px;margin:0 auto;padding:28px 20px 80px; }
+.page-header { margin-bottom:20px; }
+.page-header h1 { font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:4px; }
+.page-header p  { font-size:13px;color:var(--muted); }
+
+/* ── Filter row ── */
+.filter-row { display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap; }
+.search-wrap { position:relative;flex:1;min-width:160px; }
+.search-wrap::before { content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none; }
+.search-inp { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px 8px 32px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none; }
+.search-inp:focus { border-color:var(--purple); }
+.search-inp::placeholder { color:var(--dim); }
+
+/* ── Custom dropdown ── */
+.cdd-wrap { position:relative;flex-shrink:0; }
+.cdd-btn { display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap;transition:border-color .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none; }
+.cdd-btn:focus,.cdd-btn.open { border-color:var(--purple);outline:none; }
+.cdd-arrow { font-size:10px;color:var(--muted);transition:transform .2s;pointer-events:none; }
+.cdd-btn.open .cdd-arrow { transform:rotate(180deg); }
+.cdd-panel { display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:120;min-width:150px;background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.55); }
+.cdd-panel.open { display:block;animation:cddIn .15s ease; }
+.cdd-panel.align-right { left:auto;right:0; }
+@keyframes cddIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+.cdd-opt { padding:9px 12px;font-size:13px;color:var(--muted);border-radius:8px;cursor:pointer;transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;white-space:nowrap; }
+.cdd-opt:hover { background:rgba(124,58,237,.12);color:var(--text); }
+.cdd-opt.selected { color:var(--accent);font-weight:600; }
+
+/* ── Report cards ── */
+.report-list { display:flex;flex-direction:column;gap:10px;min-height:160px; }
+.report-card { background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s,transform .18s;animation:cardIn .3s cubic-bezier(.16,1,.3,1) both; }
+@keyframes cardIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.report-card:hover { border-color:var(--border2);transform:translateY(-1px); }
+.report-card.s-pending   { border-left:3px solid var(--amber); }
+.report-card.s-progress  { border-left:3px solid var(--blue); }
+.report-card.s-completed { border-left:3px solid var(--green); }
+.report-inner { padding:14px 18px; }
+.report-top { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px; }
+.report-fac { font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;flex:1;min-width:0; }
+.report-fac-loc { font-size:11px;color:var(--muted);margin-top:1px; }
+.report-badges { display:flex;align-items:center;gap:5px;flex-shrink:0; }
+.pri-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.04em; }
+.pri-badge.high   { background:rgba(248,113,113,.15);color:var(--red); }
+.pri-badge.medium { background:rgba(245,158,11,.15); color:var(--amber); }
+.pri-badge.low    { background:rgba(52,211,153,.15); color:var(--green); }
+.status-badge { font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:.04em; }
+.status-badge.pending   { background:rgba(245,158,11,.15);color:var(--amber); }
+.status-badge.progress  { background:rgba(96,165,250,.15); color:var(--blue); }
+.status-badge.completed { background:rgba(52,211,153,.15); color:var(--green); }
+.report-desc { font-size:12px;color:var(--muted);line-height:1.55;margin-bottom:10px; }
+.progress-bar { height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:10px; }
+.progress-fill { height:100%;border-radius:2px;transition:width .5s ease; }
+.progress-fill.pending  { background:var(--amber);width:5%; }
+.progress-fill.progress { background:var(--blue); width:50%; }
+.progress-fill.completed{ background:var(--green);width:100%; }
+.progress-note { font-size:11px;color:var(--dim);margin-bottom:6px; }
+.report-footer { display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap; }
+.report-meta { font-size:11px;color:var(--dim); }
+.btn-del-report { display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;border:1px solid rgba(248,113,113,.3);color:var(--red);background:transparent;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent; }
+.btn-del-report:hover { background:rgba(248,113,113,.1); }
+
+/* ── Pagination ── */
+.pagination { display:flex;align-items:center;justify-content:space-between;margin-top:24px;gap:12px;flex-wrap:wrap; }
+.page-info { font-size:12px;color:var(--muted); }
+.page-info b { color:var(--text); }
+.page-btns { display:flex;gap:8px; }
+.page-btn { display:inline-flex;align-items:center;gap:5px;padding:7px 16px;border-radius:10px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation; }
+.page-btn:hover:not(:disabled) { border-color:var(--purple);color:var(--text);background:rgba(124,58,237,.08); }
+.page-btn:disabled { opacity:.35;cursor:not-allowed; }
+
+/* ── Empty ── */
+.empty-state { text-align:center;padding:48px 20px;background:var(--card);border:1px solid var(--border);border-radius:14px; }
+.empty-icon { font-size:36px;margin-bottom:10px; }
+.empty-state h3 { font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:5px; }
+.empty-state p  { font-size:13px;color:var(--muted); }
+
+/* ── Skeleton ── */
+.skeleton { background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:14px; }
+@keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+
+/* ── Confirm modal ── */
+.modal-backdrop { display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px; }
+.modal-backdrop.open { display:flex; }
+.modal { background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:24px;width:100%;max-width:400px;animation:modalIn .25s cubic-bezier(.16,1,.3,1); }
+@keyframes modalIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+.modal-title { font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px; }
+.modal-msg   { font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.55; }
+.modal-actions { display:flex;gap:10px; }
+.btn-cancel { background:transparent;border:1px solid var(--border2);border-radius:10px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent; }
+.btn-cancel:hover { border-color:var(--purple);color:var(--text); }
+.btn-danger { flex:1;background:linear-gradient(135deg,#dc2626,#f87171);border:none;border-radius:10px;padding:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent; }
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .page { padding:20px 14px 80px; }
+  .page-header h1 { font-size:18px; }
+  .filter-row { gap:6px; }
+  .filter-row .search-wrap { flex:0 0 100%;order:-1; }
+  .filter-row .cdd-wrap { flex:1;min-width:0; }
+  .filter-row .cdd-btn { width:100%;justify-content:space-between;font-size:11px;padding:7px 10px; }
+  .cdd-opt { padding:10px 12px;font-size:12px; }
+  .report-inner { padding:12px 14px; }
+  .report-footer { flex-direction:column;align-items:flex-start;gap:6px; }
+}
+@media(max-width:480px){
+  .pagination { flex-direction:column;align-items:center;gap:10px; }
+  .page-btns { width:100%;justify-content:center; }
+  .page-btn { flex:1;justify-content:center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Confirm modal -->
+<div class="modal-backdrop" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-title" id="confirm-title">Delete Report</div>
+    <div class="modal-msg"   id="confirm-msg">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="back-btn" onclick="history.back()">← Back</button>
+    <span class="topbar-title">🔧 My Reports</span>
+  </div>
+  <div class="topbar-right">
+    <button class="logout-link" onclick="logout()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</div>
+
+<div class="page">
+  <!-- Header -->
+  <div class="page-header">
+    <h1>🔧 My Maintenance Reports</h1>
+    <p id="page-desc">Loading your submitted reports…</p>
+  </div>
+
+  <!-- Filter row: search + 2 custom dropdowns -->
+  <div class="filter-row">
+    <div class="search-wrap">
+      <input class="search-inp" type="text" id="search-inp" placeholder="Search facility or description…" oninput="applyFilter()">
+    </div>
+    <div class="cdd-wrap">
+      <button class="cdd-btn" id="status-btn" onclick="toggleCdd('status')">
+        <span id="status-label">All Status</span><span class="cdd-arrow">▾</span>
+      </button>
+      <div class="cdd-panel" id="status-panel">
+        <div class="cdd-opt selected" data-val=""            onclick="setCdd('status','','All Status')">All Status</div>
+        <div class="cdd-opt"          data-val="Pending"     onclick="setCdd('status','Pending','⏳ Pending')">⏳ Pending</div>
+        <div class="cdd-opt"          data-val="In Progress" onclick="setCdd('status','In Progress','🔄 In Progress')">🔄 In Progress</div>
+        <div class="cdd-opt"          data-val="Completed"   onclick="setCdd('status','Completed','✅ Done')">✅ Done</div>
+      </div>
+    </div>
+    <div class="cdd-wrap">
+      <button class="cdd-btn" id="priority-btn" onclick="toggleCdd('priority')">
+        <span id="priority-label">All Priority</span><span class="cdd-arrow">▾</span>
+      </button>
+      <div class="cdd-panel align-right" id="priority-panel">
+        <div class="cdd-opt selected" data-val=""       onclick="setCdd('priority','','All Priority')">All Priority</div>
+        <div class="cdd-opt"          data-val="High"   onclick="setCdd('priority','High','🔴 High')">🔴 High</div>
+        <div class="cdd-opt"          data-val="Medium" onclick="setCdd('priority','Medium','🟡 Medium')">🟡 Medium</div>
+        <div class="cdd-opt"          data-val="Low"    onclick="setCdd('priority','Low','🟢 Low')">🟢 Low</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report list -->
+  <div class="report-list" id="report-list">
+    <div class="skeleton" style="height:100px;"></div>
+    <div class="skeleton" style="height:100px;margin-top:10px;"></div>
+    <div class="skeleton" style="height:100px;margin-top:10px;"></div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination" style="display:none;">
+    <div class="page-info" id="page-info">—</div>
+    <div class="page-btns">
+      <button class="page-btn" id="btn-prev" onclick="goPage(-1)">← Previous</button>
+      <button class="page-btn" id="btn-next" onclick="goPage(+1)">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+const _token = localStorage.getItem('yagums_token');
+const _user  = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = 'login.html'; }
+if (!['Student','Lecturer','Admin','Facility Manager'].includes(_user.role)) { window.location.href = 'login.html'; }
+
+// ════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════
+const PER_PAGE = 8;
+let allData    = [];
+let filtered   = [];
+let currentPage = 1;
+let activeStatus   = '';
+let activePriority = '';
+
+// ════════════════════════════════════════════════
+//  API helpers
+// ════════════════════════════════════════════════
+async function apiGet(url) {
+  try {
+    const res  = await fetch(url, { headers:{'Authorization':'Bearer '+_token} });
+    const data = await res.json();
+    if (data.success === false && data.redirect) { window.location.href = data.redirect; }
+    return data;
+  } catch(e) { console.error(e); return {success:false}; }
+}
+async function apiPost(url, body) {
+  try {
+    const res  = await fetch(url, { method:'POST', headers:{'Authorization':'Bearer '+_token,'Content-Type':'application/json'}, body:JSON.stringify(body) });
+    const data = await res.json();
+    if (data.success === false && data.redirect) { window.location.href = data.redirect; }
+    return data;
+  } catch(e) { console.error(e); return {success:false}; }
+}
+
+// ════════════════════════════════════════════════
+//  Custom dropdowns
+// ════════════════════════════════════════════════
+function toggleCdd(id) {
+  const panel = document.getElementById(id+'-panel');
+  const btn   = document.getElementById(id+'-btn');
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    const b = document.getElementById(p.id.replace('-panel','-btn'));
+    if (b) b.classList.remove('open');
+  });
+  if (!isOpen) {
+    panel.classList.add('open'); btn.classList.add('open');
+    requestAnimationFrame(() => {
+      const rect = panel.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) { panel.style.left='auto'; panel.style.right='0'; }
+      else { panel.style.left=''; panel.style.right=''; }
+    });
+  }
+}
+function setCdd(id, val, label) {
+  if (id === 'status')   activeStatus   = val;
+  if (id === 'priority') activePriority = val;
+  document.getElementById(id+'-label').textContent = label;
+  const panel = document.getElementById(id+'-panel');
+  panel.querySelectorAll('.cdd-opt').forEach(o => o.classList.toggle('selected', o.dataset.val === val));
+  panel.classList.remove('open');
+  document.getElementById(id+'-btn').classList.remove('open');
+  currentPage = 1;
+  applyFilter();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cdd-wrap')) {
+    document.querySelectorAll('.cdd-panel.open').forEach(p => {
+      p.classList.remove('open');
+      const b = document.getElementById(p.id.replace('-panel','-btn'));
+      if (b) b.classList.remove('open');
+    });
+  }
+});
+
+// ════════════════════════════════════════════════
+//  Load
+// ════════════════════════════════════════════════
+async function loadReports() {
+  const data = await apiGet('api/maintenance.php?my_reports=1');
+  if (!data.success) { showEmpty('Could not load reports. Check your connection.'); return; }
+  allData = data.requests || [];
+  applyFilter();
+}
+
+// ════════════════════════════════════════════════
+//  Filter + render
+// ════════════════════════════════════════════════
+function applyFilter() {
+  const q = (document.getElementById('search-inp').value || '').toLowerCase();
+  filtered = allData.filter(r => {
+    if (activeStatus   && r.status_name !== activeStatus)   return false;
+    if (activePriority && r.priority    !== activePriority) return false;
+    if (q && !(r.facility_name||'').toLowerCase().includes(q) &&
+             !(r.description||'').toLowerCase().includes(q)  &&
+             !(r.location||'').toLowerCase().includes(q))    return false;
+    return true;
+  });
+  currentPage = Math.min(currentPage, Math.ceil(filtered.length / PER_PAGE) || 1);
+  render();
+}
+
+function render() {
+  const listEl = document.getElementById('report-list');
+  const pagEl  = document.getElementById('pagination');
+  const total  = filtered.length;
+  const pages  = Math.ceil(total / PER_PAGE) || 1;
+  const start  = (currentPage - 1) * PER_PAGE;
+  const items  = filtered.slice(start, start + PER_PAGE);
+  const suffix = total !== allData.length ? ' (filtered)' : '';
+  document.getElementById('page-desc').textContent =
+    total + ' report' + (total!==1?'s':'') + suffix + (pages>1?' · Page '+currentPage+' of '+pages:'');
+
+  if (!items.length) {
+    showEmpty(allData.length === 0 ? "You haven't submitted any reports yet." : "No reports match your filters.");
+    return;
+  }
+
+  const stCls = { 'Pending':'pending','In Progress':'progress','Completed':'completed' };
+  const stPct = { 'Pending':5,'In Progress':50,'Completed':100 };
+
+  listEl.innerHTML = items.map((r, idx) => {
+    const sc       = stCls[r.status_name] || 'pending';
+    const pct      = stPct[r.status_name] || 5;
+    const isPending= r.status_name === 'Pending';
+    const progressNote = r.progress
+      ? `<div class="progress-note">📝 ${esc(r.progress)}</div>`
+      : '';
+    return `<div class="report-card s-${sc}" style="animation-delay:${idx*0.04}s">
+      <div class="report-inner">
+        <div class="report-top">
+          <div>
+            <div class="report-fac">${esc(r.facility_name||'—')}</div>
+            <div class="report-fac-loc">📍 ${esc(r.location||'—')}</div>
+          </div>
+          <div class="report-badges">
+            <span class="pri-badge ${(r.priority||'medium').toLowerCase()}">${esc(r.priority||'—')}</span>
+            <span class="status-badge ${sc}">${esc(r.status_name||'—')}</span>
+          </div>
+        </div>
+        <div class="report-desc">${esc(r.description||'—')}</div>
+        ${progressNote}
+        <div class="progress-bar"><div class="progress-fill ${sc}" style="width:${pct}%"></div></div>
+        <div class="report-footer">
+          <div class="report-meta">📅 ${r.created_at} &nbsp;·&nbsp; #${r.request_id}</div>
+          ${isPending
+            ? `<button class="btn-del-report" onclick="confirmDelete(${r.request_id},'${esc(r.facility_name)}')">🗑️ Delete</button>`
+            : `<span style="font-size:11px;color:var(--dim);">⚠️ Being actioned</span>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Pagination
+  pagEl.style.display = pages > 1 ? 'flex' : 'none';
+  const from = start + 1, to = Math.min(start + PER_PAGE, total);
+  document.getElementById('page-info').innerHTML = 'Showing <b>'+from+'–'+to+'</b> of <b>'+total+'</b>';
+  document.getElementById('btn-prev').disabled = currentPage <= 1;
+  document.getElementById('btn-next').disabled = currentPage >= pages;
+}
+
+function goPage(dir) {
+  const pages = Math.ceil(filtered.length / PER_PAGE) || 1;
+  currentPage = Math.max(1, Math.min(currentPage + dir, pages));
+  render();
+  document.getElementById('report-list').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ════════════════════════════════════════════════
+//  Delete
+// ════════════════════════════════════════════════
+function confirmDelete(id, name) {
+  document.getElementById('confirm-title').textContent = '🗑️ Delete Report';
+  document.getElementById('confirm-msg').textContent   = `Delete your report for "${name}"? This cannot be undone.`;
+  document.getElementById('confirm-ok').textContent    = 'Delete';
+  document.getElementById('confirm-ok').onclick = () => { closeConfirm(); deleteReport(id); };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+document.getElementById('confirm-modal').addEventListener('click', function(e){ if(e.target===this) closeConfirm(); });
+
+async function deleteReport(id) {
+  const data = await apiPost('api/maintenance.php', {action:'delete_report',request_id:id});
+  if (data.success) {
+    allData = allData.filter(r => r.request_id !== id);
+    if ((currentPage-1)*PER_PAGE >= filtered.length-1 && currentPage > 1) currentPage--;
+    applyFilter();
+  } else {
+    document.getElementById('confirm-title').textContent = 'Error';
+    document.getElementById('confirm-msg').textContent   = data.message || 'Could not delete.';
+    document.getElementById('confirm-ok').textContent    = 'OK';
+    document.getElementById('confirm-ok').onclick        = closeConfirm;
+    document.getElementById('confirm-modal').classList.add('open');
+  }
+}
+
+// ════════════════════════════════════════════════
+//  Helpers
+// ════════════════════════════════════════════════
+function showEmpty(msg) {
+  document.getElementById('report-list').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">🔧</div>
+      <h3>No Reports Found</h3>
+      <p>${esc(msg)}</p>
+    </div>`;
+  document.getElementById('pagination').style.display = 'none';
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function logout() { localStorage.removeItem('yagums_token'); localStorage.removeItem('yagums_user'); document.cookie='yagums_token=; path=/; max-age=0'; window.location.href='login.html'; }
+
+loadReports();
+</script>
+</body>
+</html>
