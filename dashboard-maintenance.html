@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>YAGUMS – Maintenance</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── Tab panes ── */
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+@media(max-width:768px){.page-tabs{display:none !important;}}
+
+/* ── Search / pagination ── */
+.list-controls{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:0;}
+.search-wrap::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;}
+.search-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px 8px 32px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.search-inp:focus{border-color:var(--amber);}
+.search-inp::placeholder{color:var(--dim);}
+.filter-sel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;-webkit-appearance:none;cursor:pointer;white-space:nowrap;flex-shrink:0;max-width:130px;}
+.filter-sel:focus{border-color:var(--amber);}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+.page-info{font-size:12px;color:var(--muted);}
+.page-info b{color:var(--text);}
+.page-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.page-btn{font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.page-btn:hover:not(:disabled){border-color:var(--amber);color:var(--text);}
+.page-btn:disabled{opacity:.35;cursor:not-allowed;}
+.page-btn.active-page{background:rgba(245,158,11,.2);border-color:var(--amber);color:var(--amber);}
+
+/* ── Mobile-card table for All Requests ── */
+.req-card{padding:12px 14px;border-bottom:1px solid rgba(37,37,64,.5);}
+.req-card:last-child{border-bottom:none;}
+.req-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
+.req-card-fac{font-size:13px;font-weight:600;color:var(--text);}
+.req-card-loc{font-size:11px;color:var(--muted);}
+.req-card-desc{font-size:12px;color:var(--muted);margin-bottom:6px;line-height:1.45;}
+.req-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.req-card-reporter{font-size:11px;color:var(--dim);}
+.req-card-date{font-size:10px;color:var(--dim);margin-left:auto;}
+
+@media(max-width:768px){
+  /* Filters: search full row, then selects side by side */
+  .list-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;}
+  .list-controls .search-wrap{width:100%;flex:0 0 100%;}
+  .list-controls .filter-sel{flex:1;min-width:0;max-width:none;font-size:11px;padding:7px 8px;}
+  /* Pagination compact */
+  .pagination{padding:10px 12px;flex-direction:column;align-items:center;gap:8px;}
+  .page-btns{justify-content:center;}
+  /* Hide wide table on mobile for All Requests, show cards instead */
+  .req-table-wrap{display:none;}
+  .req-cards-wrap{display:block;}
+  /* Preview pagination compact */
+}
+@media(min-width:769px){
+  .req-cards-wrap{display:none;}
+}
+
+/* ── Custom dropdown (replaces native select — no OS picker on mobile) ── */
+.cdd-wrap{position:relative;flex-shrink:0;}
+.cdd-btn{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap;transition:border-color .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;}
+.cdd-btn:focus,.cdd-btn.open{border-color:var(--amber);outline:none;}
+.cdd-arrow{font-size:10px;color:var(--muted);transition:transform .2s;pointer-events:none;}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg);}
+.cdd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:120;min-width:140px;background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.55);overflow:hidden;}
+.cdd-panel.open{display:block;animation:cddIn .15s ease;}
+/* Right-align panel when it would overflow the right edge */
+.cdd-panel.align-right{left:auto;right:0;}
+@keyframes cddIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.cdd-opt{padding:9px 12px;font-size:13px;color:var(--muted);border-radius:8px;cursor:pointer;transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;white-space:nowrap;}
+.cdd-opt:hover{background:rgba(245,158,11,.12);color:var(--text);}
+.cdd-opt.selected{color:var(--amber);font-weight:600;}
+@media(max-width:768px){
+  .cdd-btn{font-size:11px;padding:7px 10px;}
+  .cdd-panel{min-width:130px;}
+  .cdd-opt{padding:10px 12px;font-size:12px;}
+}
+.preview-page-btn{display:none;} /* pagination removed from overview */
+.sb-user-wrap{display:flex;align-items:center;gap:12px;padding:14px 18px;margin:8px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:14px;cursor:pointer;transition:all .2s;text-decoration:none;}
+.sb-user-wrap:hover{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);}
+.sb-avatar-img{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;border:2px solid rgba(245,158,11,.4);}
+.sb-avatar-img img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+.sb-info{flex:1;min-width:0;}
+.sb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-role-lbl{font-size:10px;color:var(--muted);margin-top:1px;}
+.sb-edit-hint{font-size:9px;color:var(--dim);margin-top:2px;}
+.nav-section{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 14px;margin:14px 0 4px;}
+.nav-divider{height:1px;background:rgba(37,37,64,.7);margin:10px 14px;}
+
+/* ── Task cards ── */
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:12px;transition:all .2s;border-left:3px solid var(--border);}
+.task-card:hover{border-color:var(--border2);transform:translateX(2px);}
+.task-card.high  {border-left-color:var(--red);}
+.task-card.medium{border-left-color:var(--amber);}
+.task-card.low   {border-left-color:var(--green);}
+.task-card.done  {border-left-color:var(--green);opacity:.7;}
+.task-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.task-name{font-size:14px;font-weight:600;color:var(--text);}
+.task-facility{font-size:12px;color:var(--muted);margin-top:2px;}
+.task-notes{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;}
+.task-progress{font-size:12px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:8px;}
+.progress-bar{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--purple),var(--purp2));transition:width .5s ease;}
+.progress-fill.done{background:linear-gradient(90deg,var(--green),#6ee7b7);}
+.task-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.btn-sm{font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;border:1px solid;font-family:'DM Sans',sans-serif;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-sm.primary{background:linear-gradient(135deg,var(--purple),var(--purp2));border-color:transparent;color:#fff;}
+.btn-sm.primary:hover{box-shadow:0 4px 14px rgba(124,58,237,.4);}
+.btn-sm.success{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.3);color:var(--green);}
+.btn-sm.success:hover{background:rgba(52,211,153,.25);}
+.btn-sm.ghost{background:transparent;border-color:var(--border2);color:var(--muted);}
+.btn-sm.ghost:hover{border-color:var(--purple);color:var(--text);}
+
+/* ── Facility health ── */
+.facility-status{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid rgba(37,37,64,.5);}
+.facility-status:last-child{border-bottom:none;}
+.fac-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.fac-dot.ok   {background:var(--green);}
+.fac-dot.issue{background:var(--red);box-shadow:0 0 6px rgba(248,113,113,.5);}
+.fac-dot.warn {background:var(--amber);}
+.fac-name{font-size:13px;font-weight:500;color:var(--text);flex:1;}
+.fac-loc{font-size:11px;color:var(--muted);}
+
+/* ── Progress modal ── */
+.modal-backdrop{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:26px;width:100%;max-width:480px;position:relative;max-height:90vh;overflow-y:auto;animation:modalIn .3s cubic-bezier(.16,1,.3,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-close{position:absolute;top:14px;right:16px;background:transparent;border:none;font-size:20px;color:var(--muted);cursor:pointer;}
+.modal-title{font-family:'Inter',sans-serif;font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+.mf{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.mf label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.mf textarea,.mf select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;resize:none;}
+.mf textarea:focus,.mf select:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.12);}
+.mf select option{background:var(--surface);}
+.m-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-bottom:12px;}
+.m-alert.show{display:block;}
+.m-alert.error  {background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.m-alert.success{background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.3); color:var(--green);}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.btn-modal-ok{flex:1;background:linear-gradient(135deg,#b45309,#f59e0b);border:none;border-radius:10px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;}
+.btn-modal-ok:hover:not(:disabled){transform:translateY(-1px);}
+.btn-modal-ok:disabled{opacity:.6;cursor:not-allowed;}
+.btn-modal-cancel{background:transparent;border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;}
+
+/* ── Announcement items ── */
+.ann-item{padding:13px 18px;border-bottom:1px solid rgba(37,37,64,.5);}
+.ann-item:last-child{border-bottom:none;}
+.ann-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.ann-item-title{font-size:13px;font-weight:600;color:var(--text);}
+.ann-item-msg{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:4px;}
+.ann-item-meta{font-size:11px;color:var(--dim);}
+.ann-pri{font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px;text-transform:uppercase;}
+.ann-pri.high  {background:rgba(248,113,113,.15);color:var(--red);}
+.ann-pri.medium{background:rgba(245,158,11,.15); color:var(--amber);}
+.ann-pri.low   {background:rgba(52,211,153,.15); color:var(--green);}
+
+/* ── FacHealth Online pill (green) ── */
+.fh-online-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#22233c;
+  border:1px solid rgba(52,211,153,.15);
+  border-radius:100px;
+  padding:5px 12px 5px 9px;
+  flex-shrink:0;
+}
+.fh-online-dot{position:relative;width:8px;height:8px;flex-shrink:0;}
+.fh-online-dot::before{
+  content:'';position:absolute;inset:0;
+  border-radius:50%;background:#34d399;
+  box-shadow:0 0 5px rgba(52,211,153,.6);
+}
+.fh-online-dot::after{
+  content:'';position:absolute;inset:-3px;
+  border-radius:50%;background:rgba(52,211,153,.25);
+  animation:fh-pulse 2s ease-in-out infinite;
+}
+@keyframes fh-pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.7);opacity:0}}
+.fh-online-lbl{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.02em;}
+
+/* ── Facility Health table tab ── */
+.fh-table-wrap{overflow-x:auto;}
+.fh-table{width:100%;border-collapse:separate;border-spacing:0;}
+.fh-table th{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:10px 18px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.fh-table td{padding:11px 18px;font-size:13px;color:var(--muted);vertical-align:middle;}
+.fh-table tbody tr:hover td{background:rgba(245,158,11,.04);}
+.fh-table tbody tr:last-child td{border-bottom:none;}
+.fh-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle;flex-shrink:0;}
+.fh-status-dot.ok   {background:var(--green);}
+.fh-status-dot.issue{background:var(--red);box-shadow:0 0 5px rgba(248,113,113,.5);}
+.fh-status-dot.warn {background:var(--amber);}
+.fh-status-label{font-size:12px;font-weight:600;}
+.fh-status-label.ok   {color:var(--green);}
+.fh-status-label.issue{color:var(--red);}
+.fh-status-label.warn {color:var(--amber);}
+
+/* ── Overview card refinements ── */
+#ov-grid .panel{border-radius:16px;}
+.stats-grid .stat-card{border-radius:16px;}
+#ov-grid > .panel{flex:1;}
+
+/* ── Misc ── */
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Modal custom dropdowns ── */
+.mf-cdd{position:relative;width:100%;}
+.mf-cdd-btn{width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--surface) !important;border:1px solid var(--border) !important;border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text) !important;cursor:pointer;transition:border-color .2s,box-shadow .2s;-webkit-tap-highlight-color:transparent;user-select:none;gap:8px;-webkit-appearance:none;appearance:none;text-align:left;}
+.mf-cdd-btn:focus,.mf-cdd-btn.open{border-color:var(--green);box-shadow:0 0 0 3px rgba(52,211,153,.1);outline:none;}
+.mf-cdd-arrow{font-size:10px;color:var(--muted);transition:transform .2s;pointer-events:none;flex-shrink:0;}
+.mf-cdd-btn.open .mf-cdd-arrow{transform:rotate(180deg);}
+.mf-cdd-label{flex:1;text-align:left;}
+.mf-cdd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:220;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.55);overflow:hidden;}
+.mf-cdd-panel.open{display:block;}
+.mf-cdd-opt{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--muted);border-radius:7px;cursor:pointer;transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent;}
+.mf-cdd-opt:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.mf-cdd-opt.selected{color:var(--green);font-weight:600;}
+
+/* ── Progress modal status dots ── */
+.pm-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle;flex-shrink:0;}
+.pm-status-dot.pending   {background:var(--amber);}
+.pm-status-dot.inprogress{background:#60a5fa;}
+.pm-status-dot.completed {background:var(--green);}
+
+/* ── Live badge (green theme for maintenance) ── */
+.mnt-live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);border-radius:100px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--green);}
+.mnt-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:mntpulse 1.5s ease-in-out infinite;}
+@keyframes mntpulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Facility Health mobile cards ── */
+.fh-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;}
+.fh-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.fh-card-name{font-size:13px;font-weight:600;color:var(--text);}
+.fh-card-loc{font-size:11px;color:var(--muted);}
+.fh-card-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.fh-card-stat{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);}
+/* Show/hide table vs cards based on screen */
+.fh-cards-wrap{display:none;}
+@media(max-width:768px){
+  .fh-table-wrap{display:none !important;}
+  .fh-cards-wrap{display:flex !important;flex-direction:column;gap:10px;padding:12px 14px;}
+}
+
+/* ── Tablet portrait (769–1024px): sidebar shown, no floating menu ── */
+@media(min-width:769px) and (max-width:1024px){
+  .sidebar{display:flex !important;}
+  .main{margin-left:var(--sidebar-w) !important;}
+  .topbar{position:sticky;top:0;z-index:100;flex-shrink:0;}
+  .slide-trigger{display:none !important;}
+  .slide-nav{display:none !important;}
+  body{height:auto !important;max-height:none !important;overflow-y:auto !important;overflow-x:hidden !important;}
+  .main{height:auto !important;max-height:none !important;overflow:visible !important;}
+  .tab-pane.active{display:block !important;}
+  .content{padding:12px 14px 32px !important;overflow:visible !important;}
+  .grid-2{grid-template-columns:1fr !important;}
+  .stats-grid{grid-template-columns:repeat(2,1fr) !important;}
+  .list-controls{flex-wrap:wrap;gap:6px;}
+  .list-controls .search-wrap{width:100%;flex:0 0 100%;}
+  /* FacHealth: show table, hide cards on tablet */
+  .fh-table-wrap{display:block !important;overflow-x:auto;}
+  .fh-cards-wrap{display:none !important;}
+  .fh-table th,.fh-table td{padding:8px 12px;font-size:12px;}
+  /* Req table: horizontal scroll on tablet */
+  .req-table-wrap{overflow-x:auto;}
+  table{min-width:500px;}
+}
+
+/* ── Mobile (≤768px) ── */
+@media(max-width:768px){
+  body{height:auto !important;max-height:none !important;overflow:auto !important;overflow-x:hidden !important;}
+  .main{height:auto !important;max-height:none !important;overflow:visible !important;}
+  .tab-pane.active{display:block !important;}
+  .content{padding:12px 12px 80px !important;overflow:visible !important;}
+  .grid-2{grid-template-columns:1fr !important;}
+  .stats-grid{grid-template-columns:1fr 1fr !important;gap:8px;}
+  .stat-card{padding:12px;}
+  .stat-value{font-size:22px;}
+  /* Task cards on mobile: title + badge on same row */
+  .task-top{flex-direction:row;justify-content:space-between;align-items:flex-start;}
+  .task-name{font-size:13px;}
+  /* Filters full-width */
+  .list-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;}
+  .list-controls .search-wrap{width:100%;flex:0 0 100%;}
+  .list-controls .cdd-wrap{flex:1;min-width:0;}
+  .cdd-btn{font-size:11px;padding:7px 10px;width:100%;}
+  /* Panel head wrap */
+  .panel-head{flex-wrap:wrap;gap:6px;}
+  /* Pagination */
+  .pagination{flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:10px 12px;}
+  .page-btns{justify-content:center;flex-wrap:wrap;}
+  .page-btn{padding:5px 8px;font-size:11px;}
+  /* Req cards mobile */
+  .req-table-wrap{display:none;}
+  .req-cards-wrap{display:block;}
+  /* Filter controls */
+  .list-controls{flex-wrap:wrap;gap:6px;padding:10px 12px;}
+  .list-controls .search-wrap{width:100%;flex:0 0 100%;}
+  .list-controls .filter-sel{flex:1;min-width:0;max-width:none;font-size:11px;padding:7px 8px;}
+  .list-controls .cdd-wrap{flex:1;}
+  .cdd-btn{font-size:11px;padding:7px 10px;width:100%;justify-content:space-between;}
+  /* Panel head wrap */
+  .panel-head{flex-wrap:wrap;gap:6px;}
+  /* Modal */
+  .modal{padding:20px 16px;border-radius:16px;margin:8px;}
+}
+
+/* ── Mobile avatar (amber theme) ── */
+.mobile-avatar-mnt{
+  display:none; width:38px; height:38px; border-radius:10px;
+  overflow:hidden; flex-shrink:0;
+  background:linear-gradient(135deg,#b45309,#f59e0b);
+  border:2px solid rgba(245,158,11,.6);
+  box-shadow:0 0 0 1px rgba(245,158,11,.3);
+  align-items:center; justify-content:center;
+  font-size:16px; text-decoration:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.mobile-avatar-mnt img{width:100%;height:100%;object-fit:cover;}
+@media(max-width:768px){.mobile-avatar-mnt{display:flex;}}
+</style>
+</head>
+<body>
+
+<!-- ── Progress Update Modal ── -->
+<div class="modal-backdrop" id="progress-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeProgressModal()">✕</button>
+    <div class="modal-title">🔧 Update Progress</div>
+    <div class="modal-sub" id="pm-sub">Task details</div>
+    <div class="m-alert" id="pm-alert"></div>
+    <div class="mf">
+      <label>Progress Notes</label>
+      <textarea id="pm-notes" rows="3" placeholder="Describe what was done or what's happening…"></textarea>
+    </div>
+    <div class="mf">
+      <label>Status</label>
+      <input type="hidden" id="pm-status" value="2">
+      <div class="mf-cdd" id="mfcdd-pm-status">
+        <button type="button" class="mf-cdd-btn" onclick="toggleMfCdd('pm-status')">
+          <span class="mf-cdd-label" id="mfcdd-pm-status-label"><span class="pm-status-dot inprogress"></span>In Progress</span>
+          <span class="mf-cdd-arrow">▾</span>
+        </button>
+        <div class="mf-cdd-panel" id="mfcdd-pm-status-panel">
+          <div class="mf-cdd-opt" onclick="setPmStatus('1','pending','Pending')">
+            <span class="pm-status-dot pending"></span>Pending
+          </div>
+          <div class="mf-cdd-opt selected" onclick="setPmStatus('2','inprogress','In Progress')">
+            <span class="pm-status-dot inprogress"></span>In Progress
+          </div>
+          <div class="mf-cdd-opt" onclick="setPmStatus('3','completed','Completed')">
+            <span class="pm-status-dot completed"></span>Completed
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeProgressModal()">Cancel</button>
+      <button class="btn-modal-ok" id="pm-save-btn" onclick="saveProgress()">Save Update</button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">YA<span>GUMS</span></div>
+    <div class="logo-sub">Maintenance Portal</div>
+  </div>
+  <a class="sb-user-wrap" href="profile.html" title="Edit profile">
+    <div class="sb-avatar-img" id="sb-avatar-wrap">🔧</div>
+    <div class="sb-info">
+      <div class="sb-name" id="sb-name">Loading…</div>
+      <div class="sb-role-lbl">Maintenance Staff</div>
+      <div class="sb-edit-hint">Tap to edit profile →</div>
+    </div>
+  </a>
+  <nav class="sidebar-nav" style="padding:6px 10px;">
+    <div class="nav-section">Overview</div>
+    <button class="nav-item" id="snav-overview"  onclick="switchTab('overview')"><span class="nav-icon">🏠</span>Dashboard</button>
+    <div class="nav-section">Tasks</div>
+    <button class="nav-item" id="snav-tasks"     onclick="switchTab('tasks')"><span class="nav-icon">📋</span>My Tasks <span class="nav-badge" id="nb-tasks">0</span></button>
+    <button class="nav-item" id="snav-requests"  onclick="switchTab('requests')"><span class="nav-icon">🔍</span>All Requests</button>
+    <button class="nav-item" id="snav-fachealth" onclick="switchTab('fachealth')"><span class="nav-icon">🏥</span>Facility Health</button>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Communications</div>
+    <button class="nav-item" id="snav-announce"  onclick="switchTab('announce')"><span class="nav-icon">📢</span>Announcements</button>
+    <a      class="nav-item" href="notifications.html"><span class="nav-icon">🔔</span>Notifications</a>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Account</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span>My Profile</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()"><span class="nav-icon">🚪</span>Sign Out</button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
+      <a href="profile.html" class="mobile-avatar-mnt" id="mob-avatar" title="My Profile" style="display:none">🔧</a>
+      <div>
+        <h2 id="page-title">Maintenance Dashboard</h2>
+        <p id="greeting">Loading…</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="notif-btn" id="notif-bell">🔔<span class="notif-count hidden" id="notif-count">0</span></button>
+      <button class="mobile-logout-btn" id="mob-logout-btn" onclick="logout()" title="Sign Out" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification panel -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head">
+      <h4>🔔 Notifications</h4>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+        <a href="notifications.html" style="font-size:12px;color:var(--accent);text-decoration:none;border:1px solid rgba(192,132,252,.3);padding:3px 10px;border-radius:7px;">History →</a>
+      </div>
+    </div>
+    <div class="notif-scroll" id="notif-list"><div class="notif-empty">No notifications.</div></div>
+  </div>
+
+  <!-- ════ OVERVIEW ════ -->
+  <div class="tab-pane active" id="tab-overview">
+    <div class="content" style="padding:24px;">
+      <div class="stats-grid" style="gap:16px;margin-bottom:16px;">
+        <div class="stat-card" style="--glow:var(--amber)"><div class="stat-head"><div class="stat-icon amber">📋</div><span class="stat-trend down">Open</span></div><div class="stat-value" id="ov-open">0</div><div class="stat-label">My Open Tasks</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon red">🚨</div></div><div class="stat-value" id="ov-high">0</div><div class="stat-label">High Priority</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon green">✅</div></div><div class="stat-value" id="ov-done">0</div><div class="stat-label">Completed</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon blue">🏛️</div></div><div class="stat-value" id="ov-fac">0</div><div class="stat-label">Facilities Monitored</div></div>
+      </div>
+      <div class="grid-2" id="ov-grid" style="align-items:stretch;gap:16px;">
+        <div class="panel" style="display:flex;flex-direction:column;">
+          <div class="panel-head" style="flex-shrink:0;"><div><h3>Active Tasks</h3><p id="tasks-sub">Loading…</p></div><button class="panel-action" onclick="switchTab('tasks')">View All →</button></div>
+          <div id="tasks-preview" style="padding:16px 18px 4px;overflow:hidden;"></div>
+
+        </div>
+        <div class="panel" style="display:flex;flex-direction:column;">
+          <div class="panel-head" style="flex-shrink:0;"><div><h3>Facility Health</h3><p>Live status</p></div><button class="panel-action" onclick="switchTab('fachealth')">View All →</button></div>
+          <div id="fac-health" style="flex:1;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MY TASKS ════ -->
+  <div class="tab-pane" id="tab-tasks">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>My Assigned Tasks</h3><p id="my-tasks-sub">Loading…</p></div>
+          <span class="mnt-live-badge"><span class="mnt-live-dot"></span>Live</span>
+        </div>
+        <div class="list-controls">
+          <div class="search-wrap">
+            <input class="search-inp" id="task-search" type="text" placeholder="Search facility or description…" oninput="renderTasks()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="task-status-btn" onclick="toggleCdd('task-status')">
+              <span id="task-status-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel" id="task-status-panel">
+              <div class="cdd-opt selected" data-val="" onclick="setCdd('task-status','','All Status',renderTasks)">All Status</div>
+              <div class="cdd-opt" data-val="open"   onclick="setCdd('task-status','open','Open',renderTasks)">Open</div>
+              <div class="cdd-opt" data-val="done"   onclick="setCdd('task-status','done','Completed',renderTasks)">Completed</div>
+            </div>
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="task-priority-btn" onclick="toggleCdd('task-priority')">
+              <span id="task-priority-label">All Priority</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel align-right" id="task-priority-panel">
+              <div class="cdd-opt selected" data-val="" onclick="setCdd('task-priority','','All Priority',renderTasks)">All Priority</div>
+              <div class="cdd-opt" data-val="High"   onclick="setCdd('task-priority','High','High ▲',renderTasks)">High</div>
+              <div class="cdd-opt" data-val="Medium" onclick="setCdd('task-priority','Medium','Medium',renderTasks)">Medium</div>
+              <div class="cdd-opt" data-val="Low"    onclick="setCdd('task-priority','Low','Low ▽',renderTasks)">Low</div>
+            </div>
+          </div>
+          <!-- Hidden inputs for JS to read values -->
+          <input type="hidden" id="task-status-filter"   value="">
+          <input type="hidden" id="task-priority-filter" value="">
+        </div>
+        <div style="padding:16px 18px;" id="my-tasks-list"></div>
+        <div class="pagination" id="tasks-pagination">
+          <div class="page-info" id="tasks-page-info">—</div>
+          <div class="page-btns" id="tasks-page-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ALL REQUESTS ════ -->
+  <div class="tab-pane" id="tab-requests">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head"><div><h3>All Maintenance Requests</h3><p id="req-sub">Loading…</p></div><span class="mnt-live-badge"><span class="mnt-live-dot"></span>Live</span></div>
+        <div class="list-controls">
+          <div class="search-wrap">
+            <input class="search-inp" id="req-search" type="text" placeholder="Search facility, reporter or description…" oninput="renderRequests()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="req-status-btn" onclick="toggleCdd('req-status')">
+              <span id="req-status-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel" id="req-status-panel">
+              <div class="cdd-opt selected" data-val=""            onclick="setCdd('req-status','','All Status',renderRequests)">All Status</div>
+              <div class="cdd-opt" data-val="Pending"              onclick="setCdd('req-status','Pending','Pending',renderRequests)">Pending</div>
+              <div class="cdd-opt" data-val="In Progress"          onclick="setCdd('req-status','In Progress','In Progress',renderRequests)">In Progress</div>
+              <div class="cdd-opt" data-val="Completed"            onclick="setCdd('req-status','Completed','Completed',renderRequests)">Completed</div>
+            </div>
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="req-priority-btn" onclick="toggleCdd('req-priority')">
+              <span id="req-priority-label">All Priority</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel align-right" id="req-priority-panel">
+              <div class="cdd-opt selected" data-val="" onclick="setCdd('req-priority','','All Priority',renderRequests)">All Priority</div>
+              <div class="cdd-opt" data-val="High"   onclick="setCdd('req-priority','High','High ▲',renderRequests)">High</div>
+              <div class="cdd-opt" data-val="Medium" onclick="setCdd('req-priority','Medium','Medium',renderRequests)">Medium</div>
+              <div class="cdd-opt" data-val="Low"    onclick="setCdd('req-priority','Low','Low ▽',renderRequests)">Low</div>
+            </div>
+          </div>
+          <!-- Hidden inputs for JS to read values -->
+          <input type="hidden" id="req-status-filter"   value="">
+          <input type="hidden" id="req-priority-filter" value="">
+        </div>
+        <div class="table-wrap req-table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Facility</th><th>Description</th><th>Reported By</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="req-tbody"><tr><td colspan="7" style="text-align:center;padding:16px;color:var(--dim)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <!-- Mobile card view (hidden on desktop) -->
+        <div class="req-cards-wrap" id="req-cards"></div>
+        <div class="pagination" id="req-pagination">
+          <div class="page-info" id="req-page-info">—</div>
+          <div class="page-btns" id="req-page-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ FACILITY HEALTH ════ -->
+  <div class="tab-pane" id="tab-fachealth">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>Facility Health</h3><p id="fh-sub">All facilities</p></div>
+          <div class="fh-online-pill"><span class="fh-online-dot"></span><span class="fh-online-lbl">Online</span></div>
+        </div>
+        <div class="list-controls">
+          <div class="search-wrap">
+            <input class="search-inp" id="fh-search" type="text" placeholder="Search facility or location…" oninput="renderFacHealth()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="fh-status-btn" onclick="toggleCdd('fh-status')">
+              <span id="fh-status-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel" id="fh-status-panel">
+              <div class="cdd-opt selected" data-val=""      onclick="setCdd('fh-status','','All Status',renderFacHealth)">All Status</div>
+              <div class="cdd-opt" data-val="issue"          onclick="setCdd('fh-status','issue','Has Issues',renderFacHealth)">Has Issues</div>
+              <div class="cdd-opt" data-val="warn"           onclick="setCdd('fh-status','warn','In Progress',renderFacHealth)">In Progress</div>
+              <div class="cdd-opt" data-val="ok"             onclick="setCdd('fh-status','ok','No Issues',renderFacHealth)">No Issues</div>
+            </div>
+          </div>
+          <input type="hidden" id="fh-status-filter" value="">
+        </div>
+        <div class="fh-cards-wrap"></div>
+        <div class="fh-table-wrap">
+          <table class="fh-table">
+            <thead>
+              <tr>
+                <th>Facility</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Pending</th>
+                <th>In Progress</th>
+              </tr>
+            </thead>
+            <tbody id="fh-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="fh-pagination">
+          <div class="page-info" id="fh-page-info">—</div>
+          <div class="page-btns" id="fh-page-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ANNOUNCEMENTS ════ -->
+  <div class="tab-pane" id="tab-announce">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>📢 Announcements</h3><p id="ann-sub">Loading…</p></div>
+          <a href="announcements.html" class="panel-action" style="text-decoration:none;">View All →</a>
+        </div>
+        <div id="ann-list"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── MOBILE-ONLY UI ── -->
+<div class="slide-nav-backdrop" id="slide-backdrop" style="display:none" onclick="closeSlideNav()"></div>
+
+<div class="slide-nav" id="slide-nav" style="display:none">
+  <div class="slide-nav-handle"></div>
+  <div class="slide-nav-title">Navigation</div>
+  <div class="slide-nav-grid">
+    <button class="slide-nav-item" id="snav-m-overview"  onclick="mobileNav('overview')">  <span class="slide-nav-icon">🏠</span>Home</button>
+    <button class="slide-nav-item" id="snav-m-tasks"     onclick="mobileNav('tasks')">     <span class="slide-nav-icon">📋</span>My Tasks</button>
+    <button class="slide-nav-item" id="snav-m-requests"  onclick="mobileNav('requests')">  <span class="slide-nav-icon">🔍</span>All Requests</button>
+    <button class="slide-nav-item" id="snav-m-fachealth" onclick="mobileNav('fachealth')"><span class="slide-nav-icon">🏥</span>Fac Health</button>
+    <button class="slide-nav-item" id="snav-m-announce"  onclick="mobileNav('announce')">  <span class="slide-nav-icon">📢</span>Announcements</button>
+    <button class="slide-nav-item"                        onclick="closeSlideNav();window.location.href='profile.html'"><span class="slide-nav-icon">👤</span>My Profile</button>
+    <button class="slide-nav-item"                        onclick="closeSlideNav();window.location.href='notifications.html'"><span class="slide-nav-icon">🔔</span>Notifications</button>
+    <button class="slide-nav-item"                        onclick="logout()"><span class="slide-nav-icon">🚪</span>Sign Out</button>
+  </div>
+</div>
+
+<button class="slide-trigger" id="slide-trigger" style="display:none" onclick="toggleSlideNav()" aria-label="Menu">
+  <svg id="slide-trigger-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .35s cubic-bezier(.16,1,.3,1)"><polyline points="18 15 12 9 6 15"/></svg>
+  <span id="slide-trigger-label">Menu</span>
+</button>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="mobile.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+const _token = localStorage.getItem('yagums_token');
+let _user    = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html'; }
+if (!['Maintenance Staff','Admin','Facility Manager'].includes(_user.role)) { window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html'; }
+
+const fn = _user.first_name || (_user.name||'Staff').split(' ')[0];
+const hr = new Date().getHours();
+document.getElementById('sb-name').textContent    = _user.name || (_user.first_name+' '+(_user.last_name||''));
+document.getElementById('greeting').textContent   = (hr<12?'Good morning':hr<17?'Good afternoon':'Good evening')+', '+fn+'!';
+document.getElementById('topbar-date').textContent= new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+// ── Profile picture ──────────────────────────────
+(function initAvatar() {
+  const pic = _user.profile_picture;
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap && pic) sbWrap.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='🔧'">`;
+  const mob = document.getElementById('mob-avatar');
+  if (mob && pic) mob.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='🔧'">`;
+})();
+window.addEventListener('focus', () => {
+  const fresh = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+  if (!fresh) return; _user = fresh;
+  const name = fresh.name || (fresh.first_name+' '+(fresh.last_name||''));
+  const el = document.getElementById('sb-name'); if (el) el.textContent = name;
+  const pic = fresh.profile_picture;
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap) sbWrap.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='🔧'">` : '🔧';
+  const mob = document.getElementById('mob-avatar');
+  if (mob) mob.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='🔧'">` : '🔧';
+});
+
+// ════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════
+async function api(url, method='GET', body) {
+  try {
+    const opts = { headers:{'Authorization':'Bearer '+_token,'Content-Type':'application/json'} };
+    if (method==='POST') { opts.method='POST'; opts.body=JSON.stringify(body); }
+    const res  = await fetch(url, opts);
+    // Session expired or unauthorised — redirect to login dynamically
+    if (res.status === 401 || res.status === 403) {
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';
+      return {success:false};
+    }
+    const data = await res.json();
+    if (data.success === false && data.redirect) {
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';
+      return {success:false};
+    }
+    return data;
+  } catch(e) { console.error('API error:', url, e); return {success:false, message:'Network error'}; }
+}
+
+// ════════════════════════════════════════════════
+//  Slide-up nav (amber trigger)
+// ════════════════════════════════════════════════
+let _slideOpen = false;
+function openSlideNav() {
+  _slideOpen = true;
+  const sn=document.getElementById('slide-nav'), sb=document.getElementById('slide-backdrop');
+  const si=document.getElementById('slide-trigger-icon'), sl=document.getElementById('slide-trigger-label');
+  const st=document.getElementById('slide-trigger');
+  if(sn){sn.style.display='block';requestAnimationFrame(()=>sn.classList.add('open'));}
+  if(sb) sb.style.display='block';
+  if(si) si.style.transform='rotate(180deg)';
+  if(sl) sl.textContent='Close';
+  if(st){st.classList.add('open');st.style.opacity='0';st.style.pointerEvents='none';}
+}
+function closeSlideNav() {
+  _slideOpen = false;
+  const sn=document.getElementById('slide-nav'), sb=document.getElementById('slide-backdrop');
+  const si=document.getElementById('slide-trigger-icon'), sl=document.getElementById('slide-trigger-label');
+  const st=document.getElementById('slide-trigger');
+  if(sn){sn.classList.remove('open');setTimeout(()=>{if(!_slideOpen)sn.style.display='none';},360);}
+  if(sb) sb.style.display='none';
+  if(si) si.style.transform='rotate(0deg)';
+  if(sl) sl.textContent='Menu';
+  if(st){st.classList.remove('open');st.style.opacity='';st.style.pointerEvents='';}
+}
+function toggleSlideNav(){_slideOpen?closeSlideNav():openSlideNav();}
+function mobileNav(tab){closeSlideNav();switchTab(tab);}
+function updateSlideNavActive(tab){
+  document.querySelectorAll('.slide-nav-item[id^="snav-m-"]').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('snav-m-'+tab);if(el)el.classList.add('active');
+}
+let _touchStartY=0,_touchStartTime=0;
+document.addEventListener('touchstart',e=>{_touchStartY=e.touches[0].clientY;_touchStartTime=Date.now();},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!_slideOpen)return;
+  const dy=e.changedTouches[0].clientY-_touchStartY,elapsed=Date.now()-_touchStartTime;
+  if(dy>60||(elapsed<350&&dy>30))closeSlideNav();
+},{passive:true});
+
+// ════════════════════════════════════════════════
+//  Custom dropdowns — no native OS picker on mobile
+// ════════════════════════════════════════════════
+function toggleCdd(id) {
+  const panel = document.getElementById(id+'-panel');
+  const btn   = document.getElementById(id+'-btn');
+  const isOpen = panel.classList.contains('open');
+  // Close all other open dropdowns first
+  document.querySelectorAll('.cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    const b = document.getElementById(p.id.replace('-panel','-btn'));
+    if (b) b.classList.remove('open');
+  });
+  if (!isOpen) {
+    panel.classList.add('open');
+    btn.classList.add('open');
+    // Auto-flip: if panel overflows right edge, right-align it
+    requestAnimationFrame(() => {
+      const rect = panel.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) {
+        panel.style.left = 'auto';
+        panel.style.right = '0';
+      } else {
+        panel.style.left = '';
+        panel.style.right = '';
+      }
+    });
+  }
+}
+function setCdd(id, val, label, callback) {
+  // Set hidden input value
+  const hidden = document.getElementById(id+'-filter');
+  if (hidden) hidden.value = val;
+  // Update button label
+  const labelEl = document.getElementById(id+'-label');
+  if (labelEl) labelEl.textContent = label;
+  // Update selected state
+  const panel = document.getElementById(id+'-panel');
+  if (panel) panel.querySelectorAll('.cdd-opt').forEach(o => {
+    o.classList.toggle('selected', o.dataset.val === val);
+  });
+  // Close dropdown
+  const btn = document.getElementById(id+'-btn');
+  if (panel) panel.classList.remove('open');
+  if (btn)   btn.classList.remove('open');
+  // Run the filter callback
+  if (callback) callback();
+}
+// Close dropdowns when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cdd-wrap')) {
+    document.querySelectorAll('.cdd-panel.open').forEach(p => {
+      p.classList.remove('open');
+      const b = document.getElementById(p.id.replace('-panel','-btn'));
+      if (b) b.classList.remove('open');
+    });
+  }
+});
+
+// ════════════════════════════════════════════════
+//  Mobile detection
+// ════════════════════════════════════════════════
+function applyMobileMode() {
+  const w = window.innerWidth;
+  const isMobile = w <= 768;
+  const isTablet = w > 768 && w <= 1024;
+  const mobAvatar=document.getElementById('mob-avatar');
+  const mobLogout=document.getElementById('mob-logout-btn');
+  const hamburger=document.getElementById('hamburger-btn');
+  const trigger  =document.getElementById('slide-trigger');
+  if(mobAvatar) mobAvatar.style.display = isMobile ? 'flex' : 'none';
+  if(mobLogout) mobLogout.style.display = isMobile ? 'flex' : 'none';
+  if(hamburger) hamburger.style.display = isMobile ? 'none' : '';
+  if(trigger)   trigger.style.display   = isMobile ? 'flex' : 'none'; // hidden on tablet via CSS
+  if(!isMobile){
+    _slideOpen=false;
+    const sn=document.getElementById('slide-nav'),sb=document.getElementById('slide-backdrop');
+    if(sn){sn.style.display='none';sn.classList.remove('open');}
+    if(sb) sb.style.display='none';
+  }
+}
+applyMobileMode();
+window.addEventListener('resize', () => {
+  applyMobileMode();
+  if (_activeTab === 'fachealth') renderFacHealth();
+});
+
+// ════════════════════════════════════════════════
+//  Tab switching
+// ════════════════════════════════════════════════
+let _activeTab = 'overview';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tb=document.getElementById('tab-btn-'+tab);if(tb)tb.classList.add('active');
+  const sn=document.getElementById('snav-'+tab);if(sn)sn.classList.add('active');
+  const titles={overview:'Maintenance Dashboard',tasks:'My Tasks',requests:'All Requests',announce:'Announcements',fachealth:'Facility Health'};
+  document.getElementById('page-title').textContent=titles[tab]||'Dashboard';
+  _activeTab=tab;
+  updateSlideNavActive(tab);
+  if(tab==='announce')   loadAnnouncements();
+  if(tab==='fachealth')  renderFacHealth();
+  if(window.innerWidth<=768) closeSidebar();
+}
+document.getElementById('snav-overview').classList.add('active');
+updateSlideNavActive('overview');
+
+// ════════════════════════════════════════════════
+//  Notifications
+// ════════════════════════════════════════════════
+const _notifPanel=document.getElementById('notif-panel');
+let _notifOpen=false;
+document.getElementById('notif-bell').addEventListener('click',e=>{
+  e.stopPropagation();_notifOpen=!_notifOpen;
+  _notifPanel.classList.toggle('open',_notifOpen);
+  if(_notifOpen)loadNotifications();
+});
+document.addEventListener('click',e=>{
+  if(_notifOpen&&!_notifPanel.contains(e.target)&&e.target.id!=='notif-bell'){_notifOpen=false;_notifPanel.classList.remove('open');}
+});
+async function loadNotifications(){
+  const data=await api('api/notifications.php');if(!data.success)return;
+  const list=data.notifications||[],unread=data.unread_count||0;
+  document.getElementById('notif-count').textContent=unread;
+  document.getElementById('notif-count').classList.toggle('hidden',unread===0);
+  const el=document.getElementById('notif-list');
+  if(!list.length){el.innerHTML='<div class="notif-empty">No notifications.</div>';return;}
+  el.innerHTML=list.map(n=>`<div class="notif-row ${n.is_read?'':'unread'}" onclick="markOneRead(${n.notification_id})"><div class="notif-dot ${n.is_read?'read':'unread'}"></div><div><div class="notif-text">${esc(n.message)}</div><div class="notif-time">${n.created_at}</div></div></div>`).join('');
+}
+async function markAllRead(){await api('api/notifications.php','POST',{action:'read_all'});loadNotifications();}
+async function markOneRead(id){await api('api/notifications.php','POST',{action:'read_one',notification_id:id});loadNotifications();}
+
+// ════════════════════════════════════════════════
+//  Load all data
+// ════════════════════════════════════════════════
+let _tasks=[], _requests=[], _facilities=[];
+
+async function loadData() {
+  const data = await api('api/maintenance.php');
+  if (!data.success) {
+    document.getElementById('tasks-preview').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load data. Make sure XAMPP is running.</div>';
+    return;
+  }
+  _tasks      = data.tasks      || [];
+  _requests   = data.requests   || [];
+  _facilities = data.facilities || [];
+  const s     = data.summary    || {};
+  // Stat cards
+  document.getElementById('ov-open').textContent = s.open_tasks    || 0;
+  document.getElementById('ov-high').textContent = s.high_priority || 0;
+  document.getElementById('ov-done').textContent = s.completed     || 0;
+  document.getElementById('ov-fac').textContent  = _facilities.length;
+  document.getElementById('nb-tasks').textContent= s.open_tasks    || 0;
+  document.getElementById('tasks-sub').textContent    = `${s.open_tasks||0} active · ${s.completed||0} completed`;
+  document.getElementById('my-tasks-sub').textContent = `${_tasks.length} total · ${s.open_tasks||0} open`;
+  document.getElementById('req-sub').textContent      = `${_requests.length} requests`;
+  renderTasks();
+  renderFacilityHealth();
+  renderRequests();
+  taskPage    = 1;
+  reqPage     = 1;
+  previewPage = 1;
+}
+
+// ════════════════════════════════════════════════
+//  Render tasks
+// ════════════════════════════════════════════════
+const PRI_CLASS  = { High:'high', Medium:'medium', Low:'low' };
+const STATUS_PCT = { 'Pending':5, 'In Progress':50, 'Completed':100 };
+
+function taskCardHTML(t, preview=false) {
+  const priCls = PRI_CLASS[t.priority] || 'medium';
+  const isDone = t.completed;
+  const pct    = isDone ? 100 : (STATUS_PCT[t.status_name] || 10);
+  const barCls = isDone ? 'done' : '';
+  return `
+    <div class="task-card ${isDone?'done':priCls}" id="tcard-${t.task_id}">
+      <div class="task-top">
+        <div>
+          <div class="task-name">${esc(t.description)}</div>
+          <div class="task-facility">📍 ${esc(t.facility_name)} · ${esc(t.location||'—')} · Reported by ${esc(t.reported_by_name)}</div>
+        </div>
+        <span class="badge ${priCls}">${esc(t.priority)}</span>
+      </div>
+      ${t.progress ? `<div class="task-notes">📝 ${esc(t.progress)}</div>` : ''}
+      <div class="task-progress">
+        <span>${esc(t.status_name)}</span>
+        <div class="progress-bar"><div class="progress-fill ${barCls}" style="width:${pct}%"></div></div>
+        <span>${pct}%</span>
+      </div>
+      ${!isDone && !preview ? `
+      <div class="task-actions">
+        <button class="btn-sm primary" onclick="openProgressModal(${t.task_id})">🔧 Update Progress</button>
+        <button class="btn-sm success"  onclick="completeTask(${t.task_id})">✅ Mark Done</button>
+      </div>` : ''}
+      ${isDone ? `<div style="font-size:11px;color:var(--green);margin-top:8px;">✅ Completed — ${esc(t.updated_at)}</div>` : ''}
+    </div>`;
+}
+
+// ════════════════════════════════════════════════
+//  Pagination helper
+// ════════════════════════════════════════════════
+function buildPagination(prefix, currentPage, totalPages, callbackName) {
+  const pagEl  = document.getElementById(prefix+'-pagination');
+  const btnsEl = document.getElementById(prefix+'-page-btns');
+  if (!pagEl) return;
+  pagEl.style.display = 'flex'; // always visible
+  if (totalPages <= 1) {
+    // Still show "Page 1 of 1" info — just no navigation buttons
+    btnsEl.innerHTML='';
+    return;
+  }
+  const btn=(p,lbl,active,dis)=>
+    `<button class="page-btn${active?' active-page':''}" ${dis?'disabled':''} onclick="${callbackName}(${p})">${lbl}</button>`;
+  const ell=`<span style="font-size:12px;color:var(--dim);padding:0 4px;">…</span>`;
+  let h=btn(currentPage-1,'← Prev',false,currentPage<=1);
+  h+=btn(1,'1',currentPage===1,false);
+  const ws=Math.max(2,currentPage-2),we=Math.min(totalPages-1,currentPage+2);
+  if(ws>2)h+=ell;
+  for(let i=ws;i<=we;i++) h+=btn(i,i,currentPage===i,false);
+  if(we<totalPages-1)h+=ell;
+  if(totalPages>1)h+=btn(totalPages,totalPages,currentPage===totalPages,false);
+  h+=btn(currentPage+1,'Next →',false,currentPage>=totalPages);
+  btnsEl.innerHTML=h;
+}
+
+// ════════════════════════════════════════════════
+//  My Tasks — search · status · priority · 5 per page
+// ════════════════════════════════════════════════
+const TASKS_PER_PAGE   = 3;
+const PREVIEW_PER_PAGE = 4; // overview panel shows 4 at a time
+let taskPage    = 1;
+let previewPage = 1;
+
+function renderPreview() {
+  // Always show the 4 most recent open tasks — no pagination
+  const open  = _tasks.filter(t => !t.completed);
+  const slice = open.slice(0, PREVIEW_PER_PAGE);
+  const preview = document.getElementById('tasks-preview');
+  if (preview) {
+    preview.innerHTML = slice.length
+      ? slice.map(t => taskCardHTML(t, true)).join('')
+      : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No open tasks — well done! ✓</div>';
+  }
+}
+
+function getFilteredTasks() {
+  const q        = (document.getElementById('task-search')?.value || '').toLowerCase();
+  const status   = document.getElementById('task-status-filter')?.value || '';
+  const priority = document.getElementById('task-priority-filter')?.value || '';
+  return _tasks.filter(t => {
+    if (q && !(t.description||'').toLowerCase().includes(q) && !(t.facility_name||'').toLowerCase().includes(q)) return false;
+    if (status === 'open' && t.completed) return false;
+    if (status === 'done' && !t.completed) return false;
+    if (priority && t.priority !== priority) return false;
+    return true;
+  });
+}
+
+function renderTasks() {
+  // Overview preview — separate paginator, unaffected by My Tasks filters
+  renderPreview();
+
+  // Filtered + paginated My Tasks list
+  const filtered = getFilteredTasks();
+  const total    = filtered.length;
+  const pages    = Math.ceil(total / TASKS_PER_PAGE) || 1;
+  taskPage       = Math.min(taskPage, pages);
+  const slice    = filtered.slice((taskPage-1)*TASKS_PER_PAGE, taskPage*TASKS_PER_PAGE);
+
+  document.getElementById('my-tasks-sub').textContent =
+    total + ' task' + (total!==1?'s':'') + (total!==_tasks.length?' (filtered)':'') +
+    ' · ' + _tasks.filter(t=>!t.completed).length + ' open';
+
+  const listEl = document.getElementById('my-tasks-list');
+  listEl.innerHTML = slice.length
+    ? slice.map(t=>taskCardHTML(t,false)).join('')
+    : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No tasks match this filter.</div>';
+
+  const from = (taskPage-1)*TASKS_PER_PAGE + 1, to = Math.min(taskPage*TASKS_PER_PAGE, total)||0;
+  const infoEl = document.getElementById('tasks-page-info');
+  if (infoEl) infoEl.innerHTML = total ? `Showing <b>${from}–${to}</b> of <b>${total}</b>` : 'No tasks';
+  buildPagination('tasks', taskPage, pages, 'gotoTaskPage');
+}
+function gotoTaskPage(p) { taskPage=p; renderTasks(); document.getElementById('tab-tasks').scrollIntoView({behavior:'smooth',block:'start'}); }
+
+// ════════════════════════════════════════════════
+//  All Requests — search · status · priority · 10 per page
+// ════════════════════════════════════════════════
+const REQS_PER_PAGE = 10;
+let reqPage = 1;
+
+function getFilteredRequests() {
+  const q        = (document.getElementById('req-search')?.value || '').toLowerCase();
+  const status   = document.getElementById('req-status-filter')?.value || '';
+  const priority = document.getElementById('req-priority-filter')?.value || '';
+  return _requests.filter(r => {
+    const fac  = (r.facility_name||'').toLowerCase();
+    const rep  = (r.reported_by_name||'').toLowerCase();
+    const desc = (r.description||'').toLowerCase();
+    if (q && !fac.includes(q) && !rep.includes(q) && !desc.includes(q)) return false;
+    if (status   && r.status_name !== status)   return false;
+    if (priority && r.priority    !== priority) return false;
+    return true;
+  });
+}
+
+function renderRequests() {
+  const filtered = getFilteredRequests();
+  const total    = filtered.length;
+  const pages    = Math.ceil(total / REQS_PER_PAGE) || 1;
+  reqPage        = Math.min(reqPage, pages);
+  const slice    = filtered.slice((reqPage-1)*REQS_PER_PAGE, reqPage*REQS_PER_PAGE);
+
+  document.getElementById('req-sub').textContent =
+    total + ' request' + (total!==1?'s':'') + (total!==_requests.length?' (filtered)':'');
+
+  const tbody = document.getElementById('req-tbody');
+  tbody.innerHTML = slice.length ? slice.map(r => {
+    const priCls=(r.priority||'').toLowerCase();
+    const stCls =r.status_name==='Completed'?'approved':r.status_name==='In Progress'?'progress':'pending';
+    return `<tr>
+      <td>#${r.request_id}</td>
+      <td><strong>${esc(r.facility_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.location||'')}</span></td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.description||'')}">${esc((r.description||'').substring(0,60))}${(r.description||'').length>60?'…':''}</td>
+      <td>${esc(r.reported_by_name||'—')}</td>
+      <td><span class="badge ${priCls}">${esc(r.priority)}</span></td>
+      <td><span class="badge ${stCls}">${esc(r.status_name)}</span></td>
+      <td>${r.created_at}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--dim)">No requests match this filter.</td></tr>';
+
+  // Mobile cards
+  const cardsEl = document.getElementById('req-cards');
+  if (cardsEl) {
+    cardsEl.innerHTML = slice.length ? slice.map(r => {
+      const priCls=(r.priority||'').toLowerCase();
+      const stCls =r.status_name==='Completed'?'approved':r.status_name==='In Progress'?'progress':'pending';
+      return `<div class="req-card">
+        <div class="req-card-top">
+          <div>
+            <div class="req-card-fac">#${r.request_id} · ${esc(r.facility_name)}</div>
+            <div class="req-card-loc">📍 ${esc(r.location||'—')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+            <span class="badge ${priCls}">${esc(r.priority)}</span>
+            <span class="badge ${stCls}">${esc(r.status_name)}</span>
+          </div>
+        </div>
+        <div class="req-card-desc">${esc(r.description||'—')}</div>
+        <div class="req-card-meta">
+          <span class="req-card-reporter">👤 ${esc(r.reported_by_name||'—')}</span>
+          <span class="req-card-date">📅 ${r.created_at}</span>
+        </div>
+      </div>`;
+    }).join('') : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No requests match this filter.</div>';
+  }
+
+  const from = (reqPage-1)*REQS_PER_PAGE + 1, to = Math.min(reqPage*REQS_PER_PAGE, total);
+  const infoEl = document.getElementById('req-page-info');
+  if (infoEl) infoEl.innerHTML = total ? `Showing <b>${from}–${to}</b> of <b>${total}</b>` : '0 results';
+  buildPagination('req', reqPage, pages, 'gotoReqPage');
+}
+function gotoReqPage(p) { reqPage=p; renderRequests(); document.getElementById('tab-requests').scrollIntoView({behavior:'smooth',block:'start'}); }
+
+// ════════════════════════════════════════════════
+//  Facility Health full table tab
+// ════════════════════════════════════════════════
+const FH_PER_PAGE        = 12; // desktop/tablet
+const FH_MOBILE_PER_PAGE = 5;  // mobile cards
+let fhPage = 1;
+
+function renderFacHealth() {
+  const q      = (document.getElementById('fh-search')?.value || '').toLowerCase();
+  const status = document.getElementById('fh-status-filter')?.value || '';
+  const isMobile = window.innerWidth <= 768;
+  const perPage  = isMobile ? FH_MOBILE_PER_PAGE : FH_PER_PAGE;
+
+  // Filter + sort
+  const order = {issue:0, warn:1, ok:2};
+  let filtered = [..._facilities].sort((a,b)=>(order[a.health]??3)-(order[b.health]??3));
+  if (q)      filtered = filtered.filter(f =>
+    (f.facility_name||'').toLowerCase().includes(q) ||
+    (f.location||'').toLowerCase().includes(q));
+  if (status) filtered = filtered.filter(f => f.health === status);
+
+  const total = filtered.length;
+  const pages = Math.ceil(total / perPage) || 1;
+  fhPage = Math.max(1, Math.min(fhPage, pages));
+  const slice = filtered.slice((fhPage-1)*perPage, fhPage*perPage);
+
+  document.getElementById('fh-sub').textContent = `${total} facilit${total!==1?'ies':'y'}`;
+
+  const statusLabel = {issue:'Has Issues', warn:'In Progress', ok:'No Issues'};
+
+  // ── Show/hide table vs cards ──
+  const tableWrap = document.querySelector('#tab-fachealth .fh-table-wrap');
+  const cardsEl   = document.querySelector('#tab-fachealth .fh-cards-wrap');
+  if (tableWrap) tableWrap.style.display = isMobile ? 'none' : '';
+  if (cardsEl)   cardsEl.style.display   = isMobile ? 'flex' : 'none';
+
+  // ── Desktop/tablet: table ──
+  const tbody = document.getElementById('fh-tbody');
+  if (tbody) {
+    tbody.innerHTML = !isMobile
+      ? (slice.length
+          ? slice.map(f => `<tr>
+              <td><strong style="color:var(--text)">${esc(f.facility_name)}</strong></td>
+              <td>${esc(f.location||'—')}</td>
+              <td><span class="fh-status-dot ${f.health}"></span><span class="fh-status-label ${f.health}">${statusLabel[f.health]||f.health}</span></td>
+              <td>${f.pending_count>0?`<span class="badge pending">${f.pending_count}</span>`:'—'}</td>
+              <td>${f.inprog_count>0?`<span class="badge progress">${f.inprog_count}</span>`:'—'}</td>
+            </tr>`).join('')
+          : `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--dim);">No facilities match this filter.</td></tr>`)
+      : '';
+  }
+
+  // ── Mobile: cards ──
+  if (cardsEl && isMobile) {
+    cardsEl.innerHTML = slice.length
+      ? slice.map(f => `
+        <div class="fh-card">
+          <div class="fh-card-top">
+            <div class="fh-card-name">${esc(f.facility_name)}</div>
+            <span class="fh-status-dot ${f.health}" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;"></span>
+          </div>
+          <div class="fh-card-loc">📍 ${esc(f.location||'—')}</div>
+          <div class="fh-card-row">
+            <span class="fh-status-label ${f.health}">${statusLabel[f.health]||f.health}</span>
+            ${f.pending_count>0?`<span class="fh-card-stat">⏳ ${f.pending_count} pending</span>`:''}
+            ${f.inprog_count>0?`<span class="fh-card-stat">🔄 ${f.inprog_count} in progress</span>`:''}
+          </div>
+        </div>`).join('')
+      : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No facilities match this filter.</div>';
+  }
+
+  // ── Pagination — always visible ──
+  const infoEl = document.getElementById('fh-page-info');
+  const from = (fhPage-1)*perPage + 1;
+  const to   = Math.min(fhPage*perPage, total) || 0;
+  if (infoEl) infoEl.innerHTML = total
+    ? `Showing <b>${from}–${to}</b> of <b>${total}</b>`
+    : 'No facilities found';
+  buildPagination('fh', fhPage, pages, 'gotoFhPage');
+}
+function gotoFhPage(p){ fhPage = p; renderFacHealth(); }
+
+function renderFacilityHealth() {
+  const el = document.getElementById('fac-health');
+  if (!_facilities.length) { el.innerHTML='<div style="padding:16px;text-align:center;font-size:13px;color:var(--dim);">No facilities found.</div>'; return; }
+  // Sort: issues first, then warn, then ok; max 9
+  const _order={issue:0,warn:1,ok:2};
+  const _sorted=[..._facilities].sort((a,b)=>(_order[a.health]??3)-(_order[b.health]??3)).slice(0,9);
+  el.innerHTML = _sorted.map(f => {
+    const label = f.health==='issue' ? `${f.pending_count} pending issue${f.pending_count>1?'s':''}` :
+                  f.health==='warn'  ? `${f.inprog_count} in progress` : 'No open issues';
+    return `<div class="facility-status">
+      <div class="fac-dot ${f.health}"></div>
+      <div><div class="fac-name">${esc(f.facility_name)}</div><div class="fac-loc">${esc(f.location||'—')} — ${label}</div></div>
+    </div>`;
+  }).join('');
+}
+// ════════════════════════════════════════════════
+let _editingTaskId = null;
+function setPmStatus(val, dotClass, label) {
+  document.getElementById('pm-status').value = val;
+  const lbl = document.getElementById('mfcdd-pm-status-label');
+  if (lbl) lbl.innerHTML = `<span class="pm-status-dot ${dotClass}"></span>${label}`;
+  const panel = document.getElementById('mfcdd-pm-status-panel');
+  const btn   = document.getElementById('mfcdd-pm-status')?.querySelector('.mf-cdd-btn');
+  if (panel) {
+    panel.querySelectorAll('.mf-cdd-opt').forEach(o => o.classList.remove('selected'));
+    const opts = panel.querySelectorAll('.mf-cdd-opt');
+    const idx  = {'1':0,'2':1,'3':2}[val];
+    if (opts[idx]) opts[idx].classList.add('selected');
+    panel.classList.remove('open');
+  }
+  if (btn) btn.classList.remove('open');
+}
+
+function openProgressModal(taskId) {
+  const t=_tasks.find(x=>x.task_id===taskId); if(!t)return;
+  _editingTaskId=taskId;
+  document.getElementById('pm-sub').textContent=`${t.description} — ${t.facility_name}`;
+  document.getElementById('pm-notes').value=t.progress||'';
+  const pmVal = t.status_name==='Completed'?'3':t.status_name==='In Progress'?'2':'1';
+  const pmDot = {'1':'pending','2':'inprogress','3':'completed'}[pmVal];
+  const pmLbl = {'1':'Pending','2':'In Progress','3':'Completed'}[pmVal];
+  setPmStatus(pmVal, pmDot, pmLbl);
+  document.getElementById('pm-alert').className='m-alert';
+  document.getElementById('progress-modal').classList.add('open');
+}
+function closeProgressModal(){document.getElementById('progress-modal').classList.remove('open');_editingTaskId=null;}
+
+async function saveProgress(){
+  const notes=document.getElementById('pm-notes').value.trim();
+  const statusId=parseInt(document.getElementById('pm-status').value);
+  const alertEl=document.getElementById('pm-alert');alertEl.className='m-alert';
+  if(!notes){alertEl.textContent='✕ Please enter progress notes.';alertEl.className='m-alert show error';return;}
+  const btn=document.getElementById('pm-save-btn');btn.disabled=true;btn.innerHTML='<div class="spin"></div> Saving…';
+  const data=await api('api/maintenance.php','POST',{action:'update_progress',task_id:_editingTaskId,progress:notes,status_id:statusId});
+  if(!data.success){alertEl.textContent='✕ '+(data.message||'Failed.');alertEl.className='m-alert show error';btn.disabled=false;btn.textContent='Save Update';return;}
+  alertEl.textContent='✓ Progress updated!';alertEl.className='m-alert show success';
+  const t=_tasks.find(x=>x.task_id===_editingTaskId);
+  if(t){t.progress=notes;t.status_name=['','Pending','In Progress','Completed'][statusId];t.completed=statusId===3;}
+  setTimeout(()=>{closeProgressModal();renderTasks();loadData();},800);
+  btn.disabled=false;btn.textContent='Save Update';
+}
+
+async function completeTask(taskId){
+  const t=_tasks.find(x=>x.task_id===taskId);if(!t)return;
+  const btn=document.getElementById(`tcard-${taskId}`)?.querySelector('.btn-sm.success');
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  const data=await api('api/maintenance.php','POST',{action:'complete',task_id:taskId});
+  if(data.success){if(t){t.completed=true;t.status_name='Completed';t.progress=t.progress||'Task completed';}renderTasks();loadData();}
+  else{if(btn){btn.disabled=false;btn.textContent='✅ Mark Done';}}
+}
+
+// ════════════════════════════════════════════════
+//  Announcements
+// ════════════════════════════════════════════════
+const PRI_LABEL={high:'Important',medium:'Medium',low:'General'};
+async function loadAnnouncements(){
+  const data=await api('api/announcements.php');
+  if(!data.success){document.getElementById('ann-list').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load.</div>';return;}
+  const list=(data.announcements||[]).slice(0,7); // 7 most recent only
+  const total=data.announcements?.length||0;
+  document.getElementById('ann-sub').textContent=total+' active';
+  const el=document.getElementById('ann-list');
+  if(!list.length){el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No announcements yet.</div>';return;}
+  el.innerHTML=list.map(a=>`<div class="ann-item">
+    <div class="ann-item-head"><div class="ann-item-title">${esc(a.title)}</div><span class="ann-pri ${a.priority}">${PRI_LABEL[a.priority]||a.priority}</span></div>
+    <div class="ann-item-msg">${esc(a.message)}</div>
+    <div class="ann-item-meta">📅 ${a.created_at} · By: ${esc(a.posted_by_name||'Admin')}</div>
+  </div>`).join('');
+}
+
+// ════════════════════════════════════════════════
+//  Utility
+// ════════════════════════════════════════════════
+function toggleMfCdd(id) {
+  const panel = document.getElementById('mfcdd-'+id+'-panel');
+  const btn   = document.getElementById('mfcdd-'+id)?.querySelector('.mf-cdd-btn');
+  const isOpen = panel?.classList.contains('open');
+  document.querySelectorAll('.mf-cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    p.closest('.mf-cdd')?.querySelector('.mf-cdd-btn')?.classList.remove('open');
+  });
+  if (!isOpen && panel) { panel.classList.add('open'); if(btn) btn.classList.add('open'); }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.mf-cdd')) {
+    document.querySelectorAll('.mf-cdd-panel.open').forEach(p => {
+      p.classList.remove('open');
+      p.closest('.mf-cdd')?.querySelector('.mf-cdd-btn')?.classList.remove('open');
+    });
+  }
+});
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function logout(){localStorage.removeItem('yagums_token');localStorage.removeItem('yagums_user');document.cookie='yagums_token=; path=/; max-age=0';window.location.href=window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';}
+
+// ════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════
+loadData();
+loadNotifications();
+
+// ── Silent auto-refresh every 10 seconds ─────────
+let _lastDataHash='';
+async function silentRefresh(){
+  const data=await api('api/maintenance.php');
+  if(!data.success)return;
+  const hash=JSON.stringify(data.tasks.map(t=>({id:t.task_id,c:t.completed,s:t.status_name,p:t.progress})))+JSON.stringify(data.summary);
+  if(hash===_lastDataHash)return;
+  _lastDataHash=hash;
+  _tasks=data.tasks||[];_requests=data.requests||[];_facilities=data.facilities||[];
+  const s=data.summary||{};
+  document.getElementById('ov-open').textContent=s.open_tasks||0;
+  document.getElementById('ov-high').textContent=s.high_priority||0;
+  document.getElementById('ov-done').textContent=s.completed||0;
+  document.getElementById('ov-fac').textContent=_facilities.length;
+  document.getElementById('nb-tasks').textContent=s.open_tasks||0;
+  document.getElementById('tasks-sub').textContent=`${s.open_tasks||0} active · ${s.completed||0} completed`;
+  document.getElementById('my-tasks-sub').textContent=`${_tasks.length} total · ${s.open_tasks||0} open`;
+  document.getElementById('req-sub').textContent=`${_requests.length} requests`;
+  renderTasks();renderFacilityHealth();renderPreview();
+  if(_activeTab==='requests') renderRequests();
+  if(_activeTab==='announce') loadAnnouncements();
+  if(_activeTab==='fachealth') renderFacHealth();
+  loadNotifications();
+}
+setInterval(silentRefresh,5000);
+</script>
+</body>
+</html>

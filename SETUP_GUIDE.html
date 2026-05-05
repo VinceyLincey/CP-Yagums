@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAGUMS — Setup Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --black:#0a0a0f; --card:#16162a; --border:#252540; --purple:#7c3aed; --purp2:#9d5bff; --text:#e8e6ff; --muted:#7b7a9d; --green:#34d399; --amber:#f59e0b; --red:#f87171; --accent:#c084fc; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--black); color:var(--text); padding:40px clamp(16px,5vw,80px) 80px; line-height:1.6; }
+  h1 { font-family:'Syne',sans-serif; font-size:clamp(24px,4vw,40px); font-weight:800; color:#fff; margin-bottom:8px; }
+  h1 span { background:linear-gradient(135deg,var(--purp2),var(--accent)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .subtitle { font-size:15px; color:var(--muted); margin-bottom:48px; }
+  h2 { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:#fff; margin:36px 0 12px; display:flex; align-items:center; gap:10px; }
+  h2 .step-num { width:28px; height:28px; background:var(--purple); border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; flex-shrink:0; }
+  p { font-size:14px; color:var(--muted); margin-bottom:12px; }
+  p strong { color:var(--text); }
+  .code-block { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin:12px 0 20px; font-family:'DM Mono',monospace; font-size:13px; line-height:1.8; overflow-x:auto; white-space:pre; }
+  .dir { color:#60a5fa; }
+  .file { color:var(--text); }
+  .comment { color:var(--muted); }
+  .new { color:var(--green); }
+  .important { color:var(--amber); }
+  .cmd { color:var(--accent); }
+  .warn-box { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.3); border-radius:12px; padding:14px 18px; margin:14px 0; font-size:13px; color:var(--red); }
+  .info-box  { background:rgba(124,58,237,.1); border:1px solid rgba(124,58,237,.3); border-radius:12px; padding:14px 18px; margin:14px 0; font-size:13px; color:var(--accent); }
+  .ok-box    { background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.3); border-radius:12px; padding:14px 18px; margin:14px 0; font-size:13px; color:var(--green); }
+  table { width:100%; border-collapse:collapse; margin:12px 0 24px; }
+  th { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding:10px 16px; text-align:left; border-bottom:1px solid var(--border); }
+  td { font-size:13px; color:var(--muted); padding:10px 16px; border-bottom:1px solid rgba(37,37,64,.5); font-family:'DM Mono',monospace; }
+  td:first-child { color:var(--text); }
+  hr { border:none; border-top:1px solid var(--border); margin:40px 0; }
+</style>
+</head>
+<body>
+
+<h1>YA<span>GUMS</span> — Setup Guide</h1>
+<p class="subtitle">Complete folder structure, database setup, and profile picture configuration.</p>
+
+<!-- ═══ FOLDER STRUCTURE ═══ -->
+<h2><span class="step-num">1</span> Project Folder Structure</h2>
+<p>Place all files inside XAMPP's <strong>htdocs</strong> folder, in a subfolder called <strong>yagums</strong>:</p>
+
+<div class="code-block"><span class="dir">C:/xampp/htdocs/yagums/</span>          <span class="comment">← your project root</span>
+│
+├── <span class="file">config.php</span>                      <span class="comment">← DB credentials + helpers</span>
+├── <span class="file">setup.php</span>                       <span class="comment">← run ONCE, then delete</span>
+│
+├── <span class="dir">api/</span>
+│   ├── <span class="file">login.php</span>
+│   ├── <span class="file">register.php</span>
+│   ├── <span class="file">profile.php</span>                 <span class="comment">← info / password / avatar</span>
+│   ├── <span class="file">announcements.php</span>           <span class="comment">← post + vote</span>
+│   └── <span class="file">admin_log.php</span>
+│
+├── <span class="new">uploads/</span>                         <span class="comment">← created automatically by setup.php</span>
+│   ├── <span class="file">.htaccess</span>                   <span class="comment">← blocks PHP execution (security)</span>
+│   └── <span class="new">avatars/</span>
+│       ├── <span class="file">2.jpg</span>                   <span class="comment">← user_id 2's profile picture</span>
+│       ├── <span class="file">6.png</span>                   <span class="comment">← user_id 6's profile picture</span>
+│       └── <span class="file">...etc</span>
+│
+├── <span class="file">index.html</span>                      <span class="comment">← landing page</span>
+├── <span class="file">login.html</span>
+├── <span class="file">register.html</span>
+├── <span class="file">profile.html</span>
+├── <span class="file">dashboard-student.html</span>
+├── <span class="file">dashboard-admin.html</span>
+├── <span class="file">dashboard-lecturer.html</span>
+├── <span class="file">dashboard-maintenance.html</span>
+├── <span class="file">shared.css</span>
+└── <span class="file">notifications.js</span>
+</div>
+
+<div class="warn-box">⚠️ Never put PHP files inside the <code>uploads/</code> folder. The <code>.htaccess</code> created by setup.php blocks this.</div>
+
+<!-- ═══ DATABASE SETUP ═══ -->
+<h2><span class="step-num">2</span> Database Setup</h2>
+<p>Open <strong>phpMyAdmin</strong> at <code>http://localhost/phpmyadmin</code> and follow these steps:</p>
+<ol style="padding-left:20px;color:var(--muted);font-size:14px;line-height:2;">
+  <li>Click <strong style="color:var(--text)">New</strong> in the left panel</li>
+  <li>Database name: <strong style="color:var(--accent)">yagums</strong> → Collation: <strong style="color:var(--accent)">utf8mb4_0900_ai_ci</strong> → Click <strong style="color:var(--text)">Create</strong></li>
+  <li>Click the <strong style="color:var(--text)">yagums</strong> database in the left panel</li>
+  <li>Click <strong style="color:var(--text)">Import</strong> → Choose file → select <strong style="color:var(--accent)">yagums_final.sql</strong> → Click <strong style="color:var(--text)">Go</strong></li>
+</ol>
+
+<!-- ═══ FIRST RUN ═══ -->
+<h2><span class="step-num">3</span> Run Setup (First Time Only)</h2>
+<p>After importing the database, visit:</p>
+<div class="code-block"><span class="cmd">http://localhost/yagums/setup.php</span></div>
+<p>This will:</p>
+<ul style="padding-left:20px;color:var(--muted);font-size:14px;line-height:2;">
+  <li>Create the <strong style="color:var(--text)">uploads/avatars/</strong> folder automatically</li>
+  <li>Generate a <strong style="color:var(--text)">10-digit numeric backup code</strong> for the Super Admin</li>
+  <li>Display the code <strong style="color:var(--red)">once</strong> — copy and store it safely</li>
+</ul>
+<div class="warn-box">🗑️ Delete or rename setup.php immediately after copying the backup code. Anyone with the URL can regenerate it.</div>
+
+<!-- ═══ ROLES TABLE ═══ -->
+<h2><span class="step-num">4</span> Role Structure</h2>
+<table>
+  <tr><th>role_id</th><th>role_name</th><th>Dashboard</th><th>Notes</th></tr>
+  <tr><td>1</td><td>Admin</td><td>dashboard-admin.html</td><td>Super Admin — user_id=1 is undeletable</td></tr>
+  <tr><td>2</td><td>Facility Manager</td><td>dashboard-admin.html</td><td>Can post announcements, approve bookings</td></tr>
+  <tr><td>3</td><td>Maintenance Staff</td><td>dashboard-maintenance.html</td><td>Handles repair tasks</td></tr>
+  <tr><td>4</td><td>Lecturer</td><td>dashboard-lecturer.html</td><td>Books rooms, reports issues</td></tr>
+  <tr><td>5</td><td>Student</td><td>dashboard-student.html</td><td>Self-registers, books facilities</td></tr>
+</table>
+
+<!-- ═══ PROFILE PICTURE ═══ -->
+<h2><span class="step-num">5</span> Profile Picture Upload</h2>
+<p>Profile pictures are uploaded via <strong>api/profile.php</strong> using multipart form data. The file is saved as:</p>
+<div class="code-block"><span class="dir">uploads/avatars/</span><span class="important">{user_id}</span><span class="file">.jpg</span>   <span class="comment">← or .png .webp .gif</span></div>
+<p>Rules enforced by the API:</p>
+<ul style="padding-left:20px;color:var(--muted);font-size:14px;line-height:2;">
+  <li>Max size: <strong style="color:var(--text)">2 MB</strong></li>
+  <li>Allowed types: <strong style="color:var(--text)">JPEG, PNG, WebP, GIF</strong></li>
+  <li>Old picture is <strong style="color:var(--text)">automatically replaced</strong> (no duplicates)</li>
+  <li>Each user only has access to their own picture via their session token</li>
+</ul>
+<p>Frontend upload example (from profile.html):</p>
+<div class="code-block"><span class="comment">// JavaScript fetch with FormData</span>
+<span class="cmd">const form = new FormData();
+form.append('avatar', fileInput.files[0]);
+
+fetch('api/profile.php', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer ' + token },
+  body: form   // no Content-Type header — browser sets multipart automatically
+})
+.then(r => r.json())
+.then(data => {
+  if (data.success) {
+    img.src = data.profile_picture + '?v=' + Date.now();
+  }
+});</span></div>
+
+<!-- ═══ BOOKING PRIVACY ═══ -->
+<h2><span class="step-num">6</span> Booking Privacy</h2>
+<div class="ok-box">✅ All booking queries are scoped to the logged-in user's session token. A student can only ever see their own bookings — the API enforces <code>WHERE user_id = {token.user_id}</code> for all non-admin roles. Admins and Facility Managers can view all bookings.</div>
+
+<!-- ═══ SUPER ADMIN ═══ -->
+<h2><span class="step-num">7</span> Super Admin Account</h2>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td>user_id</td><td>1 (fixed — cannot be deleted)</td></tr>
+  <tr><td>email</td><td>admin@yagums.edu</td></tr>
+  <tr><td>Default password</td><td>Change via setup.php on first run</td></tr>
+  <tr><td>Backup code</td><td>10-digit numeric, shown once by setup.php</td></tr>
+  <tr><td>is_protected</td><td>1 — delete protected in DB and API</td></tr>
+</table>
+<div class="info-box">💡 The backup code can be used as the "current password" field when changing password — even if you forget the main password. It is stored as a bcrypt hash in the database.</div>
+
+<!-- ═══ OPEN IN BROWSER ═══ -->
+<h2><span class="step-num">8</span> Open in Browser</h2>
+<div class="warn-box">⚠️ Always open files through the web server, never by double-clicking the HTML file.</div>
+<div class="code-block"><span class="ok-box" style="display:inline;padding:3px 8px;border-radius:4px;font-size:12px;">✅ CORRECT</span>   <span class="cmd">http://localhost/yagums/login.html</span>
+<span style="background:rgba(248,113,113,.15);padding:3px 8px;border-radius:4px;font-size:12px;color:var(--red);">❌ WRONG</span>     <span class="comment">file:///C:/xampp/htdocs/yagums/login.html</span></div>
+
+</body>
+</html>
