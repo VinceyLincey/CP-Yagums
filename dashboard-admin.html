@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -780,7 +781,7 @@
           <div class="rc-field"><label>To</label>  <input type="date" id="rpt-to"></div>
           <button class="btn-generate" onclick="generateReport()">Generate →</button>
           <div class="export-btns" id="export-btns" style="display:none">
-            <button class="btn-export-csv" onclick="exportCSV()">⬇ CSV</button>
+            <button class="btn-export-csv" onclick="exportCSV()">⬇ Excel</button>
             <button class="btn-export-pdf" onclick="exportPDF()">⬇ PDF</button>
           </div>
         </div>
@@ -1924,15 +1925,80 @@ function renderReport(type,data,out){
 }
 function exportCSV(){
   if(!_lastReport)return;
-  const{type,data}=_lastReport;let csv='';
-  if(type==='summary'){csv='Metric,Value\n';Object.entries(data.summary||{}).forEach(([k,v])=>{csv+=`"${k}",${v}\n`;});}
-  if(type==='bookings'){csv='Facility,User,Date,Start,End,Status\n';(data.bookings||[]).forEach(r=>{csv+=`"${r.facility_name}","${r.user_name}","${r.booking_date}","${r.start_time}","${r.end_time}","${r.status_name}"\n`;});}
-  if(type==='maintenance'){csv='Facility,Reported By,Description,Priority,Status,Date\n';(data.requests||[]).forEach(r=>{csv+=`"${r.facility_name||''}","${r.reported_by_name||''}","${(r.description||'').replace(/"/g,"'")}","${r.priority}","${r.status_name}","${r.created_at}"\n`;});}
-  if(type==='users'){csv='Name,Email,Role,Bookings,Joined,Active\n';(data.users||[]).forEach(r=>{csv+=`"${r.first_name} ${r.last_name}","${r.email}","${r.role_name}",${r.booking_count},"${r.created_at}",${r.is_active}\n`;});}
-  if(type==='facilities'){csv='Facility,Type,Location,Capacity,Bookings,Available\n';(data.facilities||[]).forEach(r=>{csv+=`"${r.facility_name}","${r.type_name||''}","${r.location}",${r.capacity},${r.total_bookings},${r.is_available}\n`;});}
-  if(type==='announcements'){csv='Title,Priority,Posted By,Date,Upvotes,Downvotes,Active\n';(data.announcements||[]).forEach(r=>{csv+=`"${r.title}","${r.priority}","${r.posted_by_name}","${r.created_at}",${r.upvotes},${r.downvotes},${r.is_active}\n`;});}
-  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=`yagums_${type}_${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(url);
+  const{type,data}=_lastReport;
+  const wb=XLSX.utils.book_new();
+  const dateStr=new Date().toISOString().split('T')[0];
+
+  // header style
+  const hStyle={font:{bold:true,color:{rgb:'FFFFFF'},sz:11},fill:{fgColor:{rgb:'3B1C7E'}},alignment:{horizontal:'center',vertical:'center'},border:{bottom:{style:'medium',color:{rgb:'7C3AED'}}}};
+  // alternating row styles
+  const rowA={fill:{fgColor:{rgb:'1A1333'}},font:{color:{rgb:'E2D9F3'},sz:10}};
+  const rowB={fill:{fgColor:{rgb:'130E26'}},font:{color:{rgb:'C4B5FD'},sz:10}};
+  const badgeStyle=s=>{
+    s=(s||'').toLowerCase();
+    if(s==='approved'||s==='active'||s==='available') return{font:{bold:true,color:{rgb:'34D399'},sz:10}};
+    if(s==='pending') return{font:{bold:true,color:{rgb:'FBBF24'},sz:10}};
+    if(s==='rejected'||s==='inactive'||s==='disabled') return{font:{bold:true,color:{rgb:'F87171'},sz:10}};
+    if(s==='high') return{font:{bold:true,color:{rgb:'F87171'},sz:10}};
+    if(s==='medium') return{font:{bold:true,color:{rgb:'FBBF24'},sz:10}};
+    if(s==='low') return{font:{bold:true,color:{rgb:'34D399'},sz:10}};
+    return{font:{color:{rgb:'A78BFA'},sz:10}};
+  };
+
+  function makeCell(v,style){return{v,s:style,t:typeof v==='number'?'n':'s'};}
+  function applySheet(ws,headers,rows,colWidths){
+    const R=[];
+    R.push(headers.map(h=>makeCell(h,hStyle)));
+    rows.forEach((row,i)=>{
+      const base=i%2===0?rowA:rowB;
+      R.push(row.map((v,ci)=>{
+        const isBadgeCol=typeof v==='string'&&['approved','pending','rejected','active','inactive','available','disabled','high','medium','low','archived'].includes(v.toLowerCase());
+        return makeCell(v,isBadgeCol?{...base,...badgeStyle(v)}:base);
+      }));
+    });
+    XLSX.utils.sheet_add_aoa(ws,R.map(r=>r.map(c=>c.v)),{origin:'A1'});
+    // apply styles (requires xlsx-style or sheetjs pro — skip silently if not supported)
+    try{
+      R.forEach((row,ri)=>row.forEach((cell,ci)=>{
+        const addr=XLSX.utils.encode_cell({r:ri,c:ci});
+        if(ws[addr])ws[addr].s=cell.s;
+      }));
+    }catch(e){}
+    ws['!cols']=colWidths.map(w=>({wch:w}));
+    ws['!rows']=[{hpt:20}];
+    return ws;
+  }
+
+  let ws=XLSX.utils.aoa_to_sheet([]);
+  let sheetName=type.charAt(0).toUpperCase()+type.slice(1);
+
+  if(type==='summary'){
+    const entries=Object.entries(data.summary||{});
+    applySheet(ws,['Metric','Value'],entries.map(([k,v])=>[k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),v]),[30,15]);
+  }
+  if(type==='bookings'){
+    const rows=(data.bookings||[]).map(r=>[r.facility_name,r.user_name,r.booking_date,`${r.start_time}–${r.end_time}`,r.status_name]);
+    applySheet(ws,['Facility','User','Date','Time','Status'],rows,[25,20,15,15,12]);
+  }
+  if(type==='maintenance'){
+    const rows=(data.requests||[]).map(r=>[r.facility_name||'—',r.reported_by_name||'—',(r.description||'').substring(0,80),r.priority,r.status_name,r.created_at]);
+    applySheet(ws,['Facility','Reported By','Description','Priority','Status','Date'],rows,[20,18,35,10,12,15]);
+  }
+  if(type==='users'){
+    const rows=(data.users||[]).map(r=>[`${r.first_name} ${r.last_name}`,r.email,r.role_name,r.booking_count,r.created_at,r.is_active?'Active':'Inactive']);
+    applySheet(ws,['Name','Email','Role','Bookings','Joined','Status'],rows,[22,28,15,10,15,10]);
+  }
+  if(type==='facilities'){
+    const rows=(data.facilities||[]).map(r=>[r.facility_name,r.type_name||'—',r.location,r.capacity,r.total_bookings,r.is_available?'Available':'Disabled']);
+    applySheet(ws,['Facility','Type','Location','Capacity','Total Bookings','Status'],rows,[22,16,20,10,14,12]);
+  }
+  if(type==='announcements'){
+    const rows=(data.announcements||[]).map(r=>[r.title,r.priority,r.posted_by_name,r.created_at,r.upvotes,r.downvotes,r.is_active?'Active':'Archived']);
+    applySheet(ws,['Title','Priority','Posted By','Date','👍 Upvotes','👎 Downvotes','Status'],rows,[30,10,18,18,10,12,10]);
+  }
+
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  XLSX.writeFile(wb,`yagums_${type}_${dateStr}.xlsx`);
 }
 function exportPDF(){
   if(!_lastReport)return;
