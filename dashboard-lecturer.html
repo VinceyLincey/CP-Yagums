@@ -158,6 +158,11 @@
 .btn-submit{width:100%;background:linear-gradient(135deg,#1d4ed8,#60a5fa);border:none;border-radius:10px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(96,165,250,.3);-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .btn-submit:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 24px rgba(96,165,250,.4);}
 .btn-submit:disabled{opacity:.6;cursor:not-allowed;}
+  #nb-recurring::-webkit-inner-spin-button,
+  #nb-recurring::-webkit-outer-spin-button{
+    opacity:.3;
+    filter:invert(1);
+}
 .f-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-top:2px;line-height:1.5;}
 .f-alert.show{display:block;}
 .f-alert.error  {background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
@@ -397,7 +402,17 @@
               <div class="bf"><label>Start Time</label><input type="time" id="nb-start" value="09:00"></div>
             </div>
             <div class="bf"><label>End Time</label><input type="time" id="nb-end" value="11:00"></div>
-            <div class="bf"><label>Purpose <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <div class="bf">
+              <label>Recurring Weeks <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(optional — lecturer classes)</span></label>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <input type="number" id="nb-recurring" min="1" max="8" placeholder="e.g. 4"
+                   style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;">
+                <span style="font-size:12px;color:var(--muted);white-space:nowrap;">weeks (max 8)</span>
+              </div>
+              <div style="margin-top:5px;font-size:11px;color:var(--muted);">Leave blank for a single booking. Adds the same slot every week for that many additional weeks (max 8).</div>
+            </div>
+            <div class="bf"><label>Purpose
+              <span style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
               <textarea id="nb-purpose" rows="2" placeholder="e.g. Algorithms lecture…"></textarea>
             </div>
             <div class="f-alert" id="nb-alert"></div>
@@ -927,20 +942,27 @@ async function submitNewBooking() {
   const start=document.getElementById('nb-start').value;
   const end=document.getElementById('nb-end').value;
   const purpose=document.getElementById('nb-purpose').value.trim();
+  const recurringRaw=document.getElementById('nb-recurring')?.value.trim();
+  const recurringWeeks=recurringRaw ? parseInt(recurringRaw,10) : null;
   const alertEl=document.getElementById('nb-alert'); alertEl.className='f-alert';
   if(!facId){alertEl.textContent='✕ Please select a facility.';alertEl.className='f-alert show error';return;}
   if(!date) {alertEl.textContent='✕ Please choose a date.';alertEl.className='f-alert show error';return;}
   if(!start||!end){alertEl.textContent='✕ Start and end time required.';alertEl.className='f-alert show error';return;}
   if(start>=end){alertEl.textContent='✕ End time must be after start.';alertEl.className='f-alert show error';return;}
-  const btn=document.getElementById('nb-btn');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Submitting…';
-  const data=await api('api/bookings.php','POST',{facility_id:parseInt(facId),booking_date:date,start_time:start,end_time:end,purpose});
+  if(recurringWeeks!==null&&(isNaN(recurringWeeks)||recurringWeeks<1||recurringWeeks>8)){alertEl.textContent='✕ Recurring weeks must be between 1 and 8.';alertEl.className='f-alert show error';return;}  const btn=document.getElementById('nb-btn');btn.disabled=true;
+  btn.innerHTML=recurringWeeks?`<span class="spin"></span> Submitting ${recurringWeeks+1} weeks…`:'<span class="spin"></span> Submitting…';
+  const payload={facility_id:parseInt(facId),booking_date:date,start_time:start,end_time:end,purpose};
+  if(recurringWeeks) payload.recurring_weeks=recurringWeeks;
+  const data=await api('api/bookings.php','POST',payload);
   if(!data.success){alertEl.textContent='✕ '+(data.message||'Failed.');alertEl.className='f-alert show error';btn.disabled=false;btn.innerHTML='📅 Submit Booking';return;}
-  alertEl.textContent='✓ Booking submitted! Awaiting approval.';alertEl.className='f-alert show success';
+  alertEl.textContent=recurringWeeks?`✓ Recurring booking submitted for ${recurringWeeks+1} weeks! Awaiting approval.`:'✓ Booking submitted! Awaiting approval.';
+  alertEl.className='f-alert show success';
   document.getElementById('nb-purpose').value='';
   document.getElementById('nb-facility').value='';
+  if(document.getElementById('nb-recurring')) document.getElementById('nb-recurring').value='';
   const nbLbl=document.getElementById('bfcdd-nb-fac-label');if(nbLbl)nbLbl.textContent='Select a facility…';
   document.getElementById('bfcdd-nb-fac-panel')?.querySelectorAll('.bf-cdd-opt').forEach(o=>o.classList.remove('selected'));
-  loadBookings();setTimeout(()=>alertEl.className='f-alert',5000);
+  loadBookings();setTimeout(()=>alertEl.className='f-alert',6000);
   btn.disabled=false;btn.innerHTML='📅 Submit Booking';
 }
 

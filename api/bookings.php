@@ -114,6 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $startTime  = trim($body['start_time']    ?? '');
     $endTime    = trim($body['end_time']      ?? '');
     $purpose    = trim($body['purpose']       ?? '');
+    $recurringWeeks = null;
+    if ($role === 'Lecturer') {
+        $rw = isset($body['recurring_weeks']) ? (int)$body['recurring_weeks'] : 0;
+        if ($rw >= 1 && $rw <= 8) $recurringWeeks = $rw;
+    }
 
     if (!$facilityId)  jsonResponse(false, 'Please select a facility.');
     if (empty($date))  jsonResponse(false, 'Please select a date.');
@@ -133,25 +138,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$facility['is_available']) jsonResponse(false, $facility['facility_name'] . ' is currently unavailable for booking.');
 
     // Check for slot conflict
-    $conflict = $db->prepare('
+    $datesToBook = [];
+    $totalSlots  = ($recurringWeeks !== null) ? ($recurringWeeks + 1) : 1;
+    for ($i = 0; $i < $totalSlots; $i++) {
+        $datesToBook[] = date('Y-m-d', strtotime("+{$i} weeks", strtotime($date)));
+    }
+
+    // Check every date for conflicts before inserting anything
+    $conflictCheck = $db->prepare('
         SELECT booking_id FROM bookings
-        WHERE  facility_id=? AND booking_date=?
-        AND    status_id NOT IN (3,4)
+        WHERE  facility_id  = ? AND booking_date = ?
+        AND    status_id NOT IN (3, 4)
         AND    start_time < ? AND end_time > ?
         LIMIT  1
     ');
-    $conflict->execute([$facilityId, $date, $endTime, $startTime]);
-    if ($conflict->fetch()) {
-        jsonResponse(false, 'That time slot is already booked. Please choose a different time.');
+    foreach ($datesToBook as $d) {
+        $conflictCheck->execute([$facilityId, $d, $endTime, $startTime]);
+        if ($conflictCheck->fetch()) {
+            jsonResponse(false, "That slot is already booked on {$d}. Please choose a different time or fewer recurrence weeks.");
+        }
     }
 
-    // Insert — status_id=1 (Pending)
+    // Insert one row per week
+    $groupId = ($recurringWeeks !== null) ? (int)(microtime(true) * 1000) : null;
     $ins = $db->prepare('
-        INSERT INTO bookings (user_id, facility_id, booking_date, start_time, end_time, purpose, status_id)
-        VALUES (?, ?, ?, ?, ?, ?, 1)
+        INSERT INTO bookings
+            (user_id, facility_id, booking_date, start_time, end_time, purpose,
+             recurring_weeks, recurring_group_id, status_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
     ');
-    $ins->execute([$userId, $facilityId, $date, $startTime, $endTime, $purpose ?: null]);
-    $bookingId = (int) $db->lastInsertId();
+    $firstBookingId = null;
+    foreach ($datesToBook as $d) {
+        $rw = ($d === $date && $recurringWeeks !== null) ? $recurringWeeks : null;
+        $ins->execute([$userId, $facilityId, $d, $startTime, $endTime,
+                       $purpose ?: null, $rw, $groupId]);
+        if ($firstBookingId === null) $firstBookingId = (int)$db->lastInsertId();
+    }
+    $bookingId = $firstBookingId;
 
     // Notification to the booking user
     $db->prepare("INSERT INTO notifications (user_id,message,type,is_read) VALUES (?,?,?,0)")
