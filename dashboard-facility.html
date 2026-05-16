@@ -1312,7 +1312,11 @@ function getFilteredBookings() {
   return allBookings.filter(b => {
     if (q && !(b.facility_name||'').toLowerCase().includes(q) && !(b.user_name||'').toLowerCase().includes(q)) return false;
     if (status && (b.status_name||'').toLowerCase() !== status) return false;
-    if (date   &&  b.booking_date !== date) return false;
+    if (date) {
+    const d = new Date(date + 'T00:00:00');
+    const formatted = d.toLocaleDateString('en-MY', {day:'numeric', month:'short', year:'numeric'}).replace(/\u202f/g,' ');
+    if (b.booking_date !== formatted) return false;
+    }
     return true;
   });
 }
