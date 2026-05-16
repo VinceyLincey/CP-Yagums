@@ -1039,6 +1039,7 @@ async function loadMyReports() {
   const data=await api('api/maintenance.php?my_reports=1');
   if(!data.success){el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load reports.</div>';return;}
   const list=data.requests||[];
+  window._myReports = list;
   document.getElementById('mr-sub').textContent=list.length+' report'+(list.length!==1?'s':'');
   renderRecentReports();
   // Show 5 most recent + empty placeholder slots to fill up to 5
