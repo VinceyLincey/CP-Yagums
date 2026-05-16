@@ -65,8 +65,7 @@
   .grid-2{grid-template-columns:1fr !important;}
   .stats-grid{grid-template-columns:1fr 1fr !important;}
   #ov-grid{grid-template-columns:1fr !important;}
-  .bf-cdd-panel{max-height:200px;position:fixed;left:16px;right:16px;width:auto;z-index:300;border-radius:12px;overflow-y:auto;}
-  .list-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;}
+  .bf-cdd-panel{max-height:200px;position:absolute;left:0;right:0;width:auto;z-index:300;border-radius:12px;overflow-y:auto;}  .list-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;}
   .list-controls .search-wrap-f{width:100%;flex:0 0 100%;}
   .list-controls .cdd-wrap{flex:1;min-width:0;}
   .list-controls .cdd-btn{width:100%;justify-content:space-between;font-size:11px;padding:7px 10px;}
@@ -130,8 +129,7 @@
 .bf-cdd-opt:hover{background:rgba(124,58,237,.1);color:var(--text);}
 .bf-cdd-opt.selected{color:var(--accent);font-weight:600;}
 @media(max-width:1024px){
-  .bf-cdd-panel{max-height:200px;position:fixed;left:16px;right:16px;width:auto;z-index:300;border-radius:12px;overflow-y:auto;}
-}
+  .bf-cdd-panel{max-height:200px;position:absolute;left:0;right:0;width:auto;z-index:300;border-radius:12px;overflow-y:auto;}}
 
 /* ── Booking form ── */
 .bf{display:flex;flex-direction:column;gap:5px;}
