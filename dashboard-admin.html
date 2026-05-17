@@ -1423,7 +1423,7 @@ function openAddUserModal() {
   document.getElementById('pw-reveal').style.display='none';
   document.getElementById('modal-form').style.display='block';
   document.getElementById('m_active_wrap').style.display='none';
-  document.getElementById('modal-submit-btn').textContent='Create User';
+  document.getElementById('modal-actions').innerHTML='<button class="btn-modal-cancel" onclick="closeModal()">Cancel</button><button class="btn-modal-ok" id="modal-submit-btn" onclick="submitModal()">Create User</button>';
   ['m_first','m_last','m_email','m_phone'].forEach(id=>document.getElementById(id).value='');
   _resetModalCdds();
   document.getElementById('modal-actions').style.display='flex';
