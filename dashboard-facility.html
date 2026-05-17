@@ -559,6 +559,47 @@ input[type=number] { -moz-appearance:textfield; appearance:textfield; }
     grid-column:auto !important;grid-row:auto !important;
   }
 }
+
+  /* ── Maintenance table ── */
+  #maint-table-wrap{width:100%;}
+  #maint-table-wrap table{width:100%;table-layout:auto;border-collapse:collapse;}
+  #maint-table-wrap td,#maint-table-wrap th{vertical-align:middle;padding:12px 16px;}
+  #maint-table-wrap td:nth-child(3),
+  #maint-table-wrap td:nth-child(7){white-space:normal;word-break:break-word;}
+  #maint-table-wrap td:last-child{white-space:nowrap;text-align:center;}
+
+  /* ── Maintenance cards (mobile) ── */
+  .maint-cards-wrap{display:none;}
+  .maint-req-card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:14px 16px;margin:0 12px 10px;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .maint-card-header{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .maint-card-fac{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+  .maint-card-badges{display:flex;gap:5px;flex-shrink:0;align-items:center;}
+  .maint-card-desc{font-size:13px;color:var(--muted);line-height:1.5;}
+  .maint-card-meta{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--dim);}
+  .maint-card-meta span{display:flex;align-items:center;gap:4px;}
+  .maint-card-assign{font-size:12px;color:var(--muted);}
+  .btn-assign-card{
+    display:block;width:100%;padding:10px;margin-top:4px;
+    background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);
+    border-radius:10px;color:var(--green);font-size:13px;font-weight:600;
+    font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;
+    transition:background .18s;-webkit-tap-highlight-color:transparent;
+  }
+  .btn-assign-card:hover{background:rgba(52,211,153,.2);}
+
+  /* ── Show/hide per breakpoint ── */
+  @media(min-width:769px){
+    .maint-cards-wrap{display:none !important;}
+    #maint-table-wrap{display:block !important;}
+  }
+  @media(max-width:768px){
+    #maint-table-wrap{display:none !important;}
+    .maint-cards-wrap{display:block !important;}
+  }
 </style>
 </head>
 <body>
@@ -676,6 +717,7 @@ input[type=number] { -moz-appearance:textfield; appearance:textfield; }
     <button class="nav-item"                       onclick="openAddModal()"><span class="nav-icon">➕</span>Add Facility</button>
     <div class="nav-divider"></div>
     <div class="nav-section">Communications</div>
+    <button class="nav-item" id="snav-maint"      onclick="switchTab('maint')"><span class="nav-icon">🔧</span>Maintenance</button>
     <button class="nav-item" id="snav-announce"   onclick="switchTab('announce')"><span class="nav-icon">📢</span>Announcements</button>
     <a      class="nav-item" href="notifications.html"><span class="nav-icon">🔔</span>Notifications</a>
     <div class="nav-divider"></div>
@@ -929,6 +971,96 @@ input[type=number] { -moz-appearance:textfield; appearance:textfield; }
     </div>
   </div>
 
+  <!-- ════ MAINTENANCE REQUESTS ════ -->
+  <div class="tab-pane" id="tab-maint">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>🔧 Maintenance Requests</h3><p id="maint-sub">Loading…</p></div>
+        </div>
+        <div class="list-controls">
+          <div class="search-wrap">
+            <input class="search-inp" id="maint-search" type="text"
+                   placeholder="Search facility, reporter or description…" oninput="renderMaintRequests()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="maint-status-btn" onclick="toggleCdd('maint-status')">
+              <span id="maint-status-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel" id="maint-status-panel">
+              <div class="cdd-opt selected" data-val=""            onclick="setCdd('maint-status','','All Status',renderMaintRequests)">All Status</div>
+              <div class="cdd-opt" data-val="Pending"              onclick="setCdd('maint-status','Pending','Pending',renderMaintRequests)">Pending</div>
+              <div class="cdd-opt" data-val="In Progress"          onclick="setCdd('maint-status','In Progress','In Progress',renderMaintRequests)">In Progress</div>
+              <div class="cdd-opt" data-val="Completed"            onclick="setCdd('maint-status','Completed','Completed',renderMaintRequests)">Completed</div>
+            </div>
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="maint-pri-btn" onclick="toggleCdd('maint-pri')">
+              <span id="maint-pri-label">All Priority</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel align-right" id="maint-pri-panel">
+              <div class="cdd-opt selected" data-val="" onclick="setCdd('maint-pri','','All Priority',renderMaintRequests)">All Priority</div>
+              <div class="cdd-opt" data-val="High"   onclick="setCdd('maint-pri','High','High',renderMaintRequests)">High</div>
+              <div class="cdd-opt" data-val="Medium" onclick="setCdd('maint-pri','Medium','Medium',renderMaintRequests)">Medium</div>
+              <div class="cdd-opt" data-val="Low"    onclick="setCdd('maint-pri','Low','Low',renderMaintRequests)">Low</div>
+            </div>
+          </div>
+          <input type="hidden" id="maint-status-filter" value="">
+          <input type="hidden" id="maint-pri-filter"    value="">
+        </div>
+        <!-- Desktop table -->
+        <div class="table-wrap" id="maint-table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Facility</th><th>Description</th><th>Reported By</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody id="maint-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--dim)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <!-- Mobile cards -->
+        <div class="maint-cards-wrap" id="maint-cards"></div>
+        <div class="pagination" id="maint-pagination" style="display:none;">
+          <div class="page-info" id="maint-page-info">—</div>
+          <div class="page-btns" id="maint-page-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ASSIGN TASK MODAL ════ -->
+  <div class="modal-backdrop" id="assign-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);align-items:center;justify-content:center;" onclick="e=>e.target===this&&closeAssignModal()">
+    <div style="background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:28px;width:min(440px,92vw);max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div>
+          <h3 style="font-family:'Inter',sans-serif;font-size:17px;font-weight:700;color:#fff;">Assign Task</h3>
+          <p id="assign-modal-sub" style="font-size:12px;color:var(--muted);margin-top:3px;"></p>
+        </div>
+        <button onclick="closeAssignModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 8px;">✕</button>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:8px;">Staff Member</label>
+        <div class="mf-cdd" id="mfcdd-assign-staff">
+          <button type="button" class="mf-cdd-btn" onclick="toggleMfCdd('assign-staff')">
+            <span class="mf-cdd-label" id="mfcdd-assign-staff-label">Select staff member…</span>
+            <span class="mf-cdd-arrow">▾</span>
+          </button>
+          <div class="mf-cdd-panel" id="mfcdd-assign-staff-panel" style="max-height:180px;overflow-y:auto;">
+            <div style="padding:12px;text-align:center;font-size:13px;color:var(--dim)">Loading…</div>
+          </div>
+        </div>
+        <input type="hidden" id="assign-staff-id" value="">
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:8px;">Note <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <textarea id="assign-note" rows="3" placeholder="e.g. Check the AC unit on floor 2…"
+          style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;resize:vertical;"></textarea>
+      </div>
+      <div class="m-alert" id="assign-alert"></div>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button onclick="closeAssignModal()" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;">Cancel</button>
+        <button id="assign-submit-btn" onclick="submitAssign()" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#059669,#34d399);color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Assign Task</button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
 
 <!-- ── Centred Date Picker Modal ── -->
@@ -954,6 +1086,7 @@ input[type=number] { -moz-appearance:textfield; appearance:textfield; }
     <button class="slide-nav-item" id="snav-m-bookings"   onclick="mobileNav('bookings')">  <span class="slide-nav-icon">📅</span>Bookings</button>
     <button class="slide-nav-item" id="snav-m-facilities" onclick="mobileNav('facilities')"><span class="slide-nav-icon">🏛️</span>Facilities</button>
     <button class="slide-nav-item" id="snav-m-announce"   onclick="mobileNav('announce')">  <span class="slide-nav-icon">📢</span>Announce</button>
+    <button class="slide-nav-item" id="snav-m-maint"      onclick="mobileNav('maint')"><span class="slide-nav-icon">🔧</span>Maint.</button>
     <button class="slide-nav-item"                         onclick="closeSlideNav();openAddModal()"><span class="slide-nav-icon">➕</span>Add Facility</button>
     <button class="slide-nav-item"                         onclick="closeSlideNav();window.location.href='profile.html'"><span class="slide-nav-icon">👤</span>My Profile</button>
     <button class="slide-nav-item"                         onclick="closeSlideNav();window.location.href='notifications.html'"><span class="slide-nav-icon">🔔</span>Notifications</button>
@@ -1217,12 +1350,13 @@ function switchTab(tab) {
   document.getElementById('tab-'+tab).classList.add('active');
   const tb=document.getElementById('tab-btn-'+tab);if(tb)tb.classList.add('active');
   const sn=document.getElementById('snav-'+tab);if(sn)sn.classList.add('active');
-  const titles={overview:'Facility Dashboard',bookings:'Booking Management',facilities:'Facility Management',announce:'Announcements'};
+  const titles={overview:'Facility Dashboard',bookings:'Booking Management',facilities:'Facility Management',maint:'Maintenance Requests',announce:'Announcements'};
   document.getElementById('page-title').textContent=titles[tab]||'Dashboard';
   _activeTab=tab; updateSlideNavActive(tab);
   if(tab==='bookings')   loadAllBookings();
   if(tab==='facilities') loadFacilities();
   if(tab==='announce')   loadAnnouncements();
+  if(tab==='maint')      loadMaintRequests();
   if(window.innerWidth<=768) closeSidebar();
 }
 document.getElementById('snav-overview').classList.add('active');
@@ -1793,6 +1927,7 @@ setInterval(async () => {
   if (_activeTab === 'announce' || _activeTab === 'overview') loadAnnouncements();
   // Bookings: silent 5s refresh — keeps table current without user action
   if (_activeTab === 'bookings') loadAllBookings();
+  if (_activeTab === 'maint') loadMaintRequests();
   // Notifications: silent badge refresh every 5s
   const nd = await api('api/notifications.php');
   if (!nd.success) return;
@@ -1804,6 +1939,164 @@ setInterval(async () => {
   document.getElementById('notif-count').classList.toggle('hidden', unread === 0);
   if (_notifOpen) loadNotifications();
 }, 5000);
+
+// ════════════════════════════════════════════════
+//  Maintenance Requests (Facility Manager view)
+// ════════════════════════════════════════════════
+let _maintReqs = [], _maintPage = 1;
+const MAINT_PER_PAGE_DESKTOP = 10;
+const MAINT_PER_PAGE_MOBILE  = 5;
+function getMaintPerPage() { return window.innerWidth <= 768 ? MAINT_PER_PAGE_MOBILE : MAINT_PER_PAGE_DESKTOP; }
+
+async function loadMaintRequests() {
+  const data = await api('api/maintenance.php');
+  if (!data.success) return;
+  _maintReqs = data.requests || [];
+  const open = _maintReqs.filter(r => r.status_name !== 'Completed').length;
+  if (document.getElementById('maint-sub'))
+    document.getElementById('maint-sub').textContent =
+      _maintReqs.length + ' request' + (_maintReqs.length!==1?'s':'') + ' · ' + open + ' open';
+  renderMaintRequests();
+}
+
+function getFilteredMaintReqs() {
+  const q   = (document.getElementById('maint-search')?.value||'').toLowerCase();
+  const st  = document.getElementById('maint-status-filter')?.value||'';
+  const pri = document.getElementById('maint-pri-filter')?.value||'';
+  return _maintReqs.filter(r => {
+    if (q && !(r.facility_name||'').toLowerCase().includes(q)
+          && !(r.reported_by_name||'').toLowerCase().includes(q)
+          && !(r.description||'').toLowerCase().includes(q)) return false;
+    if (st  && r.status_name !== st)  return false;
+    if (pri && r.priority    !== pri) return false;
+    return true;
+  });
+}
+
+const PRI_CLS_M = {High:'high',Medium:'medium',Low:'low'};
+const ST_CLS_M  = {'Pending':'pending','In Progress':'in-progress','Completed':'completed'};
+
+function renderMaintRequests() {
+  const filtered = getFilteredMaintReqs();
+  const perPage  = getMaintPerPage();
+  const total    = filtered.length;
+  const pages    = Math.ceil(total/perPage)||1;
+  _maintPage     = Math.min(_maintPage, pages);
+  const slice    = filtered.slice((_maintPage-1)*perPage, _maintPage*perPage);
+  const tbody    = document.getElementById('maint-tbody');
+  const cards    = document.getElementById('maint-cards');
+  if (!tbody && !cards) return;
+  if (!slice.length) {
+    if(tbody) tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--dim)">No requests match.</td></tr>';
+    if(cards) cards.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No requests found.</div>';
+  } else {
+    if(tbody) tbody.innerHTML = slice.map(r => `
+      <tr>
+        <td style="font-size:11px;color:var(--dim);white-space:nowrap;">#${r.request_id}</td>
+        <td><strong>${esc(r.emoji||'🏛️')} ${esc(r.facility_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.location||'')}</span></td>
+        <td>${esc(r.description||'')}</td>
+        <td style="white-space:nowrap;">${esc(r.reported_by_name||'—')}</td>
+        <td style="white-space:nowrap;"><span class="badge ${PRI_CLS_M[r.priority]||'warning'}">${esc(r.priority)}</span></td>
+        <td style="white-space:nowrap;"><span class="badge ${ST_CLS_M[r.status_name]||'pending'}">${esc(r.status_name)}</span></td>
+        <td style="font-size:12px;color:var(--muted);">${r.assigned_names ? esc(r.assigned_names) : '<em style="color:var(--dim)">Unassigned</em>'}</td>
+        <td style="font-size:11px;color:var(--dim);white-space:nowrap;">${r.created_at}</td>
+        <td>${r.status_name!=='Completed'?`<button class="panel-action" style="font-size:11px;padding:5px 12px;" onclick="openAssignModal(${r.request_id})">+ Assign</button>`:''}</td>
+      </tr>`).join('');
+    if(cards) cards.innerHTML = slice.map(r => `
+      <div class="maint-req-card">
+        <div class="maint-card-header">
+          <div class="maint-card-fac">${esc(r.emoji||'🏛️')} ${esc(r.facility_name)}</div>
+          <div class="maint-card-badges">
+            <span class="badge ${PRI_CLS_M[r.priority]||'warning'}" style="font-size:10px;">${esc(r.priority)}</span>
+            <span class="badge ${ST_CLS_M[r.status_name]||'pending'}" style="font-size:10px;">${esc(r.status_name)}</span>
+          </div>
+        </div>
+        <div class="maint-card-desc">${esc(r.description||'')}</div>
+        <div class="maint-card-meta">
+          <span>👤 ${esc(r.reported_by_name||'—')}</span>
+          <span>📅 ${r.created_at}</span>
+          <span>🔧 ${r.assigned_names ? esc(r.assigned_names) : '<em style="color:var(--dim)">Not yet assigned</em>'}</span>
+        </div>
+        ${r.status_name!=='Completed'?`<button class="btn-assign-card" onclick="openAssignModal(${r.request_id})">+ Assign Task</button>`:''}</div>`).join('');
+  }
+  buildMaintPagination(_maintPage, pages, total, perPage);
+}
+function gotoMaintPage(p) { _maintPage = p; renderMaintRequests(); }
+
+function buildMaintPagination(cur, pages, total, perPage) {
+  const pag  = document.getElementById('maint-pagination');
+  const info = document.getElementById('maint-page-info');
+  const btns = document.getElementById('maint-page-btns');
+  if (!pag) return;
+  if (pages <= 1) { pag.style.display='none'; return; }
+  pag.style.display = 'flex';
+  const start = (cur-1)*perPage+1, end = Math.min(cur*perPage, total);
+  if(info) info.innerHTML = `Showing <b>${start}–${end}</b> of <b>${total}</b>`;
+  let h = '';
+  const btn = (p,l,a,d) => `<button class="page-btn${a?' active-page':''}" ${d?'disabled':''} onclick="gotoMaintPage(${p})">${l}</button>`;
+  h += btn(cur-1,'← Prev',false,cur<=1);
+  h += btn(1,'1',cur===1,false);
+  const ws=Math.max(2,cur-1), we=Math.min(pages-1,cur+1);
+  if(ws>2) h+='<span style="color:var(--dim);padding:0 4px;">…</span>';
+  for(let i=ws;i<=we;i++) h+=btn(i,i,cur===i,false);
+  if(we<pages-1) h+='<span style="color:var(--dim);padding:0 4px;">…</span>';
+  if(pages>1) h+=btn(pages,pages,cur===pages,false);
+  h+=btn(cur+1,'Next →',false,cur>=pages);
+  if(btns) btns.innerHTML=h;
+}
+
+// ── Assign Task Modal ─────────────────────────────────────────────────
+let _assigningReqId = null;
+
+async function openAssignModal(reqId) {
+  _assigningReqId = reqId;
+  const r = _maintReqs.find(x => x.request_id === reqId) || {};
+  document.getElementById('assign-modal-sub').textContent = `Request #${reqId} — ${r.facility_name||''}`;
+  document.getElementById('assign-alert').className = 'm-alert';
+  document.getElementById('assign-note').value = '';
+  document.getElementById('assign-staff-id').value = '';
+  document.getElementById('mfcdd-assign-staff-label').textContent = 'Select staff member…';
+  const panel = document.getElementById('mfcdd-assign-staff-panel');
+  panel.classList.remove('open');
+  panel.innerHTML = '<div style="padding:12px;text-align:center;font-size:13px;color:var(--dim)">Loading…</div>';
+  document.getElementById('assign-modal').style.display = 'flex';
+  const data = await api('api/maintenance.php','POST',{action:'get_staff'});
+  if (!data.success || !data.staff?.length) {
+    panel.innerHTML = '<div style="padding:12px;text-align:center;font-size:13px;color:var(--dim)">No active maintenance staff.</div>';
+    return;
+  }
+  panel.innerHTML = data.staff.map(s =>
+    `<div class="mf-cdd-opt" onclick="setAssignStaff(${s.user_id},'${esc(s.name)}')">${esc(s.name)} <span style="font-size:11px;color:var(--dim);">${esc(s.email)}</span></div>`
+  ).join('');
+}
+function setAssignStaff(id, name) {
+  document.getElementById('assign-staff-id').value = id;
+  document.getElementById('mfcdd-assign-staff-label').textContent = name;
+  const panel = document.getElementById('mfcdd-assign-staff-panel');
+  panel.classList.remove('open');
+}
+function closeAssignModal() {
+  document.getElementById('assign-modal').style.display = 'none';
+  _assigningReqId = null;
+}
+async function submitAssign() {
+  const staffId = parseInt(document.getElementById('assign-staff-id').value);
+  const note    = document.getElementById('assign-note').value.trim();
+  const alertEl = document.getElementById('assign-alert');
+  const btn     = document.getElementById('assign-submit-btn');
+  alertEl.className = 'm-alert';
+  if (!staffId) { alertEl.textContent='✕ Please select a staff member.'; alertEl.className='m-alert show error'; return; }
+  btn.disabled=true; btn.textContent='Assigning…';
+  const data = await api('api/maintenance.php','POST',{action:'assign_task',request_id:_assigningReqId,staff_id:staffId,note});
+  if (!data.success) {
+    alertEl.textContent='✕ '+data.message; alertEl.className='m-alert show error';
+    btn.disabled=false; btn.textContent='Assign Task'; return;
+  }
+  alertEl.textContent='✓ Task assigned!'; alertEl.className='m-alert show success';
+  btn.disabled=false; btn.textContent='Assign Task';
+  setTimeout(()=>{ closeAssignModal(); loadMaintRequests(); }, 800);
+}
+
 </script>
 </body>
 </html>
