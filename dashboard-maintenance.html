@@ -476,7 +476,7 @@
             </button>
             <div class="cdd-panel" id="task-status-panel">
               <div class="cdd-opt selected" data-val="" onclick="setCdd('task-status','','All Status',renderTasks)">All Status</div>
-              <div class="cdd-opt" data-val="open"   onclick="setCdd('task-status','open','Open',renderTasks)">Open</div>
+              <div class="cdd-opt" data-val="Not Completed" onclick="setCdd('task-status','Not Completed','Not Completed',renderTasks)">Not Completed</div>
               <div class="cdd-opt" data-val="done"   onclick="setCdd('task-status','done','Completed',renderTasks)">Completed</div>
             </div>
           </div>
@@ -994,7 +994,7 @@ function getFilteredTasks() {
   const priority = document.getElementById('task-priority-filter')?.value || '';
   return _tasks.filter(t => {
     if (q && !(t.description||'').toLowerCase().includes(q) && !(t.facility_name||'').toLowerCase().includes(q)) return false;
-    if (status === 'open' && t.completed) return false;
+    if (status === 'Not Completed' && t.completed) return false;
     if (status === 'done' && !t.completed) return false;
     if (priority && t.priority !== priority) return false;
     return true;

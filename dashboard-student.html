@@ -582,7 +582,7 @@
                   <div class="cdd-opt" data-val="High"   onclick="setCdd('mr-priority','High','🔴 High — urgent / safety risk',null)">🔴 High — urgent / safety risk</div>
                 </div>
               </div>
-              <input type="hidden" id="mr-priority" value="Medium">
+              <input type="hidden" id="mr-priority-filter" value="Medium">
             </div>
             <div class="bf"><label>Description</label><textarea id="mr-desc" rows="4" placeholder="Describe the issue — what's wrong, where exactly, how long it's been happening…"></textarea></div>
             <div class="bf-alert" id="mr-alert"></div>
@@ -1229,7 +1229,7 @@ async function deleteMyReport(requestId) {
 }
 
 async function submitReport() {
-  const facId=document.getElementById('mr-facility').value, pri=document.getElementById('mr-priority').value;
+  const facId=document.getElementById('mr-facility').value, pri=document.getElementById('mr-priority-filter').value;
   const desc =document.getElementById('mr-desc').value.trim();
   const alertEl=document.getElementById('mr-alert'); alertEl.className='bf-alert';
   if(!facId){alertEl.className='bf-alert show error';alertEl.textContent='✕ Please select a facility.';return;}
@@ -1241,7 +1241,7 @@ async function submitReport() {
   if(!data.success){alertEl.textContent='✕ '+(data.message||'Failed.');alertEl.className='bf-alert show error';btn.disabled=false;btn.innerHTML='🔧 Submit Report';return;}
   alertEl.textContent='✓ Report submitted! Maintenance team has been notified.';alertEl.className='bf-alert show success';
   document.getElementById('mr-desc').value='';
-  document.getElementById('mr-priority').value='Medium';
+  document.getElementById('mr-priority-filter').value='Medium';
   document.getElementById('mr-priority-label').textContent='🟡 Medium — needs attention';
   document.querySelectorAll('#mr-priority-panel .cdd-opt').forEach(o=>o.classList.toggle('selected',o.dataset.val==='Medium'));
   loadMyReports(); loadNotifications();
@@ -1321,9 +1321,10 @@ function buildFacDropdowns() {
   }
   const mrPanel = document.getElementById('bfcdd-mr-facility-panel');
   if (mrPanel) {
-    mrPanel.innerHTML = window._stFacils.length
-      ? window._stFacils.map(f => `<div class="bf-cdd-opt" data-val="${f.facility_id}" onclick="setMrFacility(${f.facility_id},'${esc(f.emoji||'🏛️')} ${esc(f.facility_name)}')">${esc(f.emoji||'🏛️')} ${esc(f.facility_name)} — ${esc(f.location||'')}</div>`).join('')
-      : '<div class="bf-cdd-opt" style="opacity:.5;pointer-events:none;">No facilities found</div>';
+    const mrAvail = window._stFacils.filter(f => f.is_available);
+    mrPanel.innerHTML = mrAvail.length
+      ? mrAvail.map(f => `<div class="bf-cdd-opt" data-val="${f.facility_id}" onclick="setMrFacility(${f.facility_id},'${esc(f.emoji||'🏛️')} ${esc(f.facility_name)}')">${esc(f.emoji||'🏛️')} ${esc(f.facility_name)} — ${esc(f.location||'')}</div>`).join('')
+      : '<div class="bf-cdd-opt" style="opacity:.5;pointer-events:none;">No facilities available</div>';
   }
 }
 

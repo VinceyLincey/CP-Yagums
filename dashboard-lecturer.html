@@ -493,7 +493,7 @@
               </div>
             </div>
             <div class="bf"><label>Priority</label>
-              <input type="hidden" id="mr-priority" value="Medium">
+              <input type="hidden" id="mr-priority-filter" value="Medium">
               <div class="bf-cdd" id="bfcdd-mr-pri">
                 <button type="button" class="bf-cdd-btn" onclick="toggleBfCdd('mr-pri')">
                   <span class="bf-cdd-label" id="bfcdd-mr-pri-label"><span class="pri-dot medium"></span>Medium — needs attention</span>
@@ -989,7 +989,7 @@ document.addEventListener('click', e => {
   }
 });
 function setBfPriority(val, dotClass, label) {
-  document.getElementById('mr-priority').value = val;
+  document.getElementById('mr-priority-filter').value = val;
   const lbl = document.getElementById('bfcdd-mr-pri-label');
   if (lbl) lbl.innerHTML = `<span class="pri-dot ${dotClass}"></span>${label}`;
   const panel = document.getElementById('bfcdd-mr-pri-panel');
@@ -1120,7 +1120,7 @@ async function deleteReport(requestId){
 }
 
 async function submitReport(){
-  const facId=document.getElementById('mr-facility').value,pri=document.getElementById('mr-priority').value;
+  const facId=document.getElementById('mr-facility').value,pri=document.getElementById('mr-priority-filter').value;
   const desc=document.getElementById('mr-desc').value.trim();
   const alertEl=document.getElementById('mr-alert');alertEl.className='f-alert';
   if(!facId){alertEl.textContent='✕ Please select a facility.';alertEl.className='f-alert show error';return;}
