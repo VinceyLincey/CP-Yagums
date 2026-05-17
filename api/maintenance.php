@@ -216,15 +216,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            ->execute([$facilityId, $userId, $description, $priority]);
         $reqId = (int) $db->lastInsertId();
 
-        // Auto-assign a task to every active Maintenance Staff member
-        // so the report appears immediately on their dashboard
-        if (!empty($staff)) {
-            $taskInsert = $db->prepare('INSERT INTO maintenancetasks (request_id, assigned_to, progress, completed) VALUES (?,?,?,0)');
-            foreach ($staff as $s) {
-                $taskInsert->execute([$reqId, $s['user_id'], '']);
-            }
-        }
-
         // Notify the reporter
         $db->prepare("INSERT INTO notifications (user_id,message,type,is_read) VALUES (?,?,?,0)")
            ->execute([$userId, "🔧 Your maintenance report for {$facRow['facility_name']} has been submitted and is pending review.", 'info']);
@@ -259,8 +250,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dupChk = $db->prepare('SELECT task_id FROM maintenancetasks WHERE request_id=? AND assigned_to=? LIMIT 1');
         $dupChk->execute([$requestId, $staffId]);
         if ($dupChk->fetch()) jsonResponse(false, 'Already assigned to this staff member.');
-        $db->prepare('INSERT INTO maintenancetasks (request_id, assigned_to, progress, completed) VALUES (?,?,?,0)')
-           ->execute([$requestId, $staffId, $note]);
+        $db->prepare('INSERT INTO maintenancetasks (request_id, assigned_to, assigned_by, progress, completed) VALUES (?,?,?,?,0)')
+            ->execute([$requestId, $staffId, $userId, $note]);
         $db->prepare('UPDATE maintenancerequests SET status_id=2 WHERE request_id=? AND status_id=1')
            ->execute([$requestId]);
         $db->prepare("INSERT INTO notifications (user_id,message,type,is_read) VALUES (?,?,?,0)")
@@ -302,6 +293,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Update task progress — also mark completed if status is Completed (3)
         $db->prepare('UPDATE maintenancetasks SET progress=?, completed=? WHERE task_id=?')
            ->execute([$progress, ($statusId === 3 ? 1 : 0), $taskId]);
+        // Sync progress notes to all other tasks on the same request
+        $db->prepare('UPDATE maintenancetasks SET progress=? WHERE request_id=? AND task_id != ?')
+           ->execute([$progress, $row['request_id'], $taskId]);
+           
+        if ($statusId === 3) {
+            $db->prepare('UPDATE maintenancetasks SET completed=1, progress=COALESCE(NULLIF(progress,""),"Task completed") WHERE request_id=? AND task_id != ?')
+               ->execute([$row['request_id'], $taskId]);
+        }
 
         // Update request status
         $db->prepare('UPDATE maintenancerequests SET status_id=? WHERE request_id=?')
@@ -339,6 +338,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Mark task complete
         $db->prepare('UPDATE maintenancetasks SET completed=1, progress=COALESCE(NULLIF(progress,""),"Task completed") WHERE task_id=?')
            ->execute([$taskId]);
+        // Mark all other tasks for the same request as completed too
+        $db->prepare('UPDATE maintenancetasks SET completed=1, progress=COALESCE(NULLIF(progress,""),"Task completed") WHERE request_id=? AND task_id != ?')
+           ->execute([$row['request_id'], $taskId]);
 
         // Mark request completed (status_id=3)
         $db->prepare('UPDATE maintenancerequests SET status_id=3 WHERE request_id=?')
