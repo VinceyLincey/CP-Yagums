@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>YAGUMS – Facility Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── Tab panes ── */
+.tab-pane{display:none;} .tab-pane.active{display:block;}
+@media(max-width:768px){.page-tabs{display:none !important;}}
+
+/* ── Filter / search / pagination ── */
+.list-controls{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:0;}
+.search-wrap::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;}
+.search-inp{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px 8px 32px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.search-inp:focus{border-color:var(--green);}
+.search-inp::placeholder{color:var(--dim);}
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+.page-info{font-size:12px;color:var(--muted);}
+.page-info b{color:var(--text);}
+.page-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.page-btn{font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.page-btn:hover:not(:disabled){border-color:var(--green);color:var(--text);}
+.page-btn:disabled{opacity:.35;cursor:not-allowed;}
+.page-btn.active-page{background:rgba(52,211,153,.2);border-color:var(--green);color:var(--green);}
+
+/* ── Custom dropdown (green theme — no OS picker on mobile) ── */
+.cdd-wrap{position:relative;flex-shrink:0;}
+.cdd-btn{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap;transition:border-color .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;}
+.cdd-btn:focus,.cdd-btn.open{border-color:var(--green);outline:none;}
+.cdd-arrow{font-size:10px;color:var(--muted);transition:transform .2s;pointer-events:none;}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg);}
+.cdd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:120;min-width:150px;background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.55);overflow:hidden;}
+.cdd-panel.open{display:block;animation:cddIn .15s ease;}
+.cdd-panel.align-right{left:auto;right:0;}
+@keyframes cddIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.cdd-opt{padding:9px 12px;font-size:13px;color:var(--muted);border-radius:8px;cursor:pointer;transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;white-space:nowrap;}
+.cdd-opt:hover{background:rgba(52,211,153,.1);color:var(--text);}
+.cdd-opt.selected{color:var(--green);font-weight:600;}
+
+/* ── Date picker button + centred modal ── */
+.date-btn{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap;transition:border-color .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex-shrink:0;}
+.date-btn:focus,.date-btn.active{border-color:var(--green);outline:none;}
+.date-btn .date-clear{font-size:11px;color:var(--muted);margin-left:2px;transition:color .15s;}
+.date-btn .date-clear:hover{color:var(--red);}
+/* Centred date picker overlay */
+.date-modal-backdrop{display:none;position:fixed;inset:0;z-index:180;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center;}
+.date-modal-backdrop.open{display:flex;}
+.date-modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:20px;width:min(300px,90vw);box-shadow:0 12px 40px rgba(0,0,0,.6);animation:cddIn .2s ease;}
+.date-modal-title{font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;margin-bottom:14px;text-align:center;}
+.date-modal input[type=date]{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text);outline:none;-webkit-appearance:none;color-scheme:dark;text-align:center;margin-bottom:12px;}
+.date-modal input[type=date]:focus{border-color:var(--green);}
+.date-modal-actions{display:flex;gap:8px;}
+.date-modal-clear{flex:1;padding:9px;border-radius:9px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.date-modal-clear:hover{border-color:var(--red);color:var(--red);}
+.date-modal-apply{flex:2;padding:9px;border-radius:9px;border:none;background:linear-gradient(135deg,#059669,#34d399);color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+@media(max-width:768px){.date-btn{flex:1;min-width:0;font-size:11px;padding:7px 10px;}}
+
+@media(max-width:768px){
+  .list-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;}
+  .list-controls .search-wrap{width:100%;flex:0 0 100%;}
+  .list-controls .cdd-wrap{flex:1;min-width:0;}
+  .cdd-btn{font-size:11px;padding:7px 10px;}
+  .cdd-panel{min-width:130px;}
+  .cdd-opt{padding:10px 12px;font-size:12px;}
+  .pagination{padding:10px 12px;flex-direction:column;align-items:center;gap:8px;}
+  .page-btns{justify-content:center;}
+}
+
+/* ── Maintenance table ── */
+#maint-table-wrap{width:100%;}
+#maint-table-wrap{margin:0;}
+#maint-table-wrap table{width:100%;table-layout:auto;border-collapse:collapse;}
+#maint-table-wrap td,#maint-table-wrap th{vertical-align:middle;padding:12px 16px;}
+/* Allow long text to wrap — no horizontal scroll */
+#maint-table-wrap td:nth-child(3),
+#maint-table-wrap td:nth-child(7){white-space:normal;word-break:break-word;}
+/* Action column — button stays on one line */
+#maint-table-wrap td:last-child{white-space:nowrap;text-align:center;}
+
+/* ── Maintenance cards (mobile) ── */
+.maint-cards-wrap{display:none;}
+.maint-req-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:14px 16px;margin:0 12px 10px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.maint-card-header{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.maint-card-fac{
+  font-size:13px;font-weight:700;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;
+}
+.maint-card-badges{display:flex;gap:5px;flex-shrink:0;align-items:center;}
+.maint-card-desc{font-size:13px;color:var(--muted);line-height:1.5;}
+.maint-card-meta{
+  display:flex;flex-direction:column;gap:3px;
+  font-size:11px;color:var(--dim);
+}
+.maint-card-meta span{display:flex;align-items:center;gap:4px;}
+.maint-card-assign{font-size:12px;color:var(--muted);}
+.btn-assign-card{
+  display:block;width:100%;padding:10px;margin-top:4px;
+  background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);
+  border-radius:10px;color:var(--green);font-size:13px;font-weight:600;
+  font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;
+  transition:background .18s;-webkit-tap-highlight-color:transparent;
+}
+.btn-assign-card:hover{background:rgba(52,211,153,.2);}
+
+/* ── Show/hide per breakpoint ── */
+@media(min-width:769px){
+  .maint-cards-wrap{display:none !important;}
+  #maint-table-wrap{display:block !important;}
+}
+@media(max-width:768px){
+  #maint-table-wrap{display:none !important;}
+  .maint-cards-wrap{display:block !important;}
+}
+
+/* ── Sidebar ── */
+.sb-user-wrap{display:flex;align-items:center;gap:12px;padding:14px 18px;margin:8px 10px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:14px;cursor:pointer;transition:all .2s;text-decoration:none;}
+.sb-user-wrap:hover{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.4);}
+.sb-avatar-img{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,#059669,#34d399);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;border:2px solid rgba(52,211,153,.4);}
+.sb-avatar-img img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+.sb-info{flex:1;min-width:0;}
+.sb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-role-lbl{font-size:10px;color:var(--muted);margin-top:1px;}
+.sb-edit-hint{font-size:9px;color:var(--dim);margin-top:2px;}
+.nav-section{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 14px;margin:14px 0 4px;}
+.nav-divider{height:1px;background:rgba(37,37,64,.7);margin:10px 14px;}
+
+/* ── Booking rows ── */
+.book-row{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid rgba(37,37,64,.5);transition:background .2s;flex-wrap:wrap;}
+.book-row:last-child{border-bottom:none;}
+.book-row:hover{background:rgba(52,211,153,.03);}
+.book-info{flex:1;min-width:0;}
+.book-fac{font-size:13px;font-weight:600;color:var(--text);}
+.book-meta{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.book-actions{display:flex;gap:6px;flex-shrink:0;}
+.bk-action-btns{display:flex;gap:6px;align-items:center;}
+.btn-approve,.btn-reject{font-size:11px;font-weight:700;padding:5px 0;border-radius:8px;min-width:72px;text-align:center;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-approve{background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);color:var(--green);}
+.btn-approve:hover{background:rgba(52,211,153,.25);}
+.btn-reject{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.btn-reject:hover{background:rgba(248,113,113,.22);}
+
+/* ── Facility cards ── */
+.fac-card-item:hover{border-color:var(--border2);transform:translateY(-2px);}
+.fac-card-item.unavailable{opacity:.55;}
+.fci-emoji{font-size:32px;margin-bottom:10px;display:block;}
+.fci-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.fci-meta{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;}
+.fci-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.btn-fci{font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-fci:hover{border-color:var(--purple);color:var(--text);}
+.btn-fci.del{border-color:rgba(248,113,113,.3);color:var(--red);}
+.btn-fci.del:hover{background:rgba(248,113,113,.1);}
+.btn-fci.disable{border-color:rgba(248,113,113,.3);color:var(--red);}
+.btn-fci.disable:hover{background:rgba(248,113,113,.08);}
+.btn-fci.enable{border-color:rgba(52,211,153,.3);color:var(--green);}
+.btn-fci.enable:hover{background:rgba(52,211,153,.08);}
+.fci-avail{position:absolute;top:12px;right:12px;}
+/* ── Add facility — small square box ── */
+.add-fac-card{background:transparent;border:2px dashed var(--border2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .22s;height:80px;align-self:start;grid-column:1;grid-row:3;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.add-fac-card:hover{border-color:var(--green);background:rgba(52,211,153,.05);}
+.add-fac-card:hover .add-icon,.add-fac-card:hover .add-lbl{color:var(--green);}
+.add-icon{font-size:20px;color:var(--dim);}
+.add-lbl{font-size:11px;font-weight:600;color:var(--dim);}
+
+/* ── Modals ── */
+.modal-backdrop{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:26px;width:100%;max-width:500px;position:relative;max-height:90vh;overflow-y:auto;animation:modalIn .3s cubic-bezier(.16,1,.3,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-close{position:absolute;top:14px;right:16px;background:transparent;border:none;font-size:20px;color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.modal-close:hover{color:var(--text);}
+.modal-title{font-family:'Inter',sans-serif;font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:18px;}
+.mf{display:flex;flex-direction:column;gap:6px;margin-bottom:13px;}
+.mf label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.mf input,.mf select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.mf input:focus,.mf select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(52,211,153,.1);}
+.mf select option{background:var(--surface);}
+.mf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.m-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-bottom:12px;line-height:1.5;}
+.m-alert.show{display:block;}
+.m-alert.error{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.m-alert.success{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.btn-modal-ok{flex:1;background:linear-gradient(135deg,#059669,#34d399);border:none;border-radius:10px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-modal-ok:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px rgba(52,211,153,.3);}
+.btn-modal-ok:disabled{opacity:.6;cursor:not-allowed;}
+.btn-modal-cancel{background:transparent;border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--muted);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+.btn-modal-cancel:hover{border-color:var(--purple);color:var(--text);}
+
+/* ── Emoji picker ── */
+.emoji-picker-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block;}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:150px;overflow-y:auto;margin-bottom:14px;}
+.emoji-grid::-webkit-scrollbar{width:4px;}
+.emoji-grid::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.emoji-opt{width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:8px;cursor:pointer;transition:background .15s;border:2px solid transparent;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.emoji-opt:hover{background:rgba(124,58,237,.15);}
+.emoji-opt.selected{border-color:var(--green);background:rgba(52,211,153,.15);}
+.emoji-preview{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:10px;padding:10px 14px;text-align:center;}
+.emoji-preview span:first-child{font-size:28px;}
+.emoji-preview-text{font-size:13px;color:var(--muted);}
+
+/* ── Announcements ── */
+.ann-form{padding:18px;display:flex;flex-direction:column;gap:12px;}
+.ann-field{display:flex;flex-direction:column;gap:6px;}
+.ann-field label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.ann-field input,.ann-field textarea,.ann-field select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;resize:none;}
+.ann-field input:focus,.ann-field textarea:focus,.ann-field select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(52,211,153,.1);}
+.ann-field select option{background:var(--surface);}
+.btn-post{width:100%;background:linear-gradient(135deg,#059669,#34d399);border:none;border-radius:10px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(52,211,153,.22);-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-post:hover:not(:disabled){transform:translateY(-1px);}
+.btn-post:disabled{opacity:.6;cursor:not-allowed;}
+.f-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-top:4px;line-height:1.5;}
+.f-alert.show{display:block;}
+.f-alert.error{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.f-alert.success{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);}
+.ann-item{padding:13px 18px;border-bottom:1px solid rgba(37,37,64,.5);}
+.ann-item:last-child{border-bottom:none;}
+.ann-item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.ann-item-title{font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;}
+.ann-item-msg{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:4px;}
+.ann-item-meta{font-size:11px;color:var(--dim);}
+.ann-item-votes{display:flex;gap:6px;margin-top:4px;}
+.ann-item-actions{display:flex;gap:5px;flex-shrink:0;}
+.btn-ann-act{font-size:10px;padding:3px 9px;border-radius:6px;border:1px solid;background:transparent;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;font-weight:600;-webkit-tap-highlight-color:transparent;}
+.btn-ann-edit{border-color:rgba(96,165,250,.35);color:var(--blue);}
+.btn-ann-edit:hover{background:rgba(96,165,250,.1);}
+.btn-ann-del{border-color:rgba(248,113,113,.35);color:var(--red);}
+.btn-ann-del:hover{background:rgba(248,113,113,.1);}
+.vote-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600;}
+.vote-pill.up{background:rgba(52,211,153,.12);color:var(--green);}
+.vote-pill.dn{background:rgba(248,113,113,.12);color:var(--red);}
+.ann-pri{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;}
+.ann-pri.high{background:rgba(248,113,113,.15);color:var(--red);}
+.ann-pri.medium{background:rgba(245,158,11,.15);color:var(--amber);}
+.ann-pri.low{background:rgba(52,211,153,.15);color:var(--green);}
+
+/* ── SVG Gauge chart (matches admin) ── */
+.gauge-wrap{padding:12px 18px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.gauge-svg-wrap{position:relative;width:100%;}
+.gauge-svg-wrap svg{display:block;width:100%;height:auto;}
+.gauge-centre{position:absolute;left:0;right:0;bottom:18%;display:flex;flex-direction:column;align-items:center;pointer-events:none;}
+.gauge-num{font-family:'Inter',sans-serif;font-size:36px;font-weight:500;color:#fff;line-height:1;letter-spacing:-.02em;}
+.gauge-sub{font-size:10px;color:var(--muted);margin-top:2px;font-weight:500;}
+.gauge-legend{width:100%;display:flex;flex-direction:column;gap:6px;}
+.gauge-legend-row{display:flex;align-items:center;justify-content:space-between;}
+.gauge-legend-left{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);}
+.gauge-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.gauge-legend-right{display:flex;align-items:center;gap:5px;}
+.gauge-legend-count{font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:var(--text);}
+.gauge-check{font-size:11px;}
+
+/* ── Live badge (green theme for facility) ── */
+.live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25);border-radius:100px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--green);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:livepulse 1.5s ease-in-out infinite;}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Integrated pagination (matches admin) ── */
+.integrated-pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 18px;margin:0;background:var(--card);border-top:1px solid var(--border);border-radius:0 0 14px 14px;flex-shrink:0;}
+.integrated-pagination .page-info{font-size:12px;color:var(--muted);white-space:nowrap;line-height:1;}
+.integrated-pagination .page-info b{color:var(--text);font-weight:600;}
+.integrated-pagination .page-btns{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;}
+.page-ellipsis{font-size:12px;color:var(--dim);padding:0 4px;display:flex;align-items:center;}
+
+/* ── Table layout for bookings tab ── */
+.table-body-wrap{display:flex;flex-direction:column;}
+.table-wrap{overflow-x:auto;}
+.book-table{width:100%;border-collapse:separate;border-spacing:0;}
+.book-table th{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:10px 18px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.book-table td{padding:9px 18px;font-size:13px;color:var(--muted);vertical-align:middle;}
+.book-table tbody tr:hover td{background:rgba(52,211,153,.04);}
+.book-table tbody tr:last-child td{border-bottom:none;}
+.book-table td strong{color:var(--text);font-weight:500;}
+
+/* ── Pending approvals list in overview ── */
+.pending-list-wrap{display:flex;flex-direction:column;}
+
+/* ── Facility cards grid — more breathing room ── */
+/* 5-col fixed grid: rows 1+2 = facility cards, row 3 = add box */
+.fac-cards-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  grid-template-rows:repeat(2,1fr) auto;
+  grid-auto-rows:0;
+  gap:12px;
+  padding:16px 18px 16px;
+}
+.fac-card-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 16px;position:relative;transition:all .22s;display:flex;flex-direction:column;align-self:stretch;}
+
+/* ── Booking table — facility cell styles ── */
+.bk-action-btns{display:flex;gap:6px;align-items:center;}
+.bk-fac-wrap,.bk-usr-wrap{display:flex;flex-direction:column;min-width:0;}
+.bk-fac-name{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-usr-name{font-weight:400;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bk-fac-loc,.bk-usr-email{font-size:11px;color:var(--muted);opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+
+/* Quick Actions — stretch to fill right column height symmetrically */
+.quick-grid-fill{display:flex;flex-wrap:wrap;flex:1;gap:10px;padding:14px 18px;align-content:stretch;}
+.quick-grid-fill .quick-btn{flex:1 1 calc(50% - 5px);min-width:0;}
+
+/* ── Hide number spinner (capacity input) ── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+
+/* ── Custom select — dark themed ── */
+.mf select {
+  width:100%;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 36px 10px 14px;
+  font-family:'DM Sans',sans-serif;
+  font-size:14px;
+  color:var(--text);
+  outline:none;
+  -webkit-appearance:none;
+  appearance:none;
+  cursor:pointer;
+  transition:border-color .2s, box-shadow .2s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237b7a9d' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+}
+.mf select:focus {
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(52,211,153,.1);
+}
+.mf select option {
+  background:var(--surface);
+  color:var(--text);
+  padding:8px 12px;
+}
+
+
+/* ── Modal custom dropdowns — full width, matches input style ── */
+.mf-cdd{position:relative;width:100%;}
+.mf-cdd-btn{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;
+  color:var(--text);cursor:pointer;transition:border-color .2s,box-shadow .2s;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  user-select:none;gap:8px;
+}
+.mf-cdd-btn:focus,.mf-cdd-btn.open{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px rgba(52,211,153,.1);
+  outline:none;
+}
+.mf-cdd-arrow{font-size:10px;color:var(--muted);transition:transform .2s;pointer-events:none;flex-shrink:0;}
+.mf-cdd-btn.open .mf-cdd-arrow{transform:rotate(180deg);}
+.mf-cdd-label{flex:1;text-align:left;}
+.mf-cdd-panel{
+  display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
+  z-index:220;background:var(--card);
+  border:1px solid var(--border2);border-radius:10px;
+  padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.55);
+  overflow:hidden;
+}
+.mf-cdd-panel.open{display:block;animation:cddIn .15s ease;}
+.mf-cdd-opt{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;
+  color:var(--muted);border-radius:7px;cursor:pointer;
+  transition:background .12s,color .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.mf-cdd-opt:hover{background:rgba(255,255,255,.07);color:var(--text);}
+.mf-cdd-opt.selected{color:var(--green);font-weight:600;}
+.mf-cdd-opt .pri-dot{
+  width:8px;height:8px;border-radius:50%;flex-shrink:0;
+}
+.mf-cdd-opt .pri-dot.low   {background:#34d399;}
+.mf-cdd-opt .pri-dot.medium{background:#f59e0b;}
+.mf-cdd-opt .pri-dot.high  {background:#f87171;}
+
+/* ── Facility Management — Online status pill ── */
+.fac-online-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#22233c;
+  border:1px solid rgba(52,211,153,.15);
+  border-radius:100px;
+  padding:5px 12px 5px 9px;
+  flex-shrink:0;
+}
+.fac-online-dot{
+  position:relative;width:8px;height:8px;flex-shrink:0;
+}
+.fac-online-dot::before{
+  content:'';position:absolute;inset:0;
+  border-radius:50%;background:#34d399;
+  box-shadow:0 0 5px rgba(52,211,153,.6);
+}
+.fac-online-dot::after{
+  content:'';position:absolute;inset:-3px;
+  border-radius:50%;background:rgba(52,211,153,.25);
+  animation:fac-pulse 2s ease-in-out infinite;
+}
+@keyframes fac-pulse{
+  0%,100%{transform:scale(1);opacity:.6}
+  50%{transform:scale(1.7);opacity:0}
+}
+.fac-online-lbl{
+  font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:500;
+  color:var(--muted);letter-spacing:.02em;
+}
+
+/* ── Misc ── */
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Mobile avatar (green theme) ── */
+.mobile-avatar-fm{
+  display:none; width:38px; height:38px; border-radius:10px;
+  overflow:hidden; flex-shrink:0;
+  background:linear-gradient(135deg,#059669,#34d399);
+  border:2px solid rgba(52,211,153,.6);
+  box-shadow:0 0 0 1px rgba(52,211,153,.3);
+  align-items:center; justify-content:center;
+  font-size:16px; text-decoration:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.mobile-avatar-fm img{width:100%;height:100%;object-fit:cover;}
+
+@media(max-width:1200px) and (min-width:1025px){.fac-cards-grid{grid-template-columns:repeat(4,1fr);}}
+
+@media(max-width:1024px){
+  /* Viewport unlock — all mobile + tablet */
+  body{height:auto !important;max-height:none !important;overflow:auto !important;overflow-x:hidden !important;}
+  .main{height:auto !important;max-height:none !important;overflow:visible !important;}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block !important;}
+  .mobile-avatar-fm{display:flex;}
+  .content{padding:12px 14px 90px !important;overflow:visible !important;}
+  /* Stats */
+  .stats-grid{grid-template-columns:repeat(2,1fr) !important;gap:10px;}
+  /* Overview panels stack */
+  .grid-2{grid-template-columns:1fr !important;}
+  /* Panel head */
+  .panel-head{flex-wrap:wrap;gap:8px;}
+  .fac-online-pill{margin-left:auto;}
+  /* Filters */
+  .list-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;}
+  .list-controls .search-wrap{width:100%;flex:0 0 100%;}
+  .list-controls .cdd-wrap{flex:1;min-width:100px;}
+  .cdd-btn{font-size:11px;padding:7px 10px;width:100%;justify-content:space-between;}
+  .date-btn{flex:1;min-width:0;font-size:11px;padding:7px 10px;}
+  /* Pagination */
+  .integrated-pagination{flex-wrap:wrap !important;justify-content:center !important;padding:10px 12px 14px !important;gap:6px !important;}
+  .integrated-pagination .page-info{width:100%;text-align:center;position:static !important;}
+  .integrated-pagination .page-btns{justify-content:center;flex-wrap:wrap;gap:4px;}
+  .page-btn{padding:5px 8px;font-size:11px;}
+  /* Pending rows */
+  .book-row{padding:9px 12px;flex-wrap:wrap;}
+  .book-fac{font-size:12px;}
+  .book-meta{font-size:11px;}
+  /* Announcement form */
+  .ann-form{padding:14px;}
+  /* Modal */
+  .modal{padding:20px 16px;border-radius:16px;margin:8px;}
+  .modal-title{font-size:15px;}
+  .mf-grid2{grid-template-columns:1fr !important;}
+  .emoji-grid{grid-template-columns:repeat(6,1fr) !important;}
+  .modal-actions{flex-direction:column;}
+  .btn-modal-ok,.btn-modal-cancel{width:100%;}
+  .mf input,.mf-cdd-btn{font-size:13px !important;padding:9px 12px !important;}
+  .modal-backdrop{padding:8px;}
+}
+
+/* ── Tablet portrait (769–1024px): sidebar shown, no floating menu ── */
+@media(min-width:769px) and (max-width:1024px){
+  /* Sidebar stays — do NOT hide it */
+  .sidebar{display:flex !important;}
+  .main{margin-left:var(--sidebar-w) !important;}
+  /* Topbar: fixed at top, no shrink */
+  .topbar{position:sticky;top:0;z-index:100;flex-shrink:0;}
+  /* Hide floating menu — sidebar handles navigation */
+  .slide-trigger{display:none !important;}
+  .slide-nav{display:none !important;}
+  /* Content: smaller bottom padding (no floating menu to clear) */
+  .content{padding:12px 14px 24px !important;}
+  /* Stats: 4-col on tablet */
+  .stats-grid{grid-template-columns:repeat(4,1fr) !important;}
+}
+
+/* ── Tablet landscape (821–1024px): 3-col grid ── */
+@media(min-width:821px) and (max-width:1024px){
+  .fac-cards-grid{
+    grid-template-columns:repeat(3,1fr) !important;
+    grid-template-rows:none !important;
+    grid-auto-rows:auto !important;
+  }
+  .add-fac-card{grid-column:1 !important;grid-row:auto !important;height:80px !important;align-self:start !important;}
+  .book-table{display:table;width:100%;}
+  .book-table thead{display:table-header-group;}
+  .book-table tbody{display:table-row-group;}
+  .book-table tbody tr{display:table-row;}
+  .book-table td{display:table-cell;padding:9px 12px;}
+  .book-table th{padding:9px 12px;}
+}
+
+/* ── Tablet portrait (601–820px): 2-col grid ── */
+@media(min-width:601px) and (max-width:820px){
+  .fac-cards-grid{
+    grid-template-columns:repeat(2,1fr) !important;
+    grid-template-rows:none !important;
+    grid-auto-rows:auto !important;
+  }
+  .add-fac-card{grid-column:1 !important;grid-row:auto !important;height:80px !important;align-self:start !important;}
+  .book-table{display:table;width:100%;}
+  .book-table thead{display:table-header-group;}
+  .book-table tbody{display:table-row-group;}
+  .book-table tbody tr{display:table-row;}
+  .book-table td{display:table-cell;padding:9px 10px;font-size:12px;}
+  .book-table th{padding:9px 10px;font-size:11px;}
+}
+
+/* ── Mobile (<=600px): 1-col grid, card layout for table ── */
+@media(max-width:600px){
+  .fac-cards-grid{grid-template-columns:1fr !important;grid-template-rows:none !important;grid-auto-rows:auto !important;padding:12px 10px 24px !important;}
+  .add-fac-card{grid-column:1 !important;grid-row:auto !important;height:60px !important;align-self:start !important;}
+  .stats-grid{grid-template-columns:1fr 1fr !important;gap:6px;}
+  .stat-card{padding:10px;}
+  .stat-value{font-size:20px;}
+  /* Booking table → cards */
+  .book-table thead{display:none;}
+  .book-table tbody{display:block;}
+  .book-table tbody tr{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;gap:5px;}
+  .book-table tbody tr:last-child{margin-bottom:0;}
+  .book-table td{display:grid;grid-template-columns:80px 1fr;align-items:baseline;gap:12px;padding:4px 0 !important;font-size:12px;border:none !important;line-height:1.4;}
+  .book-table td[data-label]::before{content:attr(data-label);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);white-space:nowrap;}
+  .book-table .badge{width:fit-content;display:inline-flex;}
+  .book-table td:empty{display:none;}
+  .book-table td[data-label="Facility"] .bk-fac-wrap,
+  .book-table td[data-label="User"] .bk-usr-wrap{flex-direction:row !important;align-items:center;gap:8px;overflow:hidden;}
+  .book-table td[data-label="Facility"] .bk-fac-loc,
+  .book-table td[data-label="User"] .bk-usr-email{margin-top:0 !important;flex-shrink:0;}
+  .book-table td[data-label="Action"] .bk-action-btns{justify-content:flex-start;width:100%;}
+  .book-table td[data-label="Action"] .btn-approve,
+  .book-table td[data-label="Action"] .btn-reject{flex:1;min-width:0;text-align:center;}
+}
+/* ── Tablet (769–1024px) ── */
+@media(min-width:769px) and (max-width:1024px){
+  /* ── Unlock height — nothing gets cut off ── */
+  body{height:auto !important;max-height:none !important;
+       overflow-y:auto !important;overflow-x:hidden !important;}
+  .main{display:flex;flex-direction:column;
+        height:auto !important;max-height:none !important;overflow:visible !important;}
+  .content{display:block !important;height:auto !important;
+           overflow:visible !important;padding-bottom:80px !important;}
+  .tab-pane.active{display:block !important;height:auto !important;min-height:0;}
+
+  /* ── Facility tab — flex column so pagination always at bottom ── */
+  #tab-facilities .content{display:flex !important;flex-direction:column !important;}
+  #tab-facilities .panel{
+    display:flex;flex-direction:column;flex:1;min-height:0;
+  }
+  #tab-facilities .fac-cards-grid{flex:1;}
+
+  /* ── Pagination always visible — z-index above all, relative flow ── */
+  .integrated-pagination{
+    display:flex !important;
+    flex-wrap:wrap !important;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 18px 20px !important;
+    margin-top:auto;
+    z-index:20;
+    position:relative;
+    background:var(--card);
+  }
+  .integrated-pagination .page-info{white-space:nowrap;}
+
+  /* ── Table breathing room ── */
+  .book-table{width:100%;table-layout:auto;}
+  .book-table th,.book-table td{padding:9px 14px;}
+  .book-table th:nth-child(1),.book-table td:nth-child(1){min-width:140px;}
+  .book-table th:nth-child(2),.book-table td:nth-child(2){min-width:120px;}
+  .book-table th:nth-child(3),.book-table td:nth-child(3){min-width:110px;}
+  .book-table th:nth-child(4),.book-table td:nth-child(4){min-width:100px;}
+  .book-table th:nth-child(5),.book-table td:nth-child(5){min-width:100px;}
+
+  /* ── Facility grid — 2-col symmetrical, equal card heights ── */
+  .fac-cards-grid{
+    grid-template-columns:repeat(2,1fr) !important;
+    grid-template-rows:none !important;
+    grid-auto-rows:auto !important;
+    align-items:stretch !important;
+    padding:16px 18px 0 !important;
+    gap:12px !important;
+  }
+  .fac-card-item{min-height:160px;}
+  .add-fac-card{
+    min-height:80px;height:auto !important;
+    grid-column:auto !important;grid-row:auto !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Edit Announcement Modal ── -->
+<div class="modal-backdrop" id="edit-ann-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEditAnnModal()">✕</button>
+    <div class="modal-title">✏️ Edit Announcement</div>
+    <div class="modal-sub">Update the title, message or priority.</div>
+    <div class="m-alert" id="edit-ann-alert"></div>
+    <div class="mf"><label>Title</label><input type="text" id="edit-ann-title" placeholder="e.g. Facility closure notice"></div>
+    <div class="mf"><label>Message</label>
+      <textarea id="edit-ann-msg" rows="4" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;resize:none;-webkit-appearance:none;" placeholder="Write your announcement…"></textarea>
+    </div>
+    <div class="mf"><label>Priority</label>
+      <input type="hidden" id="edit-ann-priority" value="medium">
+      <div class="mf-cdd" id="mfcdd-edit-pri">
+        <button type="button" class="mf-cdd-btn" onclick="toggleMfCdd('edit-pri')">
+          <span class="mf-cdd-label" id="mfcdd-edit-pri-label"><span class="pri-dot medium" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:7px;vertical-align:middle;"></span>Medium — Important</span>
+          <span class="mf-cdd-arrow">▾</span>
+        </button>
+        <div class="mf-cdd-panel" id="mfcdd-edit-pri-panel">
+          <div class="mf-cdd-opt" onclick="setMfCdd('edit-pri','low','<span class=\'pri-dot low\' style=\'display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399;margin-right:7px;vertical-align:middle;\'></span>Low — General')">
+            <span class="pri-dot low"></span>Low — General
+          </div>
+          <div class="mf-cdd-opt selected" onclick="setMfCdd('edit-pri','medium','<span class=\'pri-dot medium\' style=\'display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:7px;vertical-align:middle;\'></span>Medium — Important')">
+            <span class="pri-dot medium"></span>Medium — Important
+          </div>
+          <div class="mf-cdd-opt" onclick="setMfCdd('edit-pri','high','<span class=\'pri-dot high\' style=\'display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171;margin-right:7px;vertical-align:middle;\'></span>High — Urgent')">
+            <span class="pri-dot high"></span>High — Urgent
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeEditAnnModal()">Cancel</button>
+      <button class="btn-modal-ok" id="edit-ann-save-btn" onclick="saveEditAnn()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Facility Modal ── -->
+<div class="modal-backdrop" id="add-fac-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAddModal()">✕</button>
+    <div class="modal-title">Add New Facility</div>
+    <div class="modal-sub">Choose an emoji and fill in the details.</div>
+    <div class="m-alert" id="add-alert"></div>
+    <div class="emoji-preview"><span id="emoji-preview-val">🏛️</span><div class="emoji-preview-text">Tap below to change</div></div>
+    <label class="emoji-picker-label">Choose Emoji</label>
+    <div class="emoji-grid" id="emoji-grid"></div>
+    <div class="mf"><label>Facility Name</label><input type="text" id="fac-name" placeholder="e.g. Lecture Hall A"></div>
+    <div class="mf-grid2">
+      <div class="mf"><label>Type</label>
+        <input type="hidden" id="fac-type" value="1">
+        <div class="mf-cdd" id="mfcdd-fac-type">
+          <button type="button" class="mf-cdd-btn" onclick="toggleMfCdd('fac-type')">
+            <span class="mf-cdd-label" id="mfcdd-fac-type-label">Lecture Hall</span>
+            <span class="mf-cdd-arrow">▾</span>
+          </button>
+          <div class="mf-cdd-panel" id="mfcdd-fac-type-panel">
+            <div class="mf-cdd-opt selected" onclick="setMfCdd('fac-type','1','Lecture Hall')">Lecture Hall</div>
+            <div class="mf-cdd-opt" onclick="setMfCdd('fac-type','2','Laboratory')">Laboratory</div>
+            <div class="mf-cdd-opt" onclick="setMfCdd('fac-type','3','Sports Facility')">Sports Facility</div>
+            <div class="mf-cdd-opt" onclick="setMfCdd('fac-type','4','Meeting Room')">Meeting Room</div>
+            <div class="mf-cdd-opt" onclick="setMfCdd('fac-type','5','Study Room')">Study Room</div>
+          </div>
+        </div>
+      </div>
+      <div class="mf"><label>Capacity (pax)</label><input type="number" id="fac-capacity" placeholder="50" min="1"></div>
+    </div>
+    <div class="mf"><label>Location</label><input type="text" id="fac-location" placeholder="e.g. Block A, Level 2"></div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-modal-ok" id="add-fac-btn" onclick="submitAddFacility()">Add Facility</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Generic Confirm Modal ── -->
+<div class="modal-backdrop" id="confirm-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title" id="confirm-title">Confirm</div>
+    <div class="modal-sub"   id="confirm-msg"   style="margin-bottom:18px;">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-modal-ok"     id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">YA<span>GUMS</span></div>
+    <div class="logo-sub">Facility Manager</div>
+  </div>
+  <a class="sb-user-wrap" href="profile.html" title="Edit your profile">
+    <div class="sb-avatar-img" id="sb-avatar-wrap">🏢</div>
+    <div class="sb-info">
+      <div class="sb-name"     id="sb-name">Loading…</div>
+      <div class="sb-role-lbl">Facility Manager</div>
+      <div class="sb-edit-hint">Tap to edit profile →</div>
+    </div>
+  </a>
+  <nav class="sidebar-nav" style="padding:6px 10px;">
+    <div class="nav-section">Overview</div>
+    <button class="nav-item" id="snav-overview"   onclick="switchTab('overview')"><span class="nav-icon">🏠</span>Dashboard</button>
+    <div class="nav-section">Management</div>
+    <button class="nav-item" id="snav-bookings"   onclick="switchTab('bookings')"><span class="nav-icon">📅</span>Bookings <span class="nav-badge" id="nb-pending">0</span></button>
+    <button class="nav-item" id="snav-facilities" onclick="switchTab('facilities')"><span class="nav-icon">🏛️</span>Facilities <span class="nav-badge" id="nb-fac">—</span></button>
+    <button class="nav-item"                       onclick="openAddModal()"><span class="nav-icon">➕</span>Add Facility</button>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Communications</div>
+    <button class="nav-item" id="snav-maint"      onclick="switchTab('maint')"><span class="nav-icon">🔧</span>Maintenance</button>
+    <button class="nav-item" id="snav-announce"   onclick="switchTab('announce')"><span class="nav-icon">📢</span>Announcements</button>
+    <a      class="nav-item" href="notifications.html"><span class="nav-icon">🔔</span>Notifications</a>
+    <div class="nav-divider"></div>
+    <div class="nav-section">Account</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span>My Profile</a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()"><span class="nav-icon">🚪</span>Sign Out</button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
+      <a href="profile.html" class="mobile-avatar-fm" id="mob-avatar" title="My Profile" style="display:none">🏢</a>
+      <div>
+        <h2 id="page-title">Facility Dashboard</h2>
+        <p  id="greeting">Loading…</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="notif-btn" id="notif-bell">🔔<span class="notif-count hidden" id="notif-count">0</span></button>
+      <button class="mobile-logout-btn" id="mob-logout-btn" onclick="logout()" title="Sign Out" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification panel -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head">
+      <h4>🔔 Notifications</h4>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+        <a href="notifications.html" style="font-size:12px;color:var(--accent);text-decoration:none;border:1px solid rgba(192,132,252,.3);padding:3px 10px;border-radius:7px;">History →</a>
+      </div>
+    </div>
+    <div class="notif-scroll" id="notif-list"><div class="notif-empty">No notifications.</div></div>
+  </div>
+
+  <!-- ════ OVERVIEW ════ -->
+  <div class="tab-pane active" id="tab-overview">
+    <div class="content" style="padding-bottom:24px;">
+      <div class="stats-grid">
+        <div class="stat-card" style="--glow:var(--amber)"><div class="stat-head"><div class="stat-icon amber">⏳</div><span class="stat-trend down">Waiting</span></div><div class="stat-value" id="ov-pending">—</div><div class="stat-label">Pending Bookings</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon green">✅</div></div><div class="stat-value" id="ov-approved">—</div><div class="stat-label">Approved</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon blue">🏛️</div></div><div class="stat-value" id="ov-facilities">—</div><div class="stat-label">Facilities</div></div>
+        <div class="stat-card"><div class="stat-head"><div class="stat-icon purple">📢</div></div><div class="stat-value" id="ov-ann">—</div><div class="stat-label">Announcements</div></div>
+      </div>
+      <div class="grid-2" style="align-items:stretch;">
+        <div class="panel" style="display:flex;flex-direction:column;overflow:hidden;border-radius:14px;">
+          <div class="panel-head" style="flex-shrink:0;">
+            <div><h3>Pending Approvals</h3><p id="pending-sub">Loading…</p></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="live-badge"><span class="live-dot"></span>Live</span>
+              <button class="panel-action" onclick="switchTab('bookings')">View All →</button>
+            </div>
+          </div>
+          <div id="pending-preview" style="flex:1;overflow-y:auto;min-height:0;"><div style="padding:24px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;height:100%;">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>Booking Status</h3><p id="booking-status-sub" style="font-size:11px;color:var(--dim);margin-top:2px;">Loaded on page load</p></div>
+            </div>
+            <div class="gauge-wrap">
+              <div class="gauge-svg-wrap">
+                <svg id="gauge-svg" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <pattern id="hatch-pending" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+                      <rect width="2.5" height="5" fill="rgba(245,158,11,0.5)"/>
+                    </pattern>
+                    <clipPath id="gauge-clip"><rect x="0" y="0" width="200" height="80"/></clipPath>
+                  </defs>
+                  <g clip-path="url(#gauge-clip)">
+                    <path id="gauge-track"      fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="13" stroke-linecap="round"/>
+                    <path id="gauge-pending-bg" fill="none" stroke="url(#hatch-pending)"   stroke-width="13" stroke-linecap="round"/>
+                    <path id="gauge-pending-bdr"fill="none" stroke="rgba(245,158,11,0.45)" stroke-width="13" stroke-linecap="round"/>
+                    <path id="gauge-rejected"   fill="none" stroke="#f87171"               stroke-width="13" stroke-linecap="round"/>
+                    <path id="gauge-approved"   fill="none" stroke="#34d399"               stroke-width="13" stroke-linecap="round"/>
+                  </g>
+                </svg>
+                <div class="gauge-centre">
+                  <div class="gauge-num" id="gauge-num">—</div>
+                  <div class="gauge-sub">Pending</div>
+                </div>
+              </div>
+              <div class="gauge-legend">
+                <div class="gauge-legend-row">
+                  <div class="gauge-legend-left"><div class="gauge-legend-dot" style="background:#34d399"></div>Approved</div>
+                  <div class="gauge-legend-right"><span class="gauge-legend-count" id="cnt-approved">—</span><span class="gauge-check">✓</span></div>
+                </div>
+                <div class="gauge-legend-row">
+                  <div class="gauge-legend-left"><div class="gauge-legend-dot" style="background:#f87171"></div>Rejected</div>
+                  <div class="gauge-legend-right"><span class="gauge-legend-count" id="cnt-rejected">—</span></div>
+                </div>
+                <div class="gauge-legend-row">
+                  <div class="gauge-legend-left"><div class="gauge-legend-dot" style="background:#f59e0b"></div>Pending</div>
+                  <div class="gauge-legend-right"><span class="gauge-legend-count" id="cnt-pending">—</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+            <div class="panel-head" style="flex-shrink:0;"><div><h3>Quick Actions</h3></div></div>
+            <div class="quick-grid" style="padding:10px 14px;gap:8px;flex:1;align-content:start;">
+              <div class="quick-btn" style="padding:10px 8px;flex-direction:row;gap:8px;" onclick="switchTab('bookings')"><span class="qi" style="font-size:16px;">📅</span><span>Approve Bookings</span></div>
+              <div class="quick-btn" style="padding:10px 8px;flex-direction:row;gap:8px;" onclick="openAddModal()"><span class="qi" style="font-size:16px;">➕</span><span>Add Facility</span></div>
+              <div class="quick-btn" style="padding:10px 8px;flex-direction:row;gap:8px;" onclick="switchTab('announce')"><span class="qi" style="font-size:16px;">📢</span><span>Announce</span></div>
+              <div class="quick-btn" style="padding:10px 8px;flex-direction:row;gap:8px;" onclick="window.location.href='profile.html'"><span class="qi" style="font-size:16px;">👤</span><span>My Profile</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ BOOKINGS ════ -->
+  <div class="tab-pane" id="tab-bookings">
+    <div class="content" style="padding-bottom:24px;">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>All Bookings</h3><p id="all-bookings-sub">Loading…</p></div>
+          <span class="live-badge"><span class="live-dot"></span>Live</span>
+        </div>
+        <div class="list-controls">
+          <div class="search-wrap">
+            <input class="search-inp" id="book-search" type="text" placeholder="Search facility or user…" oninput="renderBookings()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="book-status-btn" onclick="toggleCdd('book-status')">
+              <span id="book-status-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel" id="book-status-panel">
+              <div class="cdd-opt selected" data-val=""          onclick="setCdd('book-status','','All Status',renderBookings)">All Status</div>
+              <div class="cdd-opt" data-val="pending"            onclick="setCdd('book-status','pending','Pending',renderBookings)">Pending</div>
+              <div class="cdd-opt" data-val="approved"           onclick="setCdd('book-status','approved','Approved',renderBookings)">Approved</div>
+              <div class="cdd-opt" data-val="rejected"           onclick="setCdd('book-status','rejected','Rejected',renderBookings)">Rejected</div>
+            </div>
+          </div>
+          <button class="date-btn" id="book-date-btn" onclick="openDatePicker()" title="Filter by date">
+            📅 <span id="book-date-label">All Dates</span>
+            <span class="date-clear" id="book-date-clear" style="display:none" onclick="clearDate(event)">✕</span>
+          </button>
+          <input type="hidden" id="book-status-filter" value="">
+        </div>
+        <div class="table-body-wrap">
+          <div class="table-wrap">
+            <table class="book-table">
+              <thead><tr><th>Facility</th><th>User</th><th>Date</th><th>Time</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="all-bookings-list"></tbody>
+            </table>
+          </div>
+          <div class="integrated-pagination" id="book-pagination" style="display:none;">
+            <div class="page-info" id="book-page-info">—</div>
+            <div class="page-btns" id="book-page-btns"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ FACILITIES ════ -->
+  <div class="tab-pane" id="tab-facilities">
+    <div class="content" style="padding-bottom:24px;">
+      <div class="panel" style="display:flex;flex-direction:column;overflow:hidden;border-radius:14px;">
+        <div class="panel-head">
+          <div><h3>Facility Management</h3><p id="fac-sub">Loading…</p></div>
+          <div class="fac-online-pill"><span class="fac-online-dot"></span><span class="fac-online-lbl">Online</span></div>
+        </div>
+        <div class="list-controls">
+          <div class="search-wrap">
+            <input class="search-inp" id="fac-search" type="text" placeholder="Search name or location…" oninput="renderFacilities()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="fac-avail-btn" onclick="toggleCdd('fac-avail')">
+              <span id="fac-avail-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel" id="fac-avail-panel">
+              <div class="cdd-opt selected" data-val="" onclick="setCdd('fac-avail','','All Status',renderFacilities)">All Status</div>
+              <div class="cdd-opt" data-val="1"         onclick="setCdd('fac-avail','1','Available',renderFacilities)">Available</div>
+              <div class="cdd-opt" data-val="0"         onclick="setCdd('fac-avail','0','Unavailable',renderFacilities)">Unavailable</div>
+            </div>
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="fac-type-btn" onclick="toggleCdd('fac-type-filter')">
+              <span id="fac-type-filter-label">All Types</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel align-right" id="fac-type-filter-panel">
+              <div class="cdd-opt selected" data-val=""                onclick="setCdd('fac-type-filter','','All Types',renderFacilities)">All Types</div>
+              <div class="cdd-opt" data-val="Lecture Hall"             onclick="setCdd('fac-type-filter','Lecture Hall','Lecture Hall',renderFacilities)">Lecture Hall</div>
+              <div class="cdd-opt" data-val="Laboratory"               onclick="setCdd('fac-type-filter','Laboratory','Laboratory',renderFacilities)">Laboratory</div>
+              <div class="cdd-opt" data-val="Sports Facility"          onclick="setCdd('fac-type-filter','Sports Facility','Sports Facility',renderFacilities)">Sports Facility</div>
+              <div class="cdd-opt" data-val="Meeting Room"             onclick="setCdd('fac-type-filter','Meeting Room','Meeting Room',renderFacilities)">Meeting Room</div>
+              <div class="cdd-opt" data-val="Study Room"               onclick="setCdd('fac-type-filter','Study Room','Study Room',renderFacilities)">Study Room</div>
+            </div>
+          </div>
+          <input type="hidden" id="fac-avail-filter" value="">
+          <input type="hidden" id="fac-type-filter"  value="">
+        </div>
+        <div class="fac-cards-grid" id="fac-grid"></div>
+        <div class="integrated-pagination" id="fac-pagination" style="margin-top:auto;">
+          <div class="page-info" id="fac-page-info">—</div>
+          <div class="page-btns" id="fac-page-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MAINTENANCE REQUESTS ════ -->
+  <div class="tab-pane" id="tab-maint">
+    <div class="content">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>🔧 Maintenance Requests</h3><p id="maint-sub">Loading…</p></div>
+        </div>
+        <div class="list-controls">
+          <div class="search-wrap">
+            <input class="search-inp" id="maint-search" type="text"
+                   placeholder="Search facility, reporter or description…" oninput="renderMaintRequests()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="maint-status-btn" onclick="toggleCdd('maint-status')">
+              <span id="maint-status-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel" id="maint-status-panel">
+              <div class="cdd-opt selected" data-val=""            onclick="setCdd('maint-status','','All Status',renderMaintRequests)">All Status</div>
+              <div class="cdd-opt" data-val="Pending"              onclick="setCdd('maint-status','Pending','Pending',renderMaintRequests)">Pending</div>
+              <div class="cdd-opt" data-val="In Progress"          onclick="setCdd('maint-status','In Progress','In Progress',renderMaintRequests)">In Progress</div>
+              <div class="cdd-opt" data-val="Completed"            onclick="setCdd('maint-status','Completed','Completed',renderMaintRequests)">Completed</div>
+            </div>
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="maint-pri-btn" onclick="toggleCdd('maint-pri')">
+              <span id="maint-pri-label">All Priority</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel align-right" id="maint-pri-panel">
+              <div class="cdd-opt selected" data-val="" onclick="setCdd('maint-pri','','All Priority',renderMaintRequests)">All Priority</div>
+              <div class="cdd-opt" data-val="High"   onclick="setCdd('maint-pri','High','High',renderMaintRequests)">High</div>
+              <div class="cdd-opt" data-val="Medium" onclick="setCdd('maint-pri','Medium','Medium',renderMaintRequests)">Medium</div>
+              <div class="cdd-opt" data-val="Low"    onclick="setCdd('maint-pri','Low','Low',renderMaintRequests)">Low</div>
+            </div>
+          </div>
+          <input type="hidden" id="maint-status-filter" value="">
+          <input type="hidden" id="maint-pri-filter"    value="">
+        </div>
+        <!-- Desktop table -->
+        <div class="table-wrap" id="maint-table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Facility</th><th>Description</th><th>Reported By</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody id="maint-tbody"><tr><td colspan="9" style="text-align:center;padding:20px;color:var(--dim)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <!-- Mobile cards -->
+        <div class="maint-cards-wrap" id="maint-cards"></div>
+        <div class="pagination" id="maint-pagination" style="display:none;">
+          <div class="page-info" id="maint-page-info">—</div>
+          <div class="page-btns" id="maint-page-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════ ANNOUNCEMENTS ════ -->
+  <div class="tab-pane" id="tab-announce">
+    <div class="content" style="padding-bottom:24px;">
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><div><h3>📢 Post Announcement</h3><p>Sent to all users</p></div></div>
+          <div class="ann-form">
+            <div class="ann-field"><label>Title</label><input type="text" id="ann-title" placeholder="e.g. Facility closure notice"></div>
+            <div class="ann-field"><label>Message</label><textarea id="ann-msg" rows="4" placeholder="Write your announcement…"></textarea></div>
+            <div class="ann-field"><label>Priority</label>
+              <input type="hidden" id="ann-priority" value="medium">
+              <div class="mf-cdd" id="mfcdd-ann-pri">
+                <button type="button" class="mf-cdd-btn" onclick="toggleMfCdd('ann-pri')">
+                  <span class="mf-cdd-label" id="mfcdd-ann-pri-label"><span class="pri-dot medium" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:7px;vertical-align:middle;"></span>Medium — Important</span>
+                  <span class="mf-cdd-arrow">▾</span>
+                </button>
+                <div class="mf-cdd-panel" id="mfcdd-ann-pri-panel">
+                  <div class="mf-cdd-opt" onclick="setMfCdd('ann-pri','low','<span class=\'pri-dot low\' style=\'display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399;margin-right:7px;vertical-align:middle;\'></span>Low — General')">
+                    <span class="pri-dot low"></span>Low — General
+                  </div>
+                  <div class="mf-cdd-opt selected" onclick="setMfCdd('ann-pri','medium','<span class=\'pri-dot medium\' style=\'display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:7px;vertical-align:middle;\'></span>Medium — Important')">
+                    <span class="pri-dot medium"></span>Medium — Important
+                  </div>
+                  <div class="mf-cdd-opt" onclick="setMfCdd('ann-pri','high','<span class=\'pri-dot high\' style=\'display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171;margin-right:7px;vertical-align:middle;\'></span>High — Urgent')">
+                    <span class="pri-dot high"></span>High — Urgent
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="f-alert" id="ann-alert"></div>
+            <button class="btn-post" id="ann-btn" onclick="postAnnouncement()">📢 Post Announcement</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>Recent Posts</h3><p id="ann-count-label">Loading…</p></div><a href="announcements.html" class="panel-action" style="text-decoration:none;">View History →</a></div>
+          <div id="ann-list"><div style="padding:28px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── Centred Date Picker Modal ── -->
+<div class="date-modal-backdrop" id="date-modal-backdrop" onclick="closeDatePickerOutside(event)">
+  <div class="date-modal">
+    <div class="date-modal-title">📅 Filter by Date</div>
+    <input type="date" id="book-date-filter" color-scheme="dark">
+    <div class="date-modal-actions">
+      <button class="date-modal-clear" onclick="clearDate()">Clear</button>
+      <button class="date-modal-apply" onclick="applyDate()">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MOBILE-ONLY UI ── -->
+<div class="slide-nav-backdrop" id="slide-backdrop" style="display:none" onclick="closeSlideNav()"></div>
+
+<div class="slide-nav" id="slide-nav">
+  <div class="slide-nav-handle" onclick="toggleSlideNav()" style="cursor:pointer;"></div>
+  <div class="slide-nav-title" onclick="toggleSlideNav()" style="cursor:pointer;user-select:none;">NAVIGATION</div>
+  <div class="slide-nav-grid">
+    <button class="slide-nav-item" id="snav-m-overview"   onclick="mobileNav('overview')">  <span class="slide-nav-icon">🏠</span>Home</button>
+    <button class="slide-nav-item" id="snav-m-bookings"   onclick="mobileNav('bookings')">  <span class="slide-nav-icon">📅</span>Bookings</button>
+    <button class="slide-nav-item" id="snav-m-facilities" onclick="mobileNav('facilities')"><span class="slide-nav-icon">🏛️</span>Facilities</button>
+    <button class="slide-nav-item" id="snav-m-maint"      onclick="mobileNav('maint')"><span class="slide-nav-icon">🔧</span>Maint.</button>
+    <button class="slide-nav-item" id="snav-m-announce"   onclick="mobileNav('announce')">  <span class="slide-nav-icon">📢</span>Announce</button>
+    <button class="slide-nav-item"                         onclick="closeSlideNav();openAddModal()"><span class="slide-nav-icon">➕</span>Add Facility</button>
+    <button class="slide-nav-item"                         onclick="closeSlideNav();window.location.href='profile.html'"><span class="slide-nav-icon">👤</span>My Profile</button>
+    <button class="slide-nav-item"                         onclick="closeSlideNav();window.location.href='notifications.html'"><span class="slide-nav-icon">🔔</span>Notifications</button>
+    <button class="slide-nav-item"                         onclick="logout()"><span class="slide-nav-icon">🚪</span>Sign Out</button>
+  </div>
+</div>
+
+<button class="slide-trigger" id="slide-trigger" style="display:none" onclick="toggleSlideNav()" aria-label="Menu">
+  <svg id="slide-trigger-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .35s cubic-bezier(.16,1,.3,1)"><polyline points="18 15 12 9 6 15"/></svg>
+  <span id="slide-trigger-label">Menu</span>
+</button>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="mobile.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+let _token = localStorage.getItem('yagums_token');
+let _user  = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html'; }
+if (!['Facility Manager','Admin'].includes(_user.role)) { window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html'; }
+
+const fn = _user.first_name || (_user.name||'Manager').split(' ')[0];
+const hr = new Date().getHours();
+document.getElementById('sb-name').textContent    = _user.name || (_user.first_name+' '+(_user.last_name||''));
+document.getElementById('greeting').textContent   = (hr<12?'Good morning':hr<17?'Good afternoon':'Good evening')+', '+fn+'!';
+document.getElementById('topbar-date').textContent= new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+// ── Profile picture ──────────────────────────────
+(function initAvatar() {
+  const pic = _user.profile_picture;
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap && pic) sbWrap.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='🏢'">`;
+  const mob = document.getElementById('mob-avatar');
+  if (mob && pic) mob.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='🏢'">`;
+})();
+window.addEventListener('focus', () => {
+  const fresh = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+  if (!fresh) return; _user = fresh; _token = localStorage.getItem('yagums_token') || _token;
+  const name = fresh.name || (fresh.first_name+' '+(fresh.last_name||''));
+  const el = document.getElementById('sb-name'); if (el) el.textContent = name;
+  const pic = fresh.profile_picture;
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap) sbWrap.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='🏢'">` : '🏢';
+  const mob = document.getElementById('mob-avatar');
+  if (mob) mob.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='🏢'">` : '🏢';
+});
+
+// ════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════
+async function api(url, method='GET', body) {
+  try {
+    const opts = { headers:{'Authorization':'Bearer '+_token,'Content-Type':'application/json'} };
+    if (method==='POST') { opts.method='POST'; opts.body=JSON.stringify(body); }
+    const res  = await fetch(url, opts);
+    // Session expired or unauthorised — redirect to login
+    if (res.status === 401 || res.status === 403) {
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';
+      return {success:false};
+    }
+    const data = await res.json();
+    if (data.success === false && data.redirect) {
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';
+      return {success:false};
+    }
+    return data;
+  } catch(e) { console.error('API error:', url, e); return {success:false, message:'Network error'}; }
+}
+
+// ════════════════════════════════════════════════
+//  Slide-up nav (green theme)
+// ════════════════════════════════════════════════
+let _slideOpen = false;
+function openSlideNav() {
+  _slideOpen = true;
+  const sn=document.getElementById('slide-nav'), sb=document.getElementById('slide-backdrop');
+  const si=document.getElementById('slide-trigger-icon'), sl=document.getElementById('slide-trigger-label');
+  const st=document.getElementById('slide-trigger');
+  if(sn){sn.style.display='block';requestAnimationFrame(()=>sn.classList.add('open'));}
+  if(sb) sb.style.display='block';
+  if(si) si.style.transform='rotate(180deg)';
+  if(sl) sl.textContent='Close';
+  if(st){st.classList.add('open');st.style.opacity='0';st.style.pointerEvents='none';}
+}
+function closeSlideNav() {
+  _slideOpen = false;
+  const sn=document.getElementById('slide-nav'), sb=document.getElementById('slide-backdrop');
+  const si=document.getElementById('slide-trigger-icon'), sl=document.getElementById('slide-trigger-label');
+  const st=document.getElementById('slide-trigger');
+  if(sn){sn.classList.remove('open');setTimeout(()=>{if(!_slideOpen)sn.style.display='none';},360);}
+  if(sb) sb.style.display='none';
+  if(si) si.style.transform='rotate(0deg)';
+  if(sl) sl.textContent='Menu';
+  if(st){st.classList.remove('open');st.style.opacity='';st.style.pointerEvents='';}
+}
+function toggleSlideNav(){_slideOpen?closeSlideNav():openSlideNav();}
+function mobileNav(tab){closeSlideNav();switchTab(tab);}
+function updateSlideNavActive(tab){
+  document.querySelectorAll('.slide-nav-item[id^="snav-m-"]').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('snav-m-'+tab);if(el)el.classList.add('active');
+}
+let _touchStartY=0,_touchStartTime=0;
+document.addEventListener('touchstart',e=>{_touchStartY=e.touches[0].clientY;_touchStartTime=Date.now();},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!_slideOpen)return;
+  const dy=e.changedTouches[0].clientY-_touchStartY,elapsed=Date.now()-_touchStartTime;
+  if(dy>60||(elapsed<350&&dy>30))closeSlideNav();
+},{passive:true});
+
+// ════════════════════════════════════════════════
+//  Custom dropdowns — no native OS picker on mobile
+// ════════════════════════════════════════════════
+function toggleCdd(id) {
+  const panel = document.getElementById(id+'-panel');
+  const btn   = document.getElementById(id+'-btn') || document.getElementById(id.replace('-filter','')+'-btn');
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    const b = document.getElementById(p.id.replace('-panel','-btn'));
+    if (b) b.classList.remove('open');
+  });
+  if (!isOpen) {
+    panel.classList.add('open');
+    if (btn) btn.classList.add('open');
+    requestAnimationFrame(() => {
+      const rect = panel.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) {
+        panel.style.left = 'auto'; panel.style.right = '0';
+      } else {
+        panel.style.left = ''; panel.style.right = '';
+      }
+    });
+  }
+}
+function setCdd(id, val, label, callback) {
+  const hidden   = document.getElementById(id+'-filter') || document.getElementById(id);
+  if (hidden) hidden.value = val;
+  const labelEl  = document.getElementById(id+'-label');
+  if (labelEl) labelEl.textContent = label;
+  const panel    = document.getElementById(id+'-panel');
+  if (panel) {
+    panel.querySelectorAll('.cdd-opt').forEach(o => o.classList.toggle('selected', o.dataset.val === val));
+    panel.classList.remove('open');
+  }
+  const btn = document.getElementById(id+'-btn') || document.getElementById(id.replace('-filter','')+'-btn');
+  if (btn) btn.classList.remove('open');
+  if (callback) callback();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cdd-wrap')) {
+    document.querySelectorAll('.cdd-panel.open').forEach(p => {
+      p.classList.remove('open');
+      const b = document.getElementById(p.id.replace('-panel','-btn'));
+      if (b) b.classList.remove('open');
+    });
+  }
+});
+
+// ── Date picker modal ─────────────────────────────
+function openDatePicker() {
+  document.getElementById('date-modal-backdrop').classList.add('open');
+  document.getElementById('book-date-btn').classList.add('active');
+}
+function closeDatePicker() {
+  document.getElementById('date-modal-backdrop').classList.remove('open');
+  document.getElementById('book-date-btn').classList.remove('active');
+}
+function closeDatePickerOutside(e) {
+  if (e.target === document.getElementById('date-modal-backdrop')) closeDatePicker();
+}
+function applyDate() {
+  const val = document.getElementById('book-date-filter').value;
+  const labelEl = document.getElementById('book-date-label');
+  const clearEl = document.getElementById('book-date-clear');
+  if (val) {
+    // Format nicely: "22 Apr 2026"
+    const d = new Date(val+'T00:00:00');
+    labelEl.textContent = d.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
+    clearEl.style.display = 'inline';
+    document.getElementById('book-date-btn').classList.add('active');
+  } else {
+    labelEl.textContent = 'All Dates';
+    clearEl.style.display = 'none';
+    document.getElementById('book-date-btn').classList.remove('active');
+  }
+  closeDatePicker();
+  renderBookings();
+}
+function clearDate(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('book-date-filter').value = '';
+  document.getElementById('book-date-label').textContent = 'All Dates';
+  document.getElementById('book-date-clear').style.display = 'none';
+  document.getElementById('book-date-btn').classList.remove('active');
+  closeDatePicker();
+  renderBookings();
+}
+
+// ════════════════════════════════════════════════
+//  Mobile detection
+// ════════════════════════════════════════════════
+function applyMobileMode() {
+  const w = window.innerWidth;
+  const isPhone         = w <= 768;   // phone: sidebar hidden, floating menu shown
+  const isTabletPortrait= w > 768 && w <= 1024; // sidebar visible, NO floating menu
+  const isDesktop       = w > 1024;
+
+  const mobAvatar=document.getElementById('mob-avatar');
+  const mobLogout=document.getElementById('mob-logout-btn');
+  const hamburger=document.getElementById('hamburger-btn');
+  const trigger  =document.getElementById('slide-trigger');
+  const sidebar  =document.querySelector('.sidebar');
+
+  // Phone: show mobile avatar/logout, hide trigger on tablet
+  if(mobAvatar) mobAvatar.style.display = isPhone ? 'flex' : 'none';
+  if(mobLogout) mobLogout.style.display = isPhone ? 'flex' : 'none';
+  if(hamburger) hamburger.style.display = 'none'; // always hidden (no hamburger in this dashboard)
+
+  // Floating menu: only on phones — sidebar is visible on tablet portrait
+  if(trigger) trigger.style.display = isPhone ? 'flex' : 'none';
+
+  // Tablet portrait: sidebar stays, main gets correct left margin
+  if(isTabletPortrait && sidebar) sidebar.style.display = '';
+
+  // Close slide-nav when not on phone
+  if(!isPhone) {
+    _slideOpen=false;
+    const sn=document.getElementById('slide-nav'), sb=document.getElementById('slide-backdrop');
+    if(sn){ sn.style.display='none'; sn.classList.remove('open'); }
+    if(sb) sb.style.display='none';
+  }
+}
+applyMobileMode();
+window.addEventListener('resize', applyMobileMode);
+
+// ════════════════════════════════════════════════
+//  Custom confirm modal
+// ════════════════════════════════════════════════
+function showConfirm(title, msg, okLabel, onOk, danger=false) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  const okBtn = document.getElementById('confirm-ok');
+  okBtn.textContent = okLabel;
+  okBtn.style.background = danger ? 'linear-gradient(135deg,#dc2626,#f87171)' : 'linear-gradient(135deg,#059669,#34d399)';
+  okBtn.onclick = () => { closeConfirm(); onOk(); };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+document.getElementById('confirm-modal').addEventListener('click', function(e){ if(e.target===this) closeConfirm(); });
+
+// ════════════════════════════════════════════════
+//  Tab switching
+// ════════════════════════════════════════════════
+let _activeTab = 'overview';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tb=document.getElementById('tab-btn-'+tab);if(tb)tb.classList.add('active');
+  const sn=document.getElementById('snav-'+tab);if(sn)sn.classList.add('active');
+  const titles={overview:'Facility Dashboard',bookings:'Booking Management',facilities:'Facility Management',maint:'Maintenance Requests',announce:'Announcements'};
+  document.getElementById('page-title').textContent=titles[tab]||'Dashboard';
+  _activeTab=tab; updateSlideNavActive(tab);
+  if(tab==='bookings')   loadAllBookings();
+  if(tab==='facilities') loadFacilities();
+  if(tab==='maint')      loadMaintRequests();
+  if(tab==='announce')   loadAnnouncements();
+  if(window.innerWidth<=768) closeSidebar();
+}
+document.getElementById('snav-overview').classList.add('active');
+updateSlideNavActive('overview');
+
+// ════════════════════════════════════════════════
+//  Notifications
+// ════════════════════════════════════════════════
+const _notifPanel=document.getElementById('notif-panel');
+let _notifOpen=false;
+document.getElementById('notif-bell').addEventListener('click',e=>{
+  e.stopPropagation();_notifOpen=!_notifOpen;
+  _notifPanel.classList.toggle('open',_notifOpen);
+  if(_notifOpen)loadNotifications();
+});
+document.addEventListener('click',e=>{
+  if(_notifOpen&&!_notifPanel.contains(e.target)&&e.target.id!=='notif-bell'){_notifOpen=false;_notifPanel.classList.remove('open');}
+});
+async function loadNotifications(){
+  const data=await api('api/notifications.php');if(!data.success)return;
+  const list=data.notifications||[],unread=data.unread_count||0;
+  document.getElementById('notif-count').textContent=unread;
+  document.getElementById('notif-count').classList.toggle('hidden',unread===0);
+  const el=document.getElementById('notif-list');
+  if(!list.length){el.innerHTML='<div class="notif-empty">No notifications.</div>';return;}
+  el.innerHTML=list.map(n=>`<div class="notif-row ${n.is_read?'':'unread'}" onclick="markOneRead(${n.notification_id})"><div class="notif-dot ${n.is_read?'read':'unread'}"></div><div><div class="notif-text">${esc(n.message)}</div><div class="notif-time">${n.created_at}</div></div></div>`).join('');
+}
+async function markAllRead(){await api('api/notifications.php','POST',{action:'read_all'});loadNotifications();}
+async function markOneRead(id){await api('api/notifications.php','POST',{action:'read_one',notification_id:id});loadNotifications();}
+
+// ════════════════════════════════════════════════
+//  Bookings — approve / reject with confirm
+// ════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+//  Bookings — search · status filter · date filter · pagination
+// ════════════════════════════════════════════════
+const BOOK_PER_PAGE = 10;
+let allBookings = [], bookPage = 1;
+
+async function loadAllBookings() {
+  const data = await api('api/bookings.php');
+  if (!data.success) {
+    document.getElementById('all-bookings-list').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">'+esc(data.message||'Could not load bookings.')+'</div>';
+    return;
+  }
+  const total   = data.counts?.total    || 0;
+  const pending = data.counts?.pending  || 0;
+  const approved= data.counts?.approved || 0;
+  const rejected= data.counts?.rejected || 0;
+  document.getElementById('ov-pending').textContent   = pending;
+  document.getElementById('ov-approved').textContent  = approved;
+  document.getElementById('nb-pending').textContent = pending;
+  updateGauge(approved, pending, rejected);
+
+  allBookings = data.bookings || [];
+  bookPage = 1;
+  renderBookings();
+  renderPendingPreview();
+}
+
+// ── Pending preview — 8 items, no pagination ──────
+function renderPendingPreview() {
+  const pendingAll = allBookings.filter(b=>(b.status_name||'').toLowerCase()==='pending');
+  const total = pendingAll.length;
+  const slice = pendingAll.slice(0, 8); // show up to 8
+
+  document.getElementById('pending-sub').textContent = total ? total+' awaiting approval' : 'No pending bookings';
+  document.getElementById('pending-preview').innerHTML = slice.length
+    ? slice.map(b=>`
+    <div class="book-row">
+      <div class="book-info">
+        <div class="book-fac">${esc(b.facility_name)}</div>
+        <div class="book-meta">👤 ${esc(b.user_name||'—')} · 📅 ${b.booking_date} · 🕐 ${b.start_time}–${b.end_time}</div>
+      </div>
+      <div class="book-actions">
+        <button class="btn-approve" onclick="updateBooking(${b.booking_id},2,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✓ Approve</button>
+        <button class="btn-reject"  onclick="updateBooking(${b.booking_id},3,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✕ Reject</button>
+      </div>
+    </div>`).join('')
+    : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No pending bookings ✓</div>';
+}
+
+function getFilteredBookings() {
+  const q      = (document.getElementById('book-search')?.value || '').toLowerCase();
+  const status = document.getElementById('book-status-filter')?.value || '';
+  const date   = document.getElementById('book-date-filter')?.value || '';
+  return allBookings.filter(b => {
+    if (q && !(b.facility_name||'').toLowerCase().includes(q) && !(b.user_name||'').toLowerCase().includes(q)) return false;
+    if (status && (b.status_name||'').toLowerCase() !== status) return false;
+    if (date   &&  b.booking_date !== date) return false;
+    return true;
+  });
+}
+
+// ── Shared pagination builder ─────────────────────
+function buildPageBtns(current, total, onPage) {
+  const btn = (p, label, active, disabled) =>
+    `<button class="page-btn${active?' active-page':''}" ${disabled?'disabled':''} onclick="${onPage}(${p})">${label}</button>`;
+  const ellipsis = `<span class="page-ellipsis">…</span>`;
+  let h = btn(current-1,'← Prev',false,current<=1);
+  h += btn(1,'1',current===1,false);
+  const ws=Math.max(2,current-2), we=Math.min(total-1,current+2);
+  if(ws>2) h+=ellipsis;
+  for(let i=ws;i<=we;i++) h+=btn(i,i,current===i,false);
+  if(we<total-1) h+=ellipsis;
+  if(total>1) h+=btn(total,total,current===total,false);
+  h+=btn(current+1,'Next →',false,current>=total);
+  return h;
+}
+
+
+
+function renderBookings() {
+  const filtered = getFilteredBookings();
+  const total    = filtered.length;
+  const pages    = Math.ceil(total / BOOK_PER_PAGE) || 1;
+  bookPage       = Math.min(bookPage, pages);
+  const slice    = filtered.slice((bookPage-1)*BOOK_PER_PAGE, bookPage*BOOK_PER_PAGE);
+
+  document.getElementById('all-bookings-sub').textContent =
+    total + ' booking' + (total!==1?'s':'') + (total!==allBookings.length?' (filtered)':'') +
+    ' · ' + allBookings.filter(b=>(b.status_name||'').toLowerCase()==='pending').length + ' pending';
+
+  const tbody = document.getElementById('all-bookings-list');
+  tbody.innerHTML = slice.length ? slice.map(b => {
+    const st = (b.status_name||'').toLowerCase();
+    const isPending = st === 'pending';
+    return `<tr id="brow-${b.booking_id}">
+      <td data-label="Facility"><div class="bk-fac-wrap"><span class="bk-fac-name">${esc(b.facility_name)}</span>${b.location?`<span class="bk-fac-loc">${esc(b.location)}</span>`:''}</div></td>
+      <td data-label="User"><div class="bk-usr-wrap"><span class="bk-usr-name">${esc(b.user_name||'—')}</span>${b.user_email?`<span class="bk-usr-email">${esc(b.user_email)}</span>`:''}</div></td>
+      <td data-label="Date">${b.booking_date}</td>
+      <td data-label="Time" style="white-space:nowrap">${b.start_time}–${b.end_time}</td>
+      <td data-label="Status"><span class="badge ${st}">${esc(b.status_name)}</span></td>
+      <td data-label="Action">${isPending?`<div class="bk-action-btns">
+        <button class="btn-approve" onclick="updateBooking(${b.booking_id},2,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✓ Approve</button>
+        <button class="btn-reject"  onclick="updateBooking(${b.booking_id},3,'${esc(b.facility_name)}','${esc(b.user_name||'User')}')">✕ Reject</button>
+      </div>`:'—'}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--dim);">No bookings match this filter.</td></tr>`;
+
+  const pagEl  = document.getElementById('book-pagination');
+  const infoEl = document.getElementById('book-page-info');
+  const btnsEl = document.getElementById('book-page-btns');
+  pagEl.style.display = 'flex';
+  if (pages <= 1) { btnsEl.innerHTML=''; infoEl.innerHTML=''; return; }
+  const from=(bookPage-1)*BOOK_PER_PAGE+1, to=Math.min(bookPage*BOOK_PER_PAGE,total);
+  infoEl.innerHTML=`Showing <b>${from}–${to}</b> of <b>${total}</b>`;
+  btnsEl.innerHTML=buildPageBtns(bookPage,pages,'gotoBookPage');
+}
+function gotoBookPage(p){bookPage=p;renderBookings();}
+
+function updateBooking(bookingId, statusId, facilityName, userName) {
+  const action    = statusId===2 ? 'Approve' : 'Reject';
+  const newStatus = statusId===2 ? 'Approved' : 'Rejected';
+  showConfirm(
+    action+' Booking',
+    `${action} the booking by ${userName} for ${facilityName}?`,
+    action,
+    async () => {
+      // Optimistic update
+      const booking = allBookings.find(b=>b.booking_id===bookingId);
+      if (booking) { booking.status_name=newStatus; booking.status_id=statusId; }
+      renderBookings();
+      renderPendingPreview();
+      const data = await api('api/booking_status.php','POST',{booking_id:bookingId,status_id:statusId});
+      if (data.success) {
+        // Update gauge counts
+        const p=allBookings.filter(b=>(b.status_name||'').toLowerCase()==='pending').length;
+        const a=allBookings.filter(b=>(b.status_name||'').toLowerCase()==='approved').length;
+        const r=allBookings.filter(b=>(b.status_name||'').toLowerCase()==='rejected').length;
+        updateGauge(a,p,r);
+        document.getElementById('nb-pending').textContent=p;
+        document.getElementById('ov-pending').textContent=p;
+        document.getElementById('ov-approved').textContent=a;
+      } else {
+        if (booking) { booking.status_name='Pending'; booking.status_id=1; }
+        renderBookings(); renderPendingPreview();
+        showConfirm('Error',data.message||'Failed.','OK',()=>{});
+      }
+    },
+    statusId===3
+  );
+}
+
+// ── 5s auto-refresh for overview ─────────────────
+// ════════════════════════════════════════════════
+//  Gauge chart (matches admin dashboard)
+// ════════════════════════════════════════════════
+const _G = { CX:100, CY:72, R:54 };
+let _gaugeState = { approved:-1, pending:-1, rejected:-1 };
+
+function _gArc(a, b) {
+  const x1=_G.CX+_G.R*Math.cos(a), y1=_G.CY-_G.R*Math.sin(a);
+  const x2=_G.CX+_G.R*Math.cos(b), y2=_G.CY-_G.R*Math.sin(b);
+  return `M${x1.toFixed(3)} ${y1.toFixed(3)} A${_G.R} ${_G.R} 0 0 1 ${x2.toFixed(3)} ${y2.toFixed(3)}`;
+}
+function _setPath(id,d){const e=document.getElementById(id);if(e)e.setAttribute('d',d||'');}
+
+(function(){
+  const t=document.getElementById('gauge-track');
+  if(t) t.setAttribute('d', _gArc(Math.PI, 0));
+})();
+
+function updateGauge(approved, pending, rejected) {
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('gauge-num',    pending);
+  set('cnt-approved', approved);
+  set('cnt-pending',  pending);
+  set('cnt-rejected', rejected);
+  if(_gaugeState.approved===approved&&_gaugeState.pending===pending&&_gaugeState.rejected===rejected) return;
+  _gaugeState={approved,pending,rejected};
+  const total=approved+pending+rejected;
+  if(!total) return;
+  // Boundaries from left (Math.PI): approved fills first, then rejected, pending fills rest
+  const eA = Math.PI - (approved/total)*Math.PI;
+  const eR = Math.PI - ((approved+rejected)/total)*Math.PI;
+  // Paint order: pending full (base) → rejected overlaps → approved on top
+  _setPath('gauge-pending-bg',  _gArc(Math.PI, 0));
+  _setPath('gauge-pending-bdr', _gArc(Math.PI, 0));
+  _setPath('gauge-rejected',    rejected ? _gArc(Math.PI, eR) : '');
+  _setPath('gauge-approved',    approved ? _gArc(Math.PI, eA) : '');
+}
+
+// ════════════════════════════════════════════════
+//  Facilities — CRUD with emoji picker
+// ════════════════════════════════════════════════
+const FAC_EMOJIS = ['🏛️','📚','💻','🔬','🎨','🏀','⚽','🏊','🎭','🎵','🏋️','🍽️','☕','🏥','🔧','📋','🎓','🖥️','🧪','📐','🏟️','🎤','📖','🛠️','🏫','🌿','🧘','🎯','🎲','🔭','📡','🚗','🏗️','💡','🧠','🎪'];
+let selectedEmoji = '🏛️';
+
+function buildEmojiGrid() {
+  document.getElementById('emoji-grid').innerHTML = FAC_EMOJIS.map(e =>
+    `<div class="emoji-opt ${e===selectedEmoji?'selected':''}" onclick="selectEmoji('${e}')">${e}</div>`
+  ).join('');
+}
+function selectEmoji(e) {
+  selectedEmoji = e;
+  document.getElementById('emoji-preview-val').textContent = e;
+  document.querySelectorAll('.emoji-opt').forEach(el => el.classList.toggle('selected', el.textContent.trim()===e));
+}
+function openAddModal() {
+  selectedEmoji = '🏛️';
+  document.getElementById('add-alert').className = 'm-alert';
+  document.getElementById('fac-name').value = '';
+  document.getElementById('fac-capacity').value = '';
+  document.getElementById('fac-location').value = '';
+  document.getElementById('fac-type').value = '1';
+  // Reset custom type dropdown
+  const typeLabel = document.getElementById('mfcdd-fac-type-label');
+  if (typeLabel) typeLabel.textContent = 'Lecture Hall';
+  document.querySelectorAll('#mfcdd-fac-type-panel .mf-cdd-opt').forEach((o,i) => o.classList.toggle('selected', i===0));
+  document.getElementById('emoji-preview-val').textContent = '🏛️';
+  buildEmojiGrid();
+  document.getElementById('add-fac-modal').classList.add('open');
+}
+function closeAddModal() { document.getElementById('add-fac-modal').classList.remove('open'); }
+document.getElementById('add-fac-modal').addEventListener('click', function(e){ if(e.target===this) closeAddModal(); });
+
+async function submitAddFacility() {
+  const name     = document.getElementById('fac-name').value.trim();
+  const capacity = document.getElementById('fac-capacity').value;
+  const location = document.getElementById('fac-location').value.trim();
+  const typeId   = document.getElementById('fac-type').value;
+  const alertEl  = document.getElementById('add-alert'); alertEl.className='m-alert';
+  if (!name)     { alertEl.textContent='✕ Facility name required.'; alertEl.className='m-alert show error'; return; }
+  if (!capacity) { alertEl.textContent='✕ Capacity required.';      alertEl.className='m-alert show error'; return; }
+  if (!location) { alertEl.textContent='✕ Location required.';      alertEl.className='m-alert show error'; return; }
+  const btn = document.getElementById('add-fac-btn'); btn.disabled=true; btn.textContent='Saving…';
+  const data = await api('api/facilities.php','POST',{action:'create',facility_name:name,type_id:parseInt(typeId),capacity:parseInt(capacity),location,emoji:selectedEmoji});
+  if (!data.success) { alertEl.textContent='✕ '+(data.message||'Failed.'); alertEl.className='m-alert show error'; btn.disabled=false; btn.textContent='Add Facility'; return; }
+  alertEl.textContent='✓ Facility added!'; alertEl.className='m-alert show success';
+  setTimeout(() => { closeAddModal(); loadFacilities(); }, 800);
+  btn.disabled=false; btn.textContent='Add Facility';
+}
+
+// ════════════════════════════════════════════════
+//  Facilities — search · availability filter · type filter · pagination
+// ════════════════════════════════════════════════
+const FAC_PER_PAGE = 10;
+let allFacilities = [], facPage = 1;
+
+async function loadFacilities(silent=false) {
+  if (!silent) document.getElementById('fac-grid').innerHTML = [1,2,3].map(()=>'<div class="skeleton" style="height:160px;border-radius:14px;"></div>').join('');
+  const data = await api('api/facilities.php');
+  if (!data.success) { document.getElementById('fac-grid').innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load facilities.</div>'; return; }
+  allFacilities = data.facilities || [];
+  const avail = allFacilities.filter(f=>f.is_available).length;
+  document.getElementById('ov-facilities').textContent = allFacilities.length;
+  document.getElementById('nb-fac').textContent        = allFacilities.length;
+  facPage = 1;
+  renderFacilities();
+}
+
+function getFilteredFacilities() {
+  const q     = (document.getElementById('fac-search')?.value || '').toLowerCase();
+  const avail = document.getElementById('fac-avail-filter')?.value || '';
+  const type  = document.getElementById('fac-type-filter')?.value  || '';
+  return allFacilities.filter(f => {
+    if (q     && !(f.facility_name||'').toLowerCase().includes(q) && !(f.location||'').toLowerCase().includes(q)) return false;
+    if (avail === '1' && !f.is_available) return false;
+    if (avail === '0' &&  f.is_available) return false;
+    if (type  && (f.type_name||'') !== type) return false;
+    return true;
+  });
+}
+
+function renderFacilities() {
+  const filtered = getFilteredFacilities();
+  const total    = filtered.length;
+  const avail    = filtered.filter(f=>f.is_available).length;
+  const pages    = Math.ceil(total / FAC_PER_PAGE) || 1;
+  facPage        = Math.min(facPage, pages);
+  const slice    = filtered.slice((facPage-1)*FAC_PER_PAGE, facPage*FAC_PER_PAGE);
+
+  document.getElementById('fac-sub').textContent =
+    total + ' facilit' + (total!==1?'ies':'y') + ' · ' + avail + ' available' +
+    (total!==allFacilities.length?' (filtered)':'');
+
+  // Add box is ALWAYS pinned to row 3, col 1 via CSS grid placement
+  // regardless of how many cards are on this page
+  const addBox = `<div class="add-fac-card" onclick="openAddModal()"><div class="add-icon">➕</div><div class="add-lbl">Add</div></div>`;
+
+  let cards = slice.length ? slice.map(f => `
+    <div class="fac-card-item ${f.is_available?'':'unavailable'}" id="fcard-${f.facility_id}">
+      <div class="fci-avail"><span class="badge ${f.is_available?'approved':'rejected'}">${f.is_available?'Available':'Unavailable'}</span></div>
+      <span class="fci-emoji">${esc(f.emoji||'🏛️')}</span>
+      <div class="fci-name">${esc(f.facility_name)}</div>
+      <div class="fci-meta">📍 ${esc(f.location||'—')}<br>👥 ${f.capacity} pax · ${esc(f.type_name||'—')}</div>
+      <div class="fci-actions">
+        <button class="btn-fci ${f.is_available?'disable':'enable'}" onclick="toggleFacility(${f.facility_id},${f.is_available?0:1},'${esc(f.facility_name)}')">
+          ${f.is_available?'⛔ Disable':'✅ Enable'}
+        </button>
+        <button class="btn-fci del" onclick="deleteFacility(${f.facility_id},'${esc(f.facility_name)}')">🗑️ Delete</button>
+      </div>
+    </div>`) : [`<div style="grid-column:1 / span 5;grid-row:1 / span 2;display:flex;align-items:center;justify-content:center;padding:28px;font-size:13px;color:var(--dim);">No facilities match this filter.</div>`];
+
+  // Add box always rendered — grid placement keeps it at row 3 col 1
+  cards.push(addBox);
+  document.getElementById('fac-grid').innerHTML = cards.join('');
+
+  // Pagination
+  const pagEl  = document.getElementById('fac-pagination');
+  const infoEl = document.getElementById('fac-page-info');
+  const btnsEl = document.getElementById('fac-page-btns');
+  pagEl.style.display = 'flex';
+  if (pages <= 1) { btnsEl.innerHTML=''; infoEl.innerHTML=''; return; }
+  const from = (facPage-1)*FAC_PER_PAGE + 1, to = Math.min(facPage*FAC_PER_PAGE, total);
+  infoEl.innerHTML = `Showing <b>${from}–${to}</b> of <b>${total}</b>`;
+  let btnHtml = `<button class="page-btn" ${facPage<=1?'disabled':''} onclick="gotoFacPage(${facPage-1})">← Prev</button>`;
+  const start = Math.max(1, facPage-2), end = Math.min(pages, start+4);
+  for (let i=start; i<=end; i++) btnHtml += `<button class="page-btn ${i===facPage?'active-page':''}" onclick="gotoFacPage(${i})">${i}</button>`;
+  btnHtml += `<button class="page-btn" ${facPage>=pages?'disabled':''} onclick="gotoFacPage(${facPage+1})">Next →</button>`;
+  btnsEl.innerHTML = btnHtml;
+}
+function gotoFacPage(p) { facPage=p; renderFacilities(); document.getElementById('tab-facilities').scrollIntoView({behavior:'smooth',block:'start'}); }
+
+function toggleFacility(id, newState, name) {
+  const action = newState ? 'Enable' : 'Disable';
+  showConfirm(
+    action+' Facility',
+    `${action} "${name}"?${newState?' Users can book this facility again.':" Won't be bookable until re-enabled."}`,
+    action,
+    async () => {
+      const data = await api('api/facilities.php','POST',{action:'toggle',facility_id:id,is_available:newState});
+      if (data.success) loadFacilities();
+      else showConfirm('Error', data.message||'Failed.','OK',()=>{});
+    }
+  );
+}
+function deleteFacility(id, name) {
+  showConfirm('🗑️ Delete Facility', `Delete "${name}"? This cannot be undone. All bookings will also be removed.`, 'Delete',
+    async () => {
+      const data = await api('api/facilities.php','POST',{action:'delete',facility_id:id});
+      if (data.success) loadFacilities();
+      else showConfirm('Error', data.message||'Failed.','OK',()=>{});
+    }, true);
+}
+
+// ════════════════════════════════════════════════
+//  Announcements — post + list with edit/delete
+// ════════════════════════════════════════════════
+const PRI_LABEL = {low:'General', medium:'Medium', high:'High'};
+// Normalise priority string — API may return 'medium', 'medium — important', etc.
+// Extract just the first word (low/medium/high) for badge lookup
+function normPriority(p) {
+  if (!p) return 'low';
+  return String(p).toLowerCase().split(/[\s—\-]/)[0].trim();
+}
+let _annData = [];
+
+async function loadAnnouncements() {
+  const data = await api('api/announcements.php');
+  if (!data.success) return;
+  _annData = data.announcements || [];
+  document.getElementById('ov-ann').textContent          = _annData.length;
+  document.getElementById('ann-count-label').textContent = _annData.length+' active';
+  const el = document.getElementById('ann-list');
+  if (!_annData.length) { el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No announcements yet.</div>'; return; }
+  el.innerHTML = _annData.slice(0,5).map(a => `
+    <div class="ann-item" id="ann-item-${a.announcement_id}">
+      <div class="ann-item-head">
+        <div class="ann-item-title">${esc(a.title)}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <div class="ann-item-actions">
+            <button class="btn-ann-act btn-ann-edit" onclick="openEditAnnModal(${a.announcement_id})">✏️ Edit</button>
+            <button class="btn-ann-act btn-ann-del"  onclick="deleteAnn(${a.announcement_id},'${esc(a.title)}')">🗑️</button>
+          </div>
+          <span class="ann-pri ${normPriority(a.priority)}">${PRI_LABEL[normPriority(a.priority)]||normPriority(a.priority)}</span>
+        </div>
+      </div>
+      <div class="ann-item-msg">${esc(a.message)}</div>
+      <div class="ann-item-meta">📅 ${a.created_at} · By: ${esc(a.posted_by_name||'—')}</div>
+      <div class="ann-item-votes">
+        <span class="vote-pill up">👍 ${a.upvotes||0}</span>
+        <span class="vote-pill dn">👎 ${a.downvotes||0}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ── Edit announcement ─────────────────────────────
+let _editingAnnId = null;
+function openEditAnnModal(id) {
+  const a = _annData.find(x => x.announcement_id === id); if (!a) return;
+  _editingAnnId = id;
+  document.getElementById('edit-ann-title').value    = a.title    || '';
+  document.getElementById('edit-ann-msg').value      = a.message  || '';
+  // Set priority hidden input + sync custom dropdown
+  const pri = a.priority || 'medium';
+  document.getElementById('edit-ann-priority').value = pri;
+  const dotColors = {low:'#34d399', medium:'#f59e0b', high:'#f87171'};
+  const priLabels = {low:'Low — General', medium:'Medium — Important', high:'High — Urgent'};
+  const dotStyle  = `display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColors[pri]};margin-right:7px;vertical-align:middle;`;
+  const priLabel  = document.getElementById('mfcdd-edit-pri-label');
+  if (priLabel) priLabel.innerHTML = `<span class="pri-dot ${pri}" style="${dotStyle}"></span>${priLabels[pri]}`;
+  document.querySelectorAll('#mfcdd-edit-pri-panel .mf-cdd-opt').forEach(o => {
+    o.classList.toggle('selected', o.getAttribute('onclick')?.includes("'"+pri+"'"));
+  });
+  document.getElementById('edit-ann-alert').className = 'm-alert';
+  document.getElementById('edit-ann-modal').classList.add('open');
+}
+function closeEditAnnModal() {
+  document.getElementById('edit-ann-modal').classList.remove('open');
+  _editingAnnId = null;
+}
+document.getElementById('edit-ann-modal').addEventListener('click', function(e){ if(e.target===this) closeEditAnnModal(); });
+
+async function saveEditAnn() {
+  const title    = document.getElementById('edit-ann-title').value.trim();
+  const message  = document.getElementById('edit-ann-msg').value.trim();
+  const priority = document.getElementById('edit-ann-priority').value;
+  const alertEl  = document.getElementById('edit-ann-alert'); alertEl.className='m-alert';
+  if (!title)   { alertEl.textContent='✕ Title required.';   alertEl.className='m-alert show error'; return; }
+  if (!message) { alertEl.textContent='✕ Message required.'; alertEl.className='m-alert show error'; return; }
+  const btn = document.getElementById('edit-ann-save-btn'); btn.disabled=true; btn.textContent='Saving…';
+  const data = await api('api/announcements.php','POST',{action:'edit',announcement_id:_editingAnnId,title,message,priority});
+  if (!data.success) { alertEl.textContent='✕ '+(data.message||'Failed.'); alertEl.className='m-alert show error'; btn.disabled=false; btn.textContent='Save Changes'; return; }
+  alertEl.textContent='✓ Updated!'; alertEl.className='m-alert show success';
+  setTimeout(() => { closeEditAnnModal(); loadAnnouncements(); }, 700);
+  btn.disabled=false; btn.textContent='Save Changes';
+}
+
+// ── Delete announcement ───────────────────────────
+function deleteAnn(id, title) {
+  showConfirm('🗑️ Delete Announcement',
+    `Delete "<strong>${esc(title)}</strong>"? This cannot be undone.`,
+    'Delete',
+    async () => {
+      const data = await api('api/announcements.php','POST',{action:'delete',announcement_id:id});
+      if (data.success) loadAnnouncements();
+      else showConfirm('Error', data.message||'Failed.','OK',()=>{});
+    }, true);
+}
+
+async function postAnnouncement() {
+  const title   = document.getElementById('ann-title').value.trim();
+  const msg     = document.getElementById('ann-msg').value.trim();
+  const priority= document.getElementById('ann-priority').value;
+  const alertEl = document.getElementById('ann-alert'); alertEl.className='f-alert';
+  if (!title) { alertEl.textContent='✕ Title required.';   alertEl.className='f-alert show error'; return; }
+  if (!msg)   { alertEl.textContent='✕ Message required.'; alertEl.className='f-alert show error'; return; }
+  const btn = document.getElementById('ann-btn'); btn.disabled=true; btn.textContent='Posting…';
+  const data = await api('api/announcements.php','POST',{action:'post',title,message:msg,priority});
+  if (!data.success) { alertEl.textContent='✕ '+(data.message||'Failed.'); alertEl.className='f-alert show error'; }
+  else {
+    alertEl.textContent='✓ Posted to all users!'; alertEl.className='f-alert show success';
+    document.getElementById('ann-title').value=''; document.getElementById('ann-msg').value='';
+    // Reset priority dropdown to medium
+    document.getElementById('ann-priority').value='medium';
+    const annPriLabel = document.getElementById('mfcdd-ann-pri-label');
+    if(annPriLabel) annPriLabel.innerHTML='<span class="pri-dot medium" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-right:7px;vertical-align:middle;"></span>Medium — Important';
+    document.querySelectorAll('#mfcdd-ann-pri-panel .mf-cdd-opt').forEach((o,i)=>o.classList.toggle('selected',i===1));
+    loadAnnouncements(); setTimeout(()=>alertEl.className='f-alert',4000);
+  }
+  btn.disabled=false; btn.textContent='📢 Post Announcement';
+}
+
+// ════════════════════════════════════════════════
+//  Utility
+// ════════════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function updatePriorityDot(selectId, dotId) {
+  const val = document.getElementById(selectId)?.value || 'medium';
+  const dot = document.getElementById(dotId);
+  if (dot) { dot.className = 'priority-dot ' + val; }
+}
+
+// ── Modal custom dropdowns (mf-cdd) ──────────────────
+function toggleMfCdd(id) {
+  const panel = document.getElementById('mfcdd-'+id+'-panel');
+  const btn   = document.getElementById('mfcdd-'+id)?.querySelector('.mf-cdd-btn');
+  const isOpen = panel?.classList.contains('open');
+  // Close all open mf-cdd panels first
+  document.querySelectorAll('.mf-cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    p.closest('.mf-cdd')?.querySelector('.mf-cdd-btn')?.classList.remove('open');
+  });
+  if (!isOpen && panel) {
+    panel.classList.add('open');
+    if (btn) btn.classList.add('open');
+  }
+}
+
+function setMfCdd(id, value, labelHtml) {
+  const hidden = document.getElementById(id === 'fac-type' ? 'fac-type' : id === 'edit-pri' ? 'edit-ann-priority' : 'ann-priority');
+  if (hidden) hidden.value = value;
+  const label = document.getElementById('mfcdd-'+id+'-label');
+  if (label) label.innerHTML = labelHtml;
+  const panel = document.getElementById('mfcdd-'+id+'-panel');
+  const btn   = document.getElementById('mfcdd-'+id)?.querySelector('.mf-cdd-btn');
+  if (panel) {
+    panel.querySelectorAll('.mf-cdd-opt').forEach(o => o.classList.remove('selected'));
+    const clicked = [...panel.querySelectorAll('.mf-cdd-opt')].find(o => o.getAttribute('onclick')?.includes("'"+value+"'"));
+    if (clicked) clicked.classList.add('selected');
+    panel.classList.remove('open');
+  }
+  if (btn) btn.classList.remove('open');
+}
+
+// Close mf-cdd panels when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.mf-cdd')) {
+    document.querySelectorAll('.mf-cdd-panel.open').forEach(p => {
+      p.classList.remove('open');
+      p.closest('.mf-cdd')?.querySelector('.mf-cdd-btn')?.classList.remove('open');
+    });
+  }
+});
+function logout(){localStorage.removeItem('yagums_token');localStorage.removeItem('yagums_user');document.cookie='yagums_token=; path=/; max-age=0';window.location.href=window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';}
+
+// ════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════
+loadAllBookings();
+loadFacilities();
+loadAnnouncements();
+loadNotifications();
+
+// ── Silent background refresh — no LIVE badge, just keeps data current ──
+let _facNotifHash = '';
+setInterval(async () => {
+  // Facilities: refresh silently so new/edited/deleted facilities appear
+  if (_activeTab === 'facilities') loadFacilities(true);
+  // Announcements: refresh silently so new posts appear in Recent Posts
+  if (_activeTab === 'announce' || _activeTab === 'overview') loadAnnouncements();
+  // Bookings: silent 5s refresh — keeps table current without user action
+  if (_activeTab === 'bookings') loadAllBookings();
+  // Maintenance: refresh when tab is active
+  if (_activeTab === 'maint') loadMaintRequests();
+  // Notifications: silent badge refresh every 5s
+  const nd = await api('api/notifications.php');
+  if (!nd.success) return;
+  const unread = nd.unread_count || 0;
+  const nh = unread + '|' + (nd.notifications||[]).slice(0,5).map(n=>n.notification_id).join(',');
+  if (nh === _facNotifHash) return;
+  _facNotifHash = nh;
+  document.getElementById('notif-count').textContent = unread;
+  document.getElementById('notif-count').classList.toggle('hidden', unread === 0);
+  if (_notifOpen) loadNotifications();
+}, 5000);
+
+// ════════════════════════════════════════════════
+//  Maintenance Requests (Facility Manager view)
+// ════════════════════════════════════════════════
+let _maintReqs = [], _maintPage = 1;
+const MAINT_PER_PAGE_DESKTOP = 10;
+const MAINT_PER_PAGE_MOBILE  = 5;
+function getMaintPerPage() { return window.innerWidth <= 768 ? MAINT_PER_PAGE_MOBILE : MAINT_PER_PAGE_DESKTOP; }
+
+async function loadMaintRequests() {
+  const data = await api('api/maintenance.php');
+  if (!data.success) return;
+  _maintReqs = data.requests || [];
+  const open = _maintReqs.filter(r => r.status_name !== 'Completed').length;
+  if (document.getElementById('maint-sub'))
+    document.getElementById('maint-sub').textContent =
+      _maintReqs.length + ' request' + (_maintReqs.length!==1?'s':'') + ' · ' + open + ' open';
+  renderMaintRequests();
+}
+
+function getFilteredMaintReqs() {
+  const q   = (document.getElementById('maint-search')?.value||'').toLowerCase();
+  const st  = document.getElementById('maint-status-filter')?.value||'';
+  const pri = document.getElementById('maint-pri-filter')?.value||'';
+  return _maintReqs.filter(r => {
+    if (q && !(r.facility_name||'').toLowerCase().includes(q)
+          && !(r.reported_by_name||'').toLowerCase().includes(q)
+          && !(r.description||'').toLowerCase().includes(q)) return false;
+    if (st  && r.status_name !== st)  return false;
+    if (pri && r.priority    !== pri) return false;
+    return true;
+  });
+}
+
+const PRI_CLS_M = {High:'high',Medium:'medium',Low:'low'};
+const ST_CLS_M  = {'Pending':'pending','In Progress':'in-progress','Completed':'completed'};
+
+function renderMaintRequests() {
+  const filtered = getFilteredMaintReqs();
+  const perPage  = getMaintPerPage();
+  const total    = filtered.length;
+  const pages    = Math.ceil(total/perPage)||1;
+  _maintPage     = Math.min(_maintPage, pages);
+  const slice    = filtered.slice((_maintPage-1)*perPage, _maintPage*perPage);
+  const tbody    = document.getElementById('maint-tbody');
+  const cards    = document.getElementById('maint-cards');
+  if (!tbody && !cards) return;
+  if (!slice.length) {
+    if(tbody) tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--dim)">No requests match.</td></tr>';
+    if(cards) cards.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No requests found.</div>';
+  } else {
+    if(tbody) tbody.innerHTML = slice.map(r => `
+      <tr>
+        <td style="font-size:11px;color:var(--dim);white-space:nowrap;">#${r.request_id}</td>
+        <td><strong>${esc(r.emoji||'🏛️')} ${esc(r.facility_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.location||'')}</span></td>
+        <td>${esc(r.description||'')}</td>
+        <td style="white-space:nowrap;">${esc(r.reported_by_name||'—')}</td>
+        <td style="white-space:nowrap;"><span class="badge ${PRI_CLS_M[r.priority]||'warning'}">${esc(r.priority)}</span></td>
+        <td style="white-space:nowrap;"><span class="badge ${ST_CLS_M[r.status_name]||'pending'}">${esc(r.status_name)}</span></td>
+        <td style="font-size:12px;color:var(--muted);">${r.assigned_names ? esc(r.assigned_names) : '<em style="color:var(--dim)">Unassigned</em>'}</td>
+        <td style="font-size:11px;color:var(--dim);white-space:nowrap;">${r.created_at}</td>
+        <td>${r.status_name!=='Completed'?`<button class="panel-action" style="font-size:11px;padding:5px 12px;" onclick="openAssignModal(${r.request_id})">+ Assign</button>`:''}</td>
+      </tr>`).join('');
+    if(cards) cards.innerHTML = slice.map(r => `
+      <div class="maint-req-card">
+        <!-- Header: facility name + status/priority badges -->
+        <div class="maint-card-header">
+          <div class="maint-card-fac">${esc(r.emoji||'🏛️')} ${esc(r.facility_name)}</div>
+          <div class="maint-card-badges">
+            <span class="badge ${PRI_CLS_M[r.priority]||'warning'}" style="font-size:10px;">${esc(r.priority)}</span>
+            <span class="badge ${ST_CLS_M[r.status_name]||'pending'}" style="font-size:10px;">${esc(r.status_name)}</span>
+          </div>
+        </div>
+        <!-- Description -->
+        <div class="maint-card-desc">${esc(r.description||'')}</div>
+        <!-- Meta details stacked -->
+        <div class="maint-card-meta">
+          <span>👤 ${esc(r.reported_by_name||'—')}</span>
+          <span>📅 ${r.created_at}</span>
+          <span>🔧 ${r.assigned_names ? esc(r.assigned_names) : '<em style="color:var(--dim)">Not yet assigned</em>'}</span>
+        </div>
+        <!-- Full-width assign button -->
+        ${r.status_name!=='Completed'?`<button class="btn-assign-card" onclick="openAssignModal(${r.request_id})">+ Assign Task</button>`:''}
+      </div>`).join('');
+  }
+  buildMaintPagination(_maintPage, pages, total, perPage);
+}
+function gotoMaintPage(p) { _maintPage = p; renderMaintRequests(); }
+
+function buildMaintPagination(cur, pages, total, perPage) {
+  const pag  = document.getElementById('maint-pagination');
+  const info = document.getElementById('maint-page-info');
+  const btns = document.getElementById('maint-page-btns');
+  if (!pag) return;
+  if (pages <= 1) { pag.style.display='none'; return; }
+  pag.style.display = 'flex';
+  const start = (cur-1)*perPage+1, end = Math.min(cur*perPage, total);
+  if(info) info.innerHTML = `Showing <b>${start}–${end}</b> of <b>${total}</b>`;
+  let h = '';
+  const btn = (p,l,a,d) => `<button class="page-btn${a?' active-page':''}" ${d?'disabled':''} onclick="gotoMaintPage(${p})">${l}</button>`;
+  h += btn(cur-1,'← Prev',false,cur<=1);
+  h += btn(1,'1',cur===1,false);
+  const ws=Math.max(2,cur-1), we=Math.min(pages-1,cur+1);
+  if(ws>2) h+='<span style="color:var(--dim);padding:0 4px;">…</span>';
+  for(let i=ws;i<=we;i++) h+=btn(i,i,cur===i,false);
+  if(we<pages-1) h+='<span style="color:var(--dim);padding:0 4px;">…</span>';
+  if(pages>1) h+=btn(pages,pages,cur===pages,false);
+  h+=btn(cur+1,'Next →',false,cur>=pages);
+  if(btns) btns.innerHTML=h;
+}
+
+// ── Assign Task Modal ─────────────────────────────────────────────────
+let _assigningReqId = null;
+
+async function openAssignModal(reqId) {
+  _assigningReqId = reqId;
+  const r = _maintReqs.find(x => x.request_id === reqId) || {};
+  document.getElementById('assign-modal-sub').textContent = `Request #${reqId} — ${r.facility_name||''}`;
+  document.getElementById('assign-alert').className = 'm-alert';
+  document.getElementById('assign-note').value = '';
+  document.getElementById('assign-staff-id').value = '';
+  document.getElementById('mfcdd-assign-staff-label').textContent = 'Select staff member…';
+  const panel = document.getElementById('mfcdd-assign-staff-panel');
+  panel.classList.remove('open');
+  panel.innerHTML = '<div style="padding:12px;text-align:center;font-size:13px;color:var(--dim)">Loading…</div>';
+  document.getElementById('assign-modal').classList.add('open');
+  const data = await api('api/maintenance.php','POST',{action:'get_staff'});
+  if (!data.success || !data.staff?.length) {
+    panel.innerHTML = '<div style="padding:12px;text-align:center;font-size:13px;color:var(--dim)">No active maintenance staff.</div>';
+    return;
+  }
+  panel.innerHTML = data.staff.map(s =>
+    `<div class="mf-cdd-opt" onclick="setAssignStaff(${s.user_id},'${esc(s.name)}')">${esc(s.name)} <span style="font-size:11px;color:var(--dim);">${esc(s.email)}</span></div>`
+  ).join('');
+}
+function setAssignStaff(id, name) {
+  document.getElementById('assign-staff-id').value = id;
+  document.getElementById('mfcdd-assign-staff-label').textContent = name;
+  const panel = document.getElementById('mfcdd-assign-staff-panel');
+  const btn   = document.getElementById('mfcdd-assign-staff')?.querySelector('.mf-cdd-btn');
+  panel.classList.remove('open'); if(btn) btn.classList.remove('open');
+}
+function closeAssignModal() {
+  document.getElementById('assign-modal').classList.remove('open');
+  _assigningReqId = null;
+}
+async function submitAssign() {
+  const staffId = parseInt(document.getElementById('assign-staff-id').value);
+  const note    = document.getElementById('assign-note').value.trim();
+  const alertEl = document.getElementById('assign-alert');
+  const btn     = document.getElementById('assign-submit-btn');
+  alertEl.className = 'm-alert';
+  if (!staffId) { alertEl.textContent='✕ Please select a staff member.'; alertEl.className='m-alert show error'; return; }
+  btn.disabled=true; btn.textContent='Assigning…';
+  const data = await api('api/maintenance.php','POST',{action:'assign_task',request_id:_assigningReqId,staff_id:staffId,note});
+  if (!data.success) {
+    alertEl.textContent='✕ '+data.message; alertEl.className='m-alert show error';
+    btn.disabled=false; btn.textContent='Assign Task'; return;
+  }
+  alertEl.textContent='✓ Task assigned!'; alertEl.className='m-alert show success';
+  btn.disabled=false; btn.textContent='Assign Task';
+  setTimeout(()=>{ closeAssignModal(); loadMaintRequests(); }, 800);
+}
+</script>
+<!-- Assign Task Modal -->
+<div class="modal-backdrop" id="assign-modal">
+  <div class="modal" style="max-width:460px;">
+    <button class="modal-close" onclick="closeAssignModal()">✕</button>
+    <div class="modal-title">🔧 Assign Task</div>
+    <div class="modal-sub" id="assign-modal-sub">Assign this request to a maintenance staff member.</div>
+    <div class="m-alert" id="assign-alert"></div>
+    <div class="mfield" style="margin-top:14px;">
+      <label>Assign To</label>
+      <input type="hidden" id="assign-staff-id" value="">
+      <div class="mf-cdd" id="mfcdd-assign-staff">
+        <button type="button" class="mf-cdd-btn" onclick="toggleMfCdd('assign-staff')">
+          <span id="mfcdd-assign-staff-label">Select staff member…</span>
+          <span class="mf-cdd-arrow">▾</span>
+        </button>
+        <div class="mf-cdd-panel" id="mfcdd-assign-staff-panel">
+          <div style="padding:12px;text-align:center;font-size:13px;color:var(--dim)">Loading staff…</div>
+        </div>
+      </div>
+    </div>
+    <div class="mfield">
+      <label>Note <span style="font-weight:300;font-size:10px;">(optional)</span></label>
+      <textarea id="assign-note" placeholder="e.g. Check wiring on level 2" maxlength="200"
+                style="width:100%;box-sizing:border-box;background:var(--surface);
+                       border:1px solid var(--border);border-radius:10px;padding:10px 14px;
+                       color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;
+                       height:80px;resize:none;outline:none;transition:border-color .2s;line-height:1.5;"
+                onfocus="this.style.borderColor='var(--blue)'"
+                onblur="this.style.borderColor='var(--border)'"></textarea>
+    </div>
+    <div class="modal-actions" style="margin-top:18px;">
+      <button class="btn-modal-cancel" onclick="closeAssignModal()">Cancel</button>
+      <button class="btn-modal-ok" id="assign-submit-btn" onclick="submitAssign()">Assign Task</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

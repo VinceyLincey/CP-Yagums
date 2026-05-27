@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>YAGUMS – My Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset + Base ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --black:#0a0a0f; --deep:#0f0f1a; --surface:#13131f; --card:#16162a;
+  --border:#252540; --border2:#2e2e50;
+  --purple:#7c3aed; --purp2:#9d5bff; --accent:#c084fc;
+  --text:#e8e6ff; --muted:#7b7a9d; --dim:#4a4a6a;
+  --green:#34d399; --amber:#f59e0b; --red:#f87171; --blue:#60a5fa;
+}
+body {
+  font-family:'DM Sans', sans-serif;
+  background:var(--black);
+  color:var(--text);
+  min-height:100vh;
+  min-height:100dvh;
+}
+
+/* ── Top bar ── */
+.topbar {
+  position:sticky; top:0; z-index:50;
+  background:var(--deep);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;
+  height:58px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px;
+}
+.topbar-left { display:flex; align-items:center; gap:10px; }
+.back-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; border-radius:10px;
+  font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif;
+  color:var(--muted); border:1px solid var(--border2);
+  background:transparent; cursor:pointer;
+  text-decoration:none; transition:all .2s;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.back-btn:hover { border-color:var(--purple); color:var(--text); background:rgba(124,58,237,.08); }
+.topbar-title { font-family:'Inter',sans-serif; font-size:16px; font-weight:700; color:#fff; }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+.logout-link {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:13px; font-weight:500; color:var(--muted); cursor:pointer;
+  padding:7px 14px; border-radius:9px; border:1px solid var(--border);
+  background:none; font-family:'DM Sans',sans-serif;
+  transition:all .2s; -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.logout-link:hover { color:var(--red); border-color:rgba(248,113,113,.3); background:rgba(248,113,113,.06); }
+
+/* ── Page wrapper ── */
+.page {
+  max-width:900px;
+  margin:0 auto;
+  padding:36px 24px 60px;
+}
+
+/* ── Avatar section — truly centred ── */
+.avatar-section {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; margin-bottom:32px; text-align:center;
+}
+.avatar-wrap { position:relative; display:inline-block; }
+.avatar-img {
+  width:100px; height:100px; border-radius:26px;
+  background:linear-gradient(135deg,var(--purple),var(--accent));
+  display:flex; align-items:center; justify-content:center;
+  font-size:46px; overflow:hidden;
+  border:3px solid rgba(124,58,237,.45);
+  box-shadow:0 0 32px rgba(124,58,237,.25);
+}
+.avatar-img img { width:100%; height:100%; object-fit:cover; border-radius:23px; }
+.avatar-edit-btn {
+  position:absolute; bottom:-8px; right:-8px;
+  width:32px; height:32px; border-radius:50%;
+  background:var(--purple); border:2px solid var(--black);
+  display:flex; align-items:center; justify-content:center;
+  /* + icon via CSS — no emoji needed */
+  font-size:20px; font-weight:300; line-height:1; color:#fff;
+  cursor:pointer; transition:background .2s, transform .15s;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  user-select:none;
+}
+.avatar-edit-btn:hover { background:var(--purp2); transform:scale(1.1); }
+#avatar-file { display:none; }
+.avatar-name { font-family:'Inter',sans-serif; font-size:22px; font-weight:800; color:#fff; }
+.role-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(124,58,237,.15); border:1px solid rgba(124,58,237,.35);
+  border-radius:100px; padding:4px 14px;
+  font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--accent);
+}
+
+/* ── Stat strip ── */
+.stat-strip {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; overflow:hidden; margin-bottom:22px;
+}
+.stat-cell {
+  padding:14px 10px; text-align:center;
+  border-right:1px solid var(--border);
+}
+.stat-cell:last-child { border-right:none; }
+.stat-val { font-family:'Inter',sans-serif; font-size:22px; font-weight:800; color:#fff; }
+.stat-lbl { font-size:11px; color:var(--muted); margin-top:3px; }
+
+/* ── Two-col cards grid (desktop) ── */
+.cards-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+
+/* ── Cards ── */
+.card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; overflow:hidden; margin-bottom:16px;
+}
+.card-head {
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:10px;
+}
+.card-icon {
+  width:34px; height:34px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; flex-shrink:0;
+}
+.card-icon.purple { background:rgba(124,58,237,.18); border:1px solid rgba(124,58,237,.3); }
+.card-icon.green  { background:rgba(52,211,153,.15);  border:1px solid rgba(52,211,153,.25); }
+.card-icon.blue   { background:rgba(96,165,250,.15);  border:1px solid rgba(96,165,250,.25); }
+.card-title { font-family:'Inter',sans-serif; font-size:14px; font-weight:700; color:#fff; }
+.card-sub   { font-size:12px; color:var(--muted); margin-top:1px; }
+.card-body  { padding:18px 20px; }
+
+/* ── Form fields ── */
+.field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.field:last-of-type { margin-bottom:0; }
+.field label {
+  font-size:11px; font-weight:600; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted);
+}
+
+/* ── Eye toggle button inside field-wrap ── */
+.field-wrap { position:relative; }
+.field-wrap .fi { position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; pointer-events:none; }
+.eye-btn {
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; cursor:pointer; padding:2px 4px;
+  color:var(--dim); font-size:16px; line-height:1;
+  transition:color .2s;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  display:flex; align-items:center; justify-content:center;
+}
+.eye-btn:hover { color:var(--muted); }
+/* When eye is active, shift input padding so text doesn't go under button */
+.has-eye { padding-right:40px !important; }
+.field-wrap input {
+  width:100%; background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:11px 14px 11px 38px;
+  font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text);
+  outline:none; transition:border-color .2s, box-shadow .2s;
+  -webkit-appearance:none;
+}
+.field-wrap input::placeholder { color:var(--dim); }
+.field-wrap input:focus { border-color:var(--purple); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+.field-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.sep { height:1px; background:var(--border); margin:14px 0; }
+
+/* ── Alerts ── */
+.alert { display:none; padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:14px; line-height:1.5; }
+.alert.show { display:block; }
+.alert.error   { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.3); color:var(--red); }
+.alert.success { background:rgba(52,211,153,.12);  border:1px solid rgba(52,211,153,.3);  color:var(--green); }
+
+/* ── Password strength ── */
+.pw-bars { display:flex; gap:4px; margin-top:6px; }
+.pw-bar  { flex:1; height:3px; background:var(--border); border-radius:2px; transition:background .3s; }
+.pw-bar.weak   { background:var(--red); }
+.pw-bar.medium { background:var(--amber); }
+.pw-bar.strong { background:var(--green); }
+.pw-hint { font-size:11px; color:var(--dim); margin-top:4px; text-align:right; }
+
+/* ── Save button ── */
+.btn-save {
+  width:100%; margin-top:16px;
+  background:linear-gradient(135deg,var(--purple),var(--purp2));
+  border:none; border-radius:10px; padding:12px;
+  font-family:'Inter',sans-serif; font-size:14px; font-weight:700; color:#fff;
+  cursor:pointer; transition:all .2s;
+  box-shadow:0 4px 14px rgba(124,58,237,.28);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+}
+.btn-save:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 8px 22px rgba(124,58,237,.38); }
+.btn-save:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+.btn-save.green { background:linear-gradient(135deg,#1d4ed8,#3b82f6); box-shadow:0 4px 14px rgba(59,130,246,.25); }
+
+/* ── Backup code modal ── */
+.bk-backdrop {
+  display:none; position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,.75); backdrop-filter:blur(4px);
+  align-items:center; justify-content:center; padding:16px;
+}
+.bk-backdrop.show { display:flex; }
+.bk-modal {
+  background:var(--card); border:1px solid var(--border2);
+  border-radius:20px; padding:28px 28px 24px;
+  max-width:420px; width:100%;
+  box-shadow:0 16px 60px rgba(0,0,0,.7);
+  position:relative;
+}
+.bk-modal-icon { font-size:40px; text-align:center; margin-bottom:12px; }
+.bk-modal-sub {
+  font-size:13px; color:var(--muted); text-align:center;
+  line-height:1.6; margin-bottom:20px;
+}
+.bk-code-box {
+  background:var(--surface); border:1px solid rgba(245,158,11,.35);
+  border-radius:12px; padding:16px 20px;
+  font-family:'DM Sans',monospace; font-size:17px; font-weight:700;
+  color:var(--amber); letter-spacing:.1em; text-align:center;
+  word-break:break-all; margin-bottom:16px; user-select:all;
+  line-height:1.6;
+}
+.bk-copy-btn {
+  width:100%; padding:10px; border-radius:10px; margin-bottom:10px;
+  background:rgba(245,158,11,.15); border:1px solid rgba(245,158,11,.35);
+  color:var(--amber); font-size:13px; font-weight:600;
+  font-family:'DM Sans',sans-serif; cursor:pointer; transition:all .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.bk-copy-btn:hover { background:rgba(245,158,11,.25); }
+.bk-warn {
+  font-size:12px; color:var(--dim); text-align:center;
+  line-height:1.5; margin-bottom:18px;
+  padding:10px 14px; background:rgba(248,113,113,.08);
+  border:1px solid rgba(248,113,113,.2); border-radius:9px; color:var(--red);
+}
+.bk-close-btn {
+  width:100%; padding:11px; border-radius:10px;
+  background:linear-gradient(135deg,var(--purple),var(--purp2));
+  border:none; color:#fff; font-size:14px; font-weight:700;
+  font-family:'Inter',sans-serif; cursor:pointer;
+  box-shadow:0 4px 14px rgba(124,58,237,.3);
+  -webkit-tap-highlight-color:transparent;
+}
+@media (max-width:500px) {
+  .bk-modal { padding:22px 18px 20px; }
+  .bk-code-box { font-size:14px; letter-spacing:.06em; }
+}
+
+/* Toggle switch */
+
+/* ── Upload progress overlay ── */
+.upload-overlay {
+  display:none; position:fixed; inset:0; z-index:100;
+  background:rgba(0,0,0,.7); backdrop-filter:blur(4px);
+  align-items:center; justify-content:center;
+  flex-direction:column; gap:12px;
+}
+.upload-overlay.show { display:flex; }
+.upload-spinner { width:40px; height:40px; border:3px solid rgba(124,58,237,.3); border-top-color:var(--purp2); border-radius:50%; animation:spin .7s linear infinite; }
+.upload-label { font-size:14px; color:var(--muted); }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ── Spin inline ── */
+.spin { width:13px; height:13px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+
+/* ── Two-col cards grid for desktop ── */
+.cards-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:16px;
+}
+
+/* ── Responsive ── */
+/* Tablet landscape (769–1024px): keep 2-col but smaller page */
+@media (min-width:769px) and (max-width:1024px) {
+  .page { max-width:100%; padding:28px 32px 60px; }
+}
+/* Tablet portrait / large mobile (501–768px): stack cards */
+@media (max-width:768px) {
+  .page { padding:24px 20px 60px; }
+  .cards-grid { grid-template-columns:1fr; }
+  .topbar { padding:0 14px; height:54px; }
+  .topbar-title { font-size:15px; }
+  .back-btn, .logout-link { padding:6px 12px; font-size:12px; }
+  .avatar-name { font-size:20px; }
+  .stat-cell { padding:12px 8px; }
+  .stat-val { font-size:19px; }
+}
+/* Mobile (≤500px): tighter, single-col field grids */
+@media (max-width:500px) {
+  .page { padding:16px 14px 60px; }
+  .field-grid2 { grid-template-columns:1fr; }
+  .page-header { gap:8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Upload overlay -->
+<div class="upload-overlay" id="upload-overlay">
+  <div class="upload-spinner"></div>
+  <div class="upload-label">Uploading photo…</div>
+</div>
+
+<!-- Top bar — no sidebar, just back button -->
+<div class="topbar">
+  <div class="topbar-left">
+    <!-- href set by JS from session role -->
+    <a id="back-btn" href="#" class="back-btn">← Back</a>
+    <div class="topbar-title">My Profile</div>
+  </div>
+  <div class="topbar-right">
+    <button class="logout-link" onclick="logout()">🚪 Sign Out</button>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="page">
+
+  <!-- Avatar + name -->
+  <div class="avatar-section">
+    <div class="avatar-wrap">
+      <div class="avatar-img" id="hero-avatar">👤</div>
+      <div class="avatar-edit-btn" onclick="document.getElementById('avatar-file').click()" title="Change photo">+</div>
+      <input type="file" id="avatar-file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="uploadAvatar(this)">
+    </div>
+    <div class="avatar-name" id="hero-name">Loading…</div>
+    <div class="role-pill" id="role-pill">👤 Student</div>
+  </div>
+
+  <!-- Personal information + Password — side by side on desktop -->
+  <div class="cards-grid">
+
+    <!-- Personal information -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon purple">👤</div>
+        <div>
+          <div class="card-title">Personal Information</div>
+          <div class="card-sub">Update your name, email and phone</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="alert" id="info-alert"></div>
+        <div class="field-grid2">
+          <div class="field">
+            <label>First Name</label>
+            <div class="field-wrap">
+              <span class="fi">✏️</span>
+              <input type="text" id="f_first" placeholder="First name" autocomplete="given-name">
+            </div>
+          </div>
+          <div class="field">
+            <label>Last Name</label>
+            <div class="field-wrap">
+              <span class="fi">✏️</span>
+              <input type="text" id="f_last" placeholder="Last name" autocomplete="family-name">
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <div class="field-wrap">
+            <span class="fi">📧</span>
+            <input type="email" id="f_email" placeholder="you@university.edu" autocomplete="email">
+          </div>
+        </div>
+        <div class="field">
+          <label>Phone Number <span style="text-transform:none;letter-spacing:0;font-size:10px;font-weight:400;color:var(--dim)">(optional)</span></label>
+          <div class="field-wrap">
+            <span class="fi">📱</span>
+            <input type="tel" id="f_phone" placeholder="+6012-3456789" autocomplete="tel">
+          </div>
+        </div>
+        <button class="btn-save" id="info-btn" onclick="saveInfo()">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- Change password -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-icon green">🔒</div>
+        <div>
+          <div class="card-title">Change Password</div>
+          <div class="card-sub">Current password required</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="alert" id="pw-alert"></div>
+        <div class="field">
+          <label>Current Password</label>
+          <div class="field-wrap">
+            <span class="fi">🔒</span>
+            <input type="password" id="curr_pw" class="has-eye" placeholder="Current password or backup code" autocomplete="current-password">
+            <button type="button" class="eye-btn" onclick="toggleEye('curr_pw',this)" tabindex="-1" aria-label="Show password">
+              <svg id="eye-curr_pw" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--dim);margin-top:5px;">You can also enter your backup code here.</div>
+        </div>
+        <div class="sep"></div>
+        <div class="field">
+          <label>New Password</label>
+          <div class="field-wrap">
+            <span class="fi">🔑</span>
+            <input type="password" id="new_pw" class="has-eye" placeholder="Minimum 6 characters"
+                   autocomplete="new-password" oninput="pwStrength(this.value)">
+            <button type="button" class="eye-btn" onclick="toggleEye('new_pw',this)" tabindex="-1" aria-label="Show password">
+              <svg id="eye-new_pw" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div class="pw-bars">
+            <div class="pw-bar" id="pb1"></div>
+            <div class="pw-bar" id="pb2"></div>
+            <div class="pw-bar" id="pb3"></div>
+            <div class="pw-bar" id="pb4"></div>
+          </div>
+          <div class="pw-hint" id="pw-hint">Enter a new password</div>
+        </div>
+        <div class="field">
+          <label>Confirm New Password</label>
+          <div class="field-wrap">
+            <span class="fi">🔑</span>
+            <input type="password" id="conf_pw" placeholder="Re-enter new password" autocomplete="new-password">
+          </div>
+        </div>
+        <button class="btn-save green" id="pw-btn" onclick="savePassword()">Update Password</button>
+      </div>
+    </div>
+
+  </div><!-- /cards-grid -->
+
+  <!-- Account details — clean read-only summary -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon blue">ℹ️</div>
+      <div>
+        <div class="card-title">Account Details</div>
+        <div class="card-sub">Read-only — contact admin to change role</div>
+      </div>
+    </div>
+    <div class="card-body" style="padding:14px 20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Role</div>
+          <div style="font-size:14px;color:var(--text);" id="ro-role">—</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">User ID</div>
+          <div style="font-size:14px;color:var(--text);" id="ro-uid">—</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Email</div>
+          <div style="font-size:14px;color:var(--text);word-break:break-all;" id="ro-email">—</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">Member since</div>
+          <div style="font-size:14px;color:var(--text);" id="ro-since">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Backup code modal — shown only to is_protected (super admin) after password change -->
+<div class="bk-backdrop" id="bk-backdrop">
+  <div class="bk-modal" role="dialog" aria-modal="true">
+    <div class="bk-modal-icon">🛡️</div>
+    <div class="bk-modal-title">Save Your Backup Code</div>
+    <div class="bk-modal-sub">
+      Your new backup code has been generated. It lets you recover access if you forget your password.
+    </div>
+    <div class="bk-code-box" id="bk-code-display">—</div>
+    <button class="bk-copy-btn" id="bk-copy-btn" onclick="copyBackupCode()">📋 Copy Code</button>
+    <div class="bk-warn">⚠️ Store this code somewhere safe. It will <strong>not</strong> be shown again.</div>
+    <button class="bk-close-btn" onclick="closeBkModal()">I've Saved My Backup Code</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  Auth + role routing
+// ════════════════════════════════════════════════
+let _token = localStorage.getItem('yagums_token');
+let _user  = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html'; }
+
+const DASHBOARDS = {
+  'Admin':             'dashboard-admin.html',
+  'Facility Manager':  'dashboard-facility.html',
+  'Maintenance Staff': 'dashboard-maintenance.html',
+  'Lecturer':          'dashboard-lecturer.html',
+  'Student':           'dashboard-student.html',
+};
+const ROLE_PILLS = {
+  'Admin':'⚙️ Admin',
+  'Facility Manager':'🏢 Facility Manager',
+  'Maintenance Staff':'🔧 Maintenance Staff',
+  'Lecturer':'🎓 Lecturer',
+  'Student':'👤 Student',
+};
+const ROLE_AVATARS = {
+  'Admin':'⚙️','Facility Manager':'🏢','Maintenance Staff':'🔧','Lecturer':'🎓','Student':'👤'
+};
+
+const role     = _user.role || 'Student';
+const homeDash = DASHBOARDS[role] || 'dashboard-student.html';
+
+// Set back button
+document.getElementById('back-btn').href = homeDash;
+
+// ════════════════════════════════════════════════
+//  Populate from session immediately, then fetch fresh
+// ════════════════════════════════════════════════
+function populateUI(user) {
+  if (!user) return;
+  _user = user;
+
+  const name = user.name || (user.first_name + ' ' + (user.last_name||''));
+  document.getElementById('hero-name').textContent = name;
+  document.getElementById('role-pill').textContent = ROLE_PILLS[role] || role;
+  document.getElementById('ro-role').textContent   = role;
+  document.getElementById('ro-uid').textContent    = '#' + (user.user_id || '—');
+  document.getElementById('ro-email').textContent  = user.email || '—';
+  document.getElementById('ro-since').textContent  = user.created_at || '—';
+
+  // Pre-fill form fields
+  document.getElementById('f_first').value = user.first_name  || '';
+  document.getElementById('f_last').value  = user.last_name   || '';
+  document.getElementById('f_email').value = user.email       || '';
+  document.getElementById('f_phone').value = user.phone_number || '';
+
+  // Profile picture or emoji
+  const av = document.getElementById('hero-avatar');
+  if (user.profile_picture) {
+    av.innerHTML = `<img src="${user.profile_picture}?v=${Date.now()}" alt="Profile photo"
+                        style="width:100%;height:100%;object-fit:cover;border-radius:23px;"
+                        onerror="this.parentElement.textContent='${ROLE_AVATARS[role]||'👤'}'">`;
+  } else {
+    av.textContent = ROLE_AVATARS[role] || '👤';
+  }
+}
+
+populateUI(_user);
+
+// Fetch fresh data from server
+async function fetchProfile() {
+  try {
+    const r    = await fetch('api/profile.php', { headers:{'Authorization':'Bearer '+_token} });
+    if (r.status === 401 || r.status === 403) { window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')+1)+'login.html'; return; }
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.success) return;
+    localStorage.setItem('yagums_user', JSON.stringify(data.user));
+    populateUI(data.user);
+      } catch {}
+}
+fetchProfile();
+
+// ════════════════════════════════════════════════
+//  Save info
+// ════════════════════════════════════════════════
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = (type==='success' ? '✓ ' : '✕ ') + msg;
+  el.className = 'alert show ' + type;
+  if (type === 'success') setTimeout(() => el.className = 'alert', 5000);
+}
+function setBtn(id, loading, label) {
+  const b = document.getElementById(id);
+  b.disabled = loading;
+  b.innerHTML = loading ? '<div class="spin"></div> Saving…' : label;
+}
+
+async function saveInfo() {
+  const fn = document.getElementById('f_first').value.trim();
+  const ln = document.getElementById('f_last').value.trim();
+  const em = document.getElementById('f_email').value.trim();
+  const ph = document.getElementById('f_phone').value.trim();
+
+  if (!fn || !ln) { showAlert('info-alert', 'First and last name are required.'); return; }
+  if (!em)        { showAlert('info-alert', 'Email is required.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { showAlert('info-alert', 'Invalid email format.'); return; }
+
+  setBtn('info-btn', true, 'Save Changes');
+  try {
+    const r = await fetch('api/profile.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'Authorization':'Bearer '+_token},
+      body:JSON.stringify({ action:'info', first_name:fn, last_name:ln, email:em, phone_number:ph })
+    });
+    const data = await r.json();
+    if (!data.success) { showAlert('info-alert', data.message); return; }
+
+    _token = data.token;
+    _user  = data.user;
+    localStorage.setItem('yagums_token', data.token);
+    localStorage.setItem('yagums_user',  JSON.stringify(data.user));
+    document.cookie = `yagums_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+    populateUI(data.user);
+    showAlert('info-alert', 'Profile saved successfully!', 'success');
+  } catch { showAlert('info-alert', 'Could not connect to server.'); }
+  finally  { setBtn('info-btn', false, 'Save Changes'); }
+}
+
+// ════════════════════════════════════════════════
+//  Change password
+// ════════════════════════════════════════════════
+async function savePassword() {
+  const curr = document.getElementById('curr_pw').value;
+  const nw   = document.getElementById('new_pw').value;
+  const conf = document.getElementById('conf_pw').value;
+
+  if (!curr)        { showAlert('pw-alert', 'Current password is required.'); return; }
+  if (!nw || nw.length < 6) { showAlert('pw-alert', 'New password must be at least 6 characters.'); return; }
+  if (nw !== conf)  { showAlert('pw-alert', 'New passwords do not match.'); return; }
+
+  setBtn('pw-btn', true, 'Update Password');
+  try {
+    const r = await fetch('api/profile.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'Authorization':'Bearer '+_token},
+      body:JSON.stringify({ action:'password', current_password:curr, new_password:nw, confirm_password:conf })
+    });
+    const data = await r.json();
+    if (!data.success) { showAlert('pw-alert', data.message); return; }
+
+    _token = data.token;
+    localStorage.setItem('yagums_token', data.token);
+    localStorage.setItem('yagums_user',  JSON.stringify(data.user));
+    document.cookie = `yagums_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+    ['curr_pw','new_pw','conf_pw'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = '';
+      el.type  = 'password'; // reset eye state
+    });
+    ['pb1','pb2','pb3','pb4'].forEach(id => document.getElementById(id).className = 'pw-bar');
+    // Reset eye icon colours
+    document.querySelectorAll('.eye-btn').forEach(b => b.style.color = '');
+    document.getElementById('pw-hint').textContent = 'Enter a new password';
+    document.getElementById('pw-hint').style.color = '';
+    showAlert('pw-alert', 'Password changed successfully!', 'success');
+    // Super admin: show backup code modal
+    if (data.backup_code) showBackupCode(data.backup_code);
+  } catch { showAlert('pw-alert', 'Could not connect to server.'); }
+  finally  { setBtn('pw-btn', false, 'Update Password'); }
+}
+
+// ── Backup code modal helpers ──────────────────────
+function showBackupCode(code) {
+  document.getElementById('bk-code-display').textContent = code;
+  document.getElementById('bk-backdrop').classList.add('show');
+  document.getElementById('bk-copy-btn').textContent = '📋 Copy Code';
+}
+function closeBkModal() {
+  document.getElementById('bk-backdrop').classList.remove('show');
+  document.getElementById('bk-code-display').textContent = '—';
+}
+function copyBackupCode() {
+  const code = document.getElementById('bk-code-display').textContent;
+  if (!code || code === '—') return;
+  const btn = document.getElementById('bk-copy-btn');
+  const copy = () => { btn.textContent = '✓ Copied!'; };
+  navigator.clipboard?.writeText(code).then(copy).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'),
+      {value:code, style:'position:fixed;opacity:0'});
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); copy();
+  });
+}
+
+
+function pwStrength(v) {
+  const bars = ['pb1','pb2','pb3','pb4'].map(id => document.getElementById(id));
+  const hint = document.getElementById('pw-hint');
+
+  // Reset
+  bars.forEach(b => b.className = 'pw-bar');
+
+  if (!v) {
+    hint.textContent = 'Enter a new password';
+    hint.style.color = '';
+    return;
+  }
+
+  // Score — must meet length threshold FIRST before any other bonus counts
+  let s = 0;
+  if (v.length >= 6)  s++;                               // meets minimum
+  if (v.length >= 10) s++;                               // longer
+  if (v.length >= 6 && /[A-Z]/.test(v) && /[0-9]/.test(v)) s++;  // complexity bonus
+  if (v.length >= 6 && /[!@#$%^&*_\-]/.test(v))         s++;     // special char bonus
+
+  // Cap at 4
+  s = Math.min(s, 4);
+
+  // If under min length, force score to 1 (always Weak)
+  if (v.length < 6) s = 1;
+
+  const LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  const cls    = s <= 1 ? 'weak' : s <= 2 ? 'medium' : 'strong';
+
+  for (let i = 0; i < s; i++) bars[i].classList.add(cls);
+  hint.textContent = LABELS[s] || 'Weak';
+  hint.style.color = cls === 'weak' ? 'var(--red)' : cls === 'medium' ? 'var(--amber)' : 'var(--green)';
+}
+
+// ── Eye toggle ────────────────────────────────────
+function toggleEye(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const svg   = btn.querySelector('svg');
+  const showing = input.type === 'text';
+
+  input.type = showing ? 'password' : 'text';
+
+  // Swap icon: open eye ↔ eye-off
+  svg.innerHTML = showing
+    ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>' +
+      '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>' +
+      '<line x1="1" y1="1" x2="23" y2="23"/>';
+
+  btn.style.color = showing ? 'var(--dim)' : 'var(--accent)';
+}
+
+// ════════════════════════════════════════════════
+//  Avatar upload
+// ════════════════════════════════════════════════
+async function uploadAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+
+  // Client-side size check
+  if (file.size > 2 * 1024 * 1024) {
+    showAlert('info-alert', 'Image is too large. Maximum size is 2 MB.', 'error');
+    document.getElementById('info-alert').className = 'alert show error';
+    return;
+  }
+
+  // Show overlay
+  document.getElementById('upload-overlay').classList.add('show');
+
+  const form = new FormData();
+  form.append('avatar', file);
+
+  try {
+    const r = await fetch('api/profile.php', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+_token},
+      body:form
+      // No Content-Type header — browser sets multipart boundary automatically
+    });
+    const data = await r.json();
+    if (data.success) {
+      const av = document.getElementById('hero-avatar');
+      av.innerHTML = `<img src="${data.profile_picture}?v=${Date.now()}" alt="Profile photo"
+                          style="width:100%;height:100%;object-fit:cover;border-radius:21px;">`;
+      // Update stored user
+      if (_user) { _user.profile_picture = data.profile_picture; localStorage.setItem('yagums_user', JSON.stringify(_user)); }
+    } else {
+      showAlert('info-alert', 'Photo upload failed: ' + (data.message||'Unknown error'), 'error');
+      document.getElementById('info-alert').className = 'alert show error';
+    }
+  } catch {
+    showAlert('info-alert', 'Could not connect to server.', 'error');
+    document.getElementById('info-alert').className = 'alert show error';
+  } finally {
+    document.getElementById('upload-overlay').classList.remove('show');
+    input.value = ''; // reset so same file can be re-selected
+  }
+}
+
+// ════════════════════════════════════════════════
+//  Logout
+// ════════════════════════════════════════════════
+function logout() {
+  localStorage.removeItem('yagums_token');
+  localStorage.removeItem('yagums_user');
+  document.cookie = 'yagums_token=; path=/; max-age=0';
+  window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>YAGUMS – Student</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── Tab panes ── */
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+@media(max-width:768px){.page-tabs{display:none !important;}}
+
+/* ── Custom dropdown + search + pagination (purple theme) ── */
+.list-controls{display:flex;align-items:center;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.search-wrap-f{position:relative;flex:1;min-width:0;}
+.search-wrap-f::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none;}
+.search-inp-f{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px 8px 32px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.search-inp-f:focus{border-color:var(--purple);}
+.search-inp-f::placeholder{color:var(--dim);}
+.cdd-wrap{position:relative;flex-shrink:0;}
+.cdd-btn{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap;transition:border-color .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;}
+.cdd-btn:focus,.cdd-btn.open{border-color:var(--purple);outline:none;}
+.cdd-arrow{font-size:10px;color:var(--muted);transition:transform .2s;pointer-events:none;}
+.cdd-btn.open .cdd-arrow{transform:rotate(180deg);}
+.cdd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:220;min-width:150px;background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden;}
+.cdd-panel.open{display:block;animation:cddIn .15s ease;}
+
+@keyframes cddIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.cdd-opt{padding:9px 12px;font-size:13px;color:var(--muted);border-radius:8px;cursor:pointer;transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent;white-space:nowrap;}
+.cdd-opt:hover{background:rgba(124,58,237,.12);color:var(--text);}
+.cdd-opt.selected{color:var(--accent);font-weight:600;}
+.st-pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px;}
+.st-page-info{font-size:12px;color:var(--muted);}
+.st-page-info b{color:var(--text);}
+.st-page-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.st-page-btn{font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.st-page-btn:hover:not(:disabled){border-color:var(--purple);color:var(--text);}
+.st-page-btn:disabled{opacity:.35;cursor:not-allowed;}
+.st-page-btn.active-page{background:rgba(124,58,237,.2);border-color:var(--purple);color:var(--accent);}
+/* Mobile booking card (table replacement) */
+.bk-card{padding:12px 14px;border-bottom:1px solid rgba(37,37,64,.5);}
+.bk-card:last-child{border-bottom:none;}
+.bk-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.bk-card-fac{font-size:13px;font-weight:600;color:var(--text);}
+.bk-card-meta{font-size:11px;color:var(--muted);line-height:1.5;}
+@media(min-width:769px) and (max-width:1024px){
+  body{height:auto !important;max-height:none !important;overflow-y:auto !important;}
+  .main{height:auto !important;overflow:visible !important;}
+  .sidebar{display:flex !important;}
+  .main{margin-left:var(--sidebar-w) !important;}
+  .topbar{position:sticky;top:0;z-index:100;}
+  .slide-trigger{display:none !important;}
+  .content{padding:16px 20px 32px !important;}
+  .grid-2{grid-template-columns:1fr !important;}
+}
+@media(max-width:768px){
+  body{height:auto !important;max-height:none !important;overflow:auto !important;overflow-x:hidden !important;}
+  .main{height:auto !important;overflow:visible !important;}
+  .tab-pane.active{display:block !important;}
+  .content{padding:16px 20px 80px !important;}
+  .grid-2{grid-template-columns:1fr !important;}
+  .stats-grid{grid-template-columns:1fr 1fr !important;}
+  #ov-grid{grid-template-columns:1fr !important;}
+  .bf-cdd-panel{max-height:200px;}
+  .list-controls{padding:10px 12px;gap:6px;flex-wrap:wrap;}
+  .list-controls .search-wrap-f{width:100%;flex:0 0 100%;}
+  .list-controls .cdd-wrap{flex:1;min-width:0;}
+  .list-controls .cdd-btn{width:100%;justify-content:space-between;font-size:11px;padding:7px 10px;}
+  .cdd-btn{font-size:11px;padding:7px 10px;}
+  .cdd-panel{min-width:130px;}
+  .cdd-opt{padding:10px 12px;font-size:12px;}
+  .st-pagination{padding:10px 12px;flex-direction:column;align-items:center;gap:8px;}
+  .st-page-btns{justify-content:center;}
+  .bk-table-wrap{display:none;}
+  .bk-cards-wrap{display:block;}
+  .bf-grid2{grid-template-columns:1fr;}
+}
+@media(min-width:769px){.bk-cards-wrap{display:none;}}
+.sb-user-wrap{display:flex;align-items:center;gap:12px;padding:14px 18px;margin:8px 10px;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:14px;cursor:pointer;transition:all .2s;text-decoration:none;}
+.sb-user-wrap:hover{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.4);}
+.sb-avatar-img{width:40px;height:40px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,var(--purple),var(--purp2));display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden;border:2px solid rgba(124,58,237,.4);}
+.sb-avatar-img img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+.sb-info{flex:1;min-width:0;}
+.sb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-role-lbl{font-size:10px;color:var(--muted);margin-top:1px;}
+.sb-edit-hint{font-size:9px;color:var(--dim);margin-top:2px;}
+.nav-section{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);padding:0 14px;margin:14px 0 4px;}
+.nav-divider{height:1px;background:rgba(37,37,64,.7);margin:10px 14px;}
+
+/* ── Online pill (matches facility dashboard) ── */
+.st-online-pill{display:inline-flex;align-items:center;gap:7px;background:#22233c;border:1px solid rgba(52,211,153,.15);border-radius:100px;padding:5px 12px 5px 9px;flex-shrink:0;}
+.st-online-dot{position:relative;width:8px;height:8px;flex-shrink:0;}
+.st-online-dot::before{content:'';position:absolute;inset:0;border-radius:50%;background:#34d399;box-shadow:0 0 4px rgba(52,211,153,.6);animation:st-breathe 3s ease-in-out infinite;}
+@keyframes st-breathe{0%,100%{box-shadow:0 0 3px rgba(52,211,153,.4);opacity:.7}50%{box-shadow:0 0 8px rgba(52,211,153,.9);opacity:1}}
+.st-online-lbl{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);}
+
+/* ── Available Spaces — shared dot/info/nav elements ── */
+.st-avail-dot-wrap{position:relative;width:10px;height:10px;flex-shrink:0;}
+.st-avail-dot-wrap::before{content:'';position:absolute;inset:0;border-radius:50%;background:#34d399;box-shadow:0 0 4px rgba(52,211,153,.6);animation:st-breathe 3s ease-in-out infinite;}
+.st-unavail-dot{width:10px;height:10px;border-radius:50%;background:var(--red);opacity:.7;flex-shrink:0;}
+.st-avail-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.st-avail-meta{font-size:10px;color:var(--muted);margin-top:1px;line-height:1.3;}
+.st-nav-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:13px;transition:all .18s;-webkit-tap-highlight-color:transparent;}
+.st-nav-btn:hover:not(:disabled){border-color:var(--purple);color:var(--text);}
+.st-nav-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ── Recent Bookings rows ── */
+.st-bk-row{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.st-bk-row:last-child{border-bottom:none;}
+.st-bk-info{flex:1;min-width:0;}
+.st-bk-fac{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.st-bk-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+
+/* bf-cdd wrapper — position:relative so panel anchors to it */
+.bf-cdd { position:relative; width:100%; }
+.bf-cdd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:220;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.65);overflow-y:auto;overflow-x:hidden;max-height:220px;}
+
+/* ── bf-cdd (custom form dropdowns) ── */
+.bf-cdd-btn{width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--surface) !important;border:1px solid var(--border) !important;border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text) !important;cursor:pointer;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;text-align:left;gap:8px;user-select:none;-webkit-tap-highlight-color:transparent;}
+.bf-cdd-btn:focus,.bf-cdd-btn.open{border-color:var(--purple) !important;box-shadow:0 0 0 3px rgba(124,58,237,.12);outline:none;}
+.bf-cdd-arrow{font-size:10px;color:var(--muted);transition:transform .2s;pointer-events:none;flex-shrink:0;}
+.bf-cdd-btn.open .bf-cdd-arrow{transform:rotate(180deg);}
+.bf-cdd-label{flex:1;text-align:left;}
+.bf-cdd-panel.open{display:block;}
+.bf-cdd-panel::-webkit-scrollbar{width:4px;}
+.bf-cdd-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
+.bf-cdd-opt{display:flex;align-items:center;gap:9px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--muted);border-radius:7px;cursor:pointer;transition:background .12s,color .12s;-webkit-tap-highlight-color:transparent;}
+.bf-cdd-opt:hover{background:rgba(124,58,237,.1);color:var(--text);}
+.bf-cdd-opt.selected{color:var(--accent);font-weight:600;}
+@media(max-width:1024px){
+  .bf-cdd-panel{max-height:200px;}
+}
+
+/* ── Booking form ── */
+.bf{display:flex;flex-direction:column;gap:5px;}
+.bf label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.bf select,.bf input,.bf textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;resize:none;}
+.bf select option{background:var(--surface);}
+.bf select:focus,.bf input:focus,.bf textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.12);}
+.bf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.booking-form{padding:16px 18px;display:flex;flex-direction:column;gap:11px;}
+.btn-book{width:100%;background:linear-gradient(135deg,var(--purple),var(--purp2));border:none;border-radius:10px;padding:13px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 18px rgba(124,58,237,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.btn-book:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 26px rgba(124,58,237,.45);}
+.btn-book:disabled{opacity:.6;cursor:not-allowed;}
+.bf-alert{display:none;padding:9px 13px;border-radius:9px;font-size:12px;margin-top:2px;line-height:1.5;}
+.bf-alert.show{display:block;}
+.bf-alert.error{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red);}
+.bf-alert.success{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green);}
+.btn-spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Booking timeline ── */
+.btn-cancel-bk{background:transparent;border:1px solid rgba(248,113,113,.4);border-radius:8px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--red);cursor:pointer;transition:all .18s;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;}
+.btn-cancel-bk:hover{background:rgba(248,113,113,.1);border-color:var(--red);}
+.btn-cancel-bk.full{display:block;width:100%;padding:10px;margin-top:6px;font-size:13px;border-radius:10px;}
+.tl-item{display:flex;align-items:flex-start;gap:12px;padding:13px 18px;border-bottom:1px solid rgba(37,37,64,.4);transition:background .2s;}
+.tl-item:last-child{border-bottom:none;}
+.tl-item:hover{background:rgba(124,58,237,.04);}
+.tl-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.tl-icon.approved{background:rgba(52,211,153,.15);}
+.tl-icon.pending{background:rgba(245,158,11,.15);}
+.tl-icon.rejected{background:rgba(248,113,113,.15);}
+.tl-icon.cancelled{background:rgba(107,114,128,.15);}
+.tl-body{flex:1;min-width:0;}
+.tl-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.tl-meta{font-size:12px;color:var(--muted);line-height:1.5;}
+
+/* ── Facility cards ── */
+.fac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:14px 18px;}
+.fac-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:14px 12px;text-align:center;position:relative;overflow:hidden;transition:all .22s;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.fac-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.15),transparent 70%);opacity:0;transition:opacity .22s;}
+.fac-card:hover{border-color:rgba(124,58,237,.5);transform:translateY(-3px);box-shadow:0 10px 28px rgba(124,58,237,.12);}
+.fac-card:hover::before{opacity:1;}
+.fac-card:active{transform:scale(.97);}
+.fac-card.unavailable{opacity:.45;cursor:not-allowed;pointer-events:none;}
+.fac-emoji{font-size:26px;margin-bottom:8px;display:block;}
+.fac-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.fac-cap{font-size:11px;color:var(--muted);margin-bottom:7px;}
+
+/* ── Announcement cards — compact ── */
+.ann-card{padding:10px 18px;border-bottom:1px solid rgba(37,37,64,.5);transition:background .2s;}
+.ann-card:last-child{border-bottom:none;}
+.ann-card:hover{background:rgba(124,58,237,.03);}
+.ann-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px;}
+.ann-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;}
+.ann-pri{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;flex-shrink:0;text-transform:uppercase;letter-spacing:.04em;}
+.ann-pri.high  {background:rgba(248,113,113,.15);color:var(--red);}
+.ann-pri.medium{background:rgba(245,158,11,.15); color:var(--amber);}
+.ann-pri.low   {background:rgba(52,211,153,.15); color:var(--green);}
+.ann-msg{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.ann-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.ann-meta{font-size:10px;color:var(--dim);}
+.vote-row{display:flex;gap:5px;}
+.vote-btn{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:transparent;cursor:pointer;transition:all .18s;color:var(--muted);font-family:'DM Sans',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.vote-btn.up:hover  {border-color:var(--green);color:var(--green);background:rgba(52,211,153,.1);}
+.vote-btn.down:hover{border-color:var(--red);  color:var(--red);  background:rgba(248,113,113,.1);}
+.vote-btn.voted-up  {border-color:var(--green);color:var(--green);background:rgba(52,211,153,.12);}
+.vote-btn.voted-down{border-color:var(--red);  color:var(--red);  background:rgba(248,113,113,.12);}
+.vote-btn:disabled{opacity:.5;cursor:not-allowed;}
+.vote-btn:active{transform:scale(.96);}
+
+/* ── Overview main grid layout ── */
+.ov-main-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  align-items:stretch;
+  margin-bottom:0;
+}
+.ov-left-panel,.ov-right-col{min-height:0;}
+.ov-left-panel{display:flex;flex-direction:column;}
+.ov-right-col{display:flex;flex-direction:column;gap:16px;}
+.ov-right-col>.panel:first-child{flex:1;display:flex;flex-direction:column;}
+.ov-right-col>.panel:first-child #ov-rep-list{flex:1;}
+
+/* ── ov-avail-inner + footer ── */
+.ov-avail-inner{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;}
+.ov-avail-footer{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  padding:8px 14px 12px;
+  border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+
+/* ── Available Spaces card grid — base (desktop) ── */
+.st-avail-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  grid-auto-rows:1fr;
+  gap:10px;
+  padding:12px 16px 14px;
+}
+.st-avail-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px 12px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  transition:border-color .2s,box-shadow .2s;
+  min-height:0;
+}
+.st-avail-card:hover{border-color:rgba(124,58,237,.4);box-shadow:0 2px 10px rgba(124,58,237,.08);}
+.st-avail-card.dim{opacity:.55;}
+.st-avail-card-top{display:flex;align-items:center;gap:7px;margin-bottom:1px;}
+.st-avail-book-btn{
+  display:block;width:100%;margin-top:auto;
+  padding:5px 0;border-radius:7px;
+  background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);
+  color:var(--accent);font-size:11px;font-weight:600;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+  transition:all .18s;-webkit-tap-highlight-color:transparent;
+}
+.st-avail-book-btn:hover{background:rgba(124,58,237,.2);}
+.st-avail-book-btn.unavail{
+  background:transparent;border-color:rgba(255,255,255,.08);
+  color:var(--dim);cursor:not-allowed;pointer-events:none;
+}
+
+/* ── Tablet portrait (769–1024px): single column stack ── */
+@media(min-width:769px) and (max-width:1024px){
+  .ov-main-grid{grid-template-columns:1fr;}
+  .ov-right-col{gap:12px;}
+  .st-avail-grid{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ── Mobile (≤768px): single column, card → row layout ── */
+@media(max-width:768px){
+  .ov-main-grid{grid-template-columns:1fr;}
+  .ov-right-col{gap:10px;}
+  .st-avail-grid{
+    grid-template-columns:1fr;
+    grid-auto-rows:auto;
+    gap:0;
+    padding:0;
+  }
+  .st-avail-card{
+    border-radius:0;border:none;border-bottom:1px solid var(--border);
+    padding:9px 16px;flex-direction:row;align-items:center;
+    gap:10px;background:transparent;box-shadow:none;
+  }
+  .st-avail-card:last-child{border-bottom:none;}
+  .st-avail-card.dim .st-avail-book-btn{display:none;}
+  .st-avail-card-top{flex:1;min-width:0;flex-direction:row;align-items:center;gap:8px;}
+  .st-avail-meta{display:none;}
+  .st-avail-book-btn{
+    width:auto;margin-top:0;padding:4px 12px;flex-shrink:0;
+  }
+}
+
+/* ── Report progress bars ── */
+.rep-item{display:flex;flex-direction:column;gap:5px;}
+.rep-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.rep-item-fac{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rep-item-meta{font-size:11px;color:var(--muted);}
+.rep-bar-wrap{width:100%;height:5px;background:var(--surface);border-radius:100px;overflow:hidden;}
+.rep-bar{height:100%;border-radius:100px;transition:width .6s ease;}
+.rep-bar.pending   {background:var(--amber);}
+.rep-bar.in-progress{background:#60a5fa;}
+.rep-bar.completed {background:var(--green);}
+.rep-bar.rejected  {background:var(--red);}
+
+/* ── Misc ── */
+.empty-state{padding:36px 20px;text-align:center;}
+.es-icon{font-size:42px;margin-bottom:12px;}
+.es-title{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.es-msg{font-size:13px;color:var(--muted);}
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px;}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+@media(max-width:768px){
+  .bf-grid2{grid-template-columns:1fr;}
+  .fac-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:400px){.fac-grid{grid-template-columns:1fr 1fr;gap:6px;padding:8px;}}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">YA<span>GUMS</span></div>
+    <div class="logo-sub">Student Portal</div>
+  </div>
+
+  <!-- Clickable avatar → profile.html -->
+  <a class="sb-user-wrap" href="profile.html" title="Edit profile">
+    <div class="sb-avatar-img" id="sb-avatar-wrap">👤</div>
+    <div class="sb-info">
+      <div class="sb-name"    id="sb-name">Loading…</div>
+      <div class="sb-role-lbl">Student</div>
+      <div class="sb-edit-hint">Tap to edit profile →</div>
+    </div>
+  </a>
+
+  <nav class="sidebar-nav" style="padding:6px 10px;">
+    <div class="nav-section">Dashboard</div>
+    <button class="nav-item active" id="snav-home"        onclick="switchTab('home')">       <span class="nav-icon">🏠</span>Home</button>
+    <button class="nav-item"        id="snav-book"        onclick="switchTab('book')">       <span class="nav-icon">➕</span>Book a Space</button>
+    <button class="nav-item"        id="snav-mybookings"  onclick="switchTab('mybookings')"> <span class="nav-icon">📅</span>My Bookings <span class="nav-badge" id="nb-bookings">0</span></button>
+    <button class="nav-item"        id="snav-maintenance" onclick="switchTab('maintenance')"><span class="nav-icon">🔧</span>Report Issue</button>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section">Communications</div>
+    <button class="nav-item"        id="snav-announce"    onclick="switchTab('announce')">   <span class="nav-icon">📢</span>Announcements</button>
+    <a      class="nav-item"        href="notifications.html">                               <span class="nav-icon">🔔</span>Notifications</a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section">Account</div>
+    <a class="nav-item" href="profile.html"><span class="nav-icon">👤</span>My Profile</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" onclick="logout()"><span class="nav-icon">🚪</span>Sign Out</button>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
+      <a href="profile.html" class="mobile-avatar" id="mob-avatar" title="My Profile" style="display:none">👤</a>
+      <div>
+        <h2 id="page-title">Student Dashboard</h2>
+        <p id="greeting">Welcome back!</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="notif-btn" id="notif-bell" aria-label="Notifications">
+        🔔<span class="notif-count hidden" id="notif-count">0</span>
+      </button>
+      <button class="mobile-logout-btn" id="mob-logout-btn" onclick="logout()" title="Sign Out" aria-label="Sign Out" style="display:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification panel -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-head">
+      <h4>🔔 Notifications</h4>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+        <a href="notifications.html" style="font-size:12px;color:var(--accent);text-decoration:none;border:1px solid rgba(192,132,252,.3);padding:3px 10px;border-radius:7px;transition:background .2s;" onmouseover="this.style.background='rgba(124,58,237,.15)'" onmouseout="this.style.background=''">History →</a>
+      </div>
+    </div>
+    <div class="notif-scroll" id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
+  </div>
+
+  <!-- ════ HOME ════ -->
+  <div class="tab-pane active" id="tab-home">
+    <div class="content" style="padding:20px 24px 24px;">
+      <div class="stats-grid" style="margin-bottom:16px;">
+        <div class="stat-card" style="--glow:var(--purp2)">
+          <div class="stat-head"><div class="stat-icon purple">📅</div><span class="stat-trend neu">Mine</span></div>
+          <div class="stat-value" id="stat-total">0</div><div class="stat-label">My Bookings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon green">✅</div><span class="stat-trend up">Active</span></div>
+          <div class="stat-value" id="stat-approved">0</div><div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon amber">⏳</div><span class="stat-trend down">Waiting</span></div>
+          <div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-head"><div class="stat-icon blue">🏛️</div><span class="stat-trend neu">Open</span></div>
+          <div class="stat-value" id="stat-fac">0</div><div class="stat-label">Available Spaces</div>
+        </div>
+      </div>
+      <div class="ov-main-grid" id="ov-grid">
+        <!-- LEFT: Available Spaces — full height, 2-col card grid inside -->
+        <div class="panel ov-left-panel">
+          <div class="panel-head" style="flex-shrink:0;">
+            <div><h3>Available Spaces</h3><p id="ov-avail-sub">Loading…</p></div>
+            <div class="st-online-pill"><span class="st-online-dot"></span><span class="st-online-lbl">Online</span></div>
+          </div>
+          <div id="ov-avail-list" class="ov-avail-inner" style="flex:1;"></div>
+          <div class="ov-avail-footer" id="ov-avail-footer" style="display:none;"></div>
+        </div>
+        <!-- RIGHT: My Reports + Recent Bookings stacked -->
+        <div class="ov-right-col">
+          <div class="panel">
+            <div class="panel-head" style="flex-shrink:0;">
+              <div><h3>My Reports</h3><p id="ov-rep-sub">Loading…</p></div>
+              <button class="panel-action" onclick="switchTab('maintenance')">View All →</button>
+            </div>
+            <div id="ov-rep-list" style="padding:14px 18px;display:flex;flex-direction:column;gap:12px;">
+              <div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head" style="flex-shrink:0;">
+              <div><h3>Recent Bookings</h3><p id="ov-bk-sub">Loading…</p></div>
+              <button class="panel-action" onclick="switchTab('mybookings')">View All →</button>
+            </div>
+            <div id="ov-bk-list" style="overflow:hidden;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ BOOK ════ -->
+  <div class="tab-pane" id="tab-book">
+    <div class="content" style="padding:20px 24px 24px;">
+      <div class="grid-2">
+        <!-- Booking form -->
+        <div class="panel">
+          <div class="panel-head"><div><h3>New Booking</h3><p>Reserve a facility</p></div></div>
+          <div class="booking-form">
+            <div class="bf"><label>Facility</label>
+              <input type="hidden" id="fac-select" value="">
+              <div class="bf-cdd" id="bfcdd-fac-select">
+                <button type="button" class="bf-cdd-btn" onclick="toggleBfCdd('fac-select')">
+                  <span class="bf-cdd-label" id="bfcdd-fac-select-label">— Select a facility —</span>
+                  <span class="bf-cdd-arrow">▾</span>
+                </button>
+                <div class="bf-cdd-panel" id="bfcdd-fac-select-panel"></div>
+              </div>
+            </div>
+            <div class="bf-grid2">
+              <div class="bf"><label>Date</label><input type="date" id="book-date"></div>
+              <div class="bf"><label>Start Time</label><input type="time" id="book-start" value="10:00"></div>
+            </div>
+            <div class="bf"><label>End Time</label><input type="time" id="book-end" value="12:00"></div>
+            <div class="bf"><label>Purpose <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--dim)">(optional)</span></label><textarea id="book-purpose" rows="2" placeholder="e.g. Study group session…"></textarea></div>
+            <div class="bf-alert" id="book-alert"></div>
+            <button class="btn-book" id="book-btn" onclick="submitBooking()">Submit Booking →</button>
+          </div>
+        </div>
+        <!-- Browse grid -->
+        <div class="panel">
+          <div class="panel-head"><div><h3>Browse Facilities</h3><p id="fac-browse-sub">Tap to select</p></div></div>
+          <div class="list-controls">
+            <div class="search-wrap-f">
+              <input class="search-inp-f" id="fac-search" type="text" placeholder="Search name or location…" oninput="renderFacGrid()">
+            </div>
+            <div class="cdd-wrap">
+              <button class="cdd-btn" id="fac-avail-btn" onclick="toggleCdd('fac-avail')">
+                <span id="fac-avail-label">All Status</span><span class="cdd-arrow">▾</span>
+              </button>
+              <div class="cdd-panel" id="fac-avail-panel">
+                <div class="cdd-opt selected" data-val="" onclick="setCdd('fac-avail','','All Status',renderFacGrid)">All Status</div>
+                <div class="cdd-opt" data-val="1"         onclick="setCdd('fac-avail','1','Available',renderFacGrid)">Available</div>
+                <div class="cdd-opt" data-val="0"         onclick="setCdd('fac-avail','0','Unavailable',renderFacGrid)">Unavailable</div>
+              </div>
+            </div>
+            <div class="cdd-wrap">
+              <button class="cdd-btn" id="fac-type-btn" onclick="toggleCdd('fac-type')">
+                <span id="fac-type-label">All Types</span><span class="cdd-arrow">▾</span>
+              </button>
+              <div class="cdd-panel align-right" id="fac-type-panel">
+                <div class="cdd-opt selected" data-val=""               onclick="setCdd('fac-type','','All Types',renderFacGrid)">All Types</div>
+                <div class="cdd-opt" data-val="Lecture Hall"            onclick="setCdd('fac-type','Lecture Hall','Lecture Hall',renderFacGrid)">Lecture Hall</div>
+                <div class="cdd-opt" data-val="Laboratory"              onclick="setCdd('fac-type','Laboratory','Laboratory',renderFacGrid)">Laboratory</div>
+                <div class="cdd-opt" data-val="Sports Facility"         onclick="setCdd('fac-type','Sports Facility','Sports Facility',renderFacGrid)">Sports Facility</div>
+                <div class="cdd-opt" data-val="Meeting Room"            onclick="setCdd('fac-type','Meeting Room','Meeting Room',renderFacGrid)">Meeting Room</div>
+                <div class="cdd-opt" data-val="Study Room"              onclick="setCdd('fac-type','Study Room','Study Room',renderFacGrid)">Study Room</div>
+              </div>
+            </div>
+            <input type="hidden" id="fac-avail-filter" value="">
+            <input type="hidden" id="fac-type-filter"  value="">
+          </div>
+          <div class="fac-grid" id="fac-browse"></div>
+          <div class="st-pagination" id="fac-pagination" style="display:none;">
+            <div class="st-page-info" id="fac-page-info">—</div>
+            <div class="st-page-btns" id="fac-page-btns"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MY BOOKINGS ════ -->
+  <div class="tab-pane" id="tab-mybookings">
+    <div class="content" style="padding:20px 24px 24px;">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>My Bookings</h3><p id="bookings-sub">Loading…</p></div>
+          <button class="panel-action" onclick="switchTab('book')">+ New Booking</button>
+        </div>
+        <div class="list-controls">
+          <div class="search-wrap-f">
+            <input class="search-inp-f" id="bk-search" type="text" placeholder="Search facility or purpose…" oninput="renderBookings()">
+          </div>
+          <div class="cdd-wrap">
+            <button class="cdd-btn" id="bk-status-btn" onclick="toggleCdd('bk-status')">
+              <span id="bk-status-label">All Status</span><span class="cdd-arrow">▾</span>
+            </button>
+            <div class="cdd-panel align-right" id="bk-status-panel">
+              <div class="cdd-opt selected" data-val=""         onclick="setCdd('bk-status','','All Status',renderBookings)">All Status</div>
+              <div class="cdd-opt" data-val="pending"           onclick="setCdd('bk-status','pending','Pending',renderBookings)">Pending</div>
+              <div class="cdd-opt" data-val="approved"          onclick="setCdd('bk-status','approved','Approved',renderBookings)">Approved</div>
+              <div class="cdd-opt" data-val="rejected"          onclick="setCdd('bk-status','rejected','Rejected',renderBookings)">Rejected</div>
+            </div>
+          </div>
+          <input type="hidden" id="bk-status-filter" value="">
+        </div>
+        <!-- Desktop timeline list -->
+        <div class="bk-table-wrap" id="bookings-list"></div>
+        <!-- Mobile cards -->
+        <div class="bk-cards-wrap" id="bk-cards"></div>
+        <div class="st-pagination" id="bk-pagination" style="display:none;">
+          <div class="st-page-info" id="bk-page-info">—</div>
+          <div class="st-page-btns" id="bk-page-btns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MAINTENANCE ════ -->
+  <div class="tab-pane" id="tab-maintenance">
+    <div class="content" style="padding:20px 24px 24px;">
+      <div class="grid-2" style="align-items:start;">
+        <div class="panel">
+          <div class="panel-head"><div><h3>🔧 Report an Issue</h3><p>Notify maintenance staff</p></div></div>
+          <div class="booking-form">
+            <div class="bf"><label>Facility</label>
+              <input type="hidden" id="mr-facility" value="">
+              <div class="bf-cdd" id="bfcdd-mr-facility">
+                <button type="button" class="bf-cdd-btn" onclick="toggleBfCdd('mr-facility')">
+                  <span class="bf-cdd-label" id="bfcdd-mr-facility-label">Select a facility…</span>
+                  <span class="bf-cdd-arrow">▾</span>
+                </button>
+                <div class="bf-cdd-panel" id="bfcdd-mr-facility-panel"></div>
+              </div>
+            </div>
+            <div class="bf"><label>Priority</label>
+              <div class="cdd-wrap" style="width:100%;">
+                <button class="cdd-btn" id="mr-priority-btn" onclick="toggleCdd('mr-priority')" style="width:100%;justify-content:space-between;">
+                  <span id="mr-priority-label">🟡 Medium — needs attention</span><span class="cdd-arrow">▾</span>
+                </button>
+                <div class="cdd-panel" id="mr-priority-panel">
+                  <div class="cdd-opt" data-val="Low"    onclick="setCdd('mr-priority','Low','🟢 Low — minor issue',null)">🟢 Low — minor issue</div>
+                  <div class="cdd-opt selected" data-val="Medium" onclick="setCdd('mr-priority','Medium','🟡 Medium — needs attention',null)">🟡 Medium — needs attention</div>
+                  <div class="cdd-opt" data-val="High"   onclick="setCdd('mr-priority','High','🔴 High — urgent / safety risk',null)">🔴 High — urgent / safety risk</div>
+                </div>
+              </div>
+              <input type="hidden" id="mr-priority" value="Medium">
+            </div>
+            <div class="bf"><label>Description</label><textarea id="mr-desc" rows="4" placeholder="Describe the issue — what's wrong, where exactly, how long it's been happening…"></textarea></div>
+            <div class="bf-alert" id="mr-alert"></div>
+            <button class="btn-book" id="mr-btn" onclick="submitReport()">🔧 Submit Report</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h3>My Reports</h3><p id="mr-sub">Loading…</p></div>
+<a href="report.html" class="panel-action" style="text-decoration:none;">View History →</a>
+          </div>
+          <div id="mr-list"><div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ ANNOUNCEMENTS ════ -->
+  <div class="tab-pane" id="tab-announce">
+    <div class="content" style="padding:16px 24px 24px;">
+      <div class="panel">
+        <div class="panel-head">
+          <div><h3>📢 Announcements</h3><p id="ann-sub">Loading…</p></div>
+          <a href="announcements.html" class="panel-action" style="text-decoration:none;">View All →</a>
+        </div>
+        <div id="ann-list">
+          <div style="padding:14px 18px;display:flex;flex-direction:column;gap:10px;">
+            <div class="skeleton" style="height:14px;width:55%"></div>
+            <div class="skeleton" style="height:12px;width:90%"></div>
+            <div class="skeleton" style="height:12px;width:70%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── MOBILE-ONLY UI ── Each element hidden by default via inline style.
+     JS shows them on mobile. position:fixed elements cannot be hidden via parent display:none. -->
+
+<div class="slide-nav-backdrop" id="slide-backdrop" style="display:none" onclick="closeSlideNav()"></div>
+
+<div class="slide-nav" id="slide-nav" style="display:none">
+  <div class="slide-nav-handle" onclick="toggleSlideNav()" style="cursor:pointer;"></div>
+  <div class="slide-nav-title" onclick="toggleSlideNav()" style="cursor:pointer;user-select:none;">Navigation</div>
+  <div class="slide-nav-grid">
+    <button class="slide-nav-item" id="snav-m-home"        onclick="mobileNav('home')">        <span class="slide-nav-icon">🏠</span>Home</button>
+    <button class="slide-nav-item" id="snav-m-book"        onclick="mobileNav('book')">        <span class="slide-nav-icon">➕</span>Book Space</button>
+    <button class="slide-nav-item" id="snav-m-mybookings"  onclick="mobileNav('mybookings')">  <span class="slide-nav-icon">📅</span>My Bookings</button>
+    <button class="slide-nav-item" id="snav-m-maintenance" onclick="mobileNav('maintenance')"> <span class="slide-nav-icon">🔧</span>Report Issue</button>
+    <button class="slide-nav-item" id="snav-m-announce"    onclick="mobileNav('announce')">    <span class="slide-nav-icon">📢</span>Announcements</button>
+    <button class="slide-nav-item"                          onclick="closeSlideNav();window.location.href='profile.html'" style="text-decoration:none;"> <span class="slide-nav-icon">👤</span>My Profile</button>
+    <button class="slide-nav-item"                          onclick="closeSlideNav();window.location.href='notifications.html'"><span class="slide-nav-icon">🔔</span>Notifications</button>
+    <button class="slide-nav-item"                          onclick="logout()">                <span class="slide-nav-icon">🚪</span>Sign Out</button>
+  </div>
+</div>
+
+<button class="slide-trigger" id="slide-trigger" style="display:none" onclick="toggleSlideNav()" aria-label="Menu">
+  <svg id="slide-trigger-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .35s cubic-bezier(.16,1,.3,1)"><polyline points="18 15 12 9 6 15"/></svg>
+  <span id="slide-trigger-label">Menu</span>
+</button>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="mobile.js"></script>
+<script>
+// ════════════════════════════════════════════════
+//  Auth
+// ════════════════════════════════════════════════
+const _token = localStorage.getItem('yagums_token');
+let _user    = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+if (!_token || !_user) { window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html'; }
+
+const fn = _user.first_name || (_user.name||'Student').split(' ')[0];
+const hr = new Date().getHours();
+document.getElementById('sb-name').textContent    = _user.name || (_user.first_name+' '+(_user.last_name||''));
+document.getElementById('greeting').textContent   = (hr<12?'Good morning':hr<17?'Good afternoon':'Good evening')+', '+fn+'!';
+document.getElementById('topbar-date').textContent= new Date().toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+// Profile picture in sidebar + mobile avatar — single consolidated init
+(function initAvatar() {
+  const pic = _user.profile_picture;
+  // Sidebar avatar (desktop)
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap && pic) sbWrap.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='👤'">`;
+  // Mobile avatar (topbar)
+  const mob = document.getElementById('mob-avatar');
+  if (mob && pic) mob.innerHTML = `<img src="${pic}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='👤'">`;
+})();
+
+// Refresh avatar + name when returning from profile.html
+window.addEventListener('focus', () => {
+  const fresh = JSON.parse(localStorage.getItem('yagums_user') || 'null');
+  if (!fresh) return;
+  _user = fresh;
+  const name = fresh.name || (fresh.first_name+' '+(fresh.last_name||''));
+  const el = document.getElementById('sb-name'); if (el) el.textContent = name;
+  const pic = fresh.profile_picture;
+  const sbWrap = document.getElementById('sb-avatar-wrap');
+  if (sbWrap) sbWrap.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" onerror="this.parentElement.textContent='👤'">` : '👤';
+  const mob = document.getElementById('mob-avatar');
+  if (mob) mob.innerHTML = pic ? `<img src="${pic}?v=${Date.now()}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.textContent='👤'">` : '👤';
+});
+
+// Booking date defaults
+const tmr = new Date(); tmr.setDate(tmr.getDate()+1);
+document.getElementById('book-date').value = tmr.toISOString().split('T')[0];
+document.getElementById('book-date').min   = new Date().toISOString().split('T')[0];
+
+// ════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════
+async function api(url, method='GET', body) {
+  try {
+    const opts = { headers:{'Authorization':'Bearer '+_token,'Content-Type':'application/json'} };
+    if (method==='POST') { opts.method='POST'; opts.body=JSON.stringify(body); }
+    const res  = await fetch(url, opts);
+    if (res.status === 401 || res.status === 403) {
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';
+      return {success:false};
+    }
+    const data = await res.json();
+    if (data.success === false && data.redirect) {
+      window.location.href = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';
+      return {success:false};
+    }
+    return data;
+  } catch(e) {
+    console.error('API error:', url, e);
+    return {success:false, message:'Network error — check your connection.'};
+  }
+}
+
+// ════════════════════════════════════════════════
+//  Slide-up nav — all elements controlled directly via style.display
+//  (position:fixed children escape parent display:none — must control individually)
+// ════════════════════════════════════════════════
+let _slideOpen = false;
+
+function openSlideNav() {
+  _slideOpen = true;
+  const sn = document.getElementById('slide-nav');
+  const sb = document.getElementById('slide-backdrop');
+  const si = document.getElementById('slide-trigger-icon');
+  const sl = document.getElementById('slide-trigger-label');
+  const st = document.getElementById('slide-trigger');
+  if (sn) { sn.style.display='block'; requestAnimationFrame(()=>sn.classList.add('open')); }
+  if (sb) { sb.style.display='block'; }
+  if (si) si.style.transform = 'rotate(180deg)';
+  if (sl) sl.textContent = 'Close';
+  if (st) { st.classList.add('open'); st.style.opacity='0'; st.style.pointerEvents='none'; }
+}
+
+function closeSlideNav() {
+  _slideOpen = false;
+  const sn = document.getElementById('slide-nav');
+  const sb = document.getElementById('slide-backdrop');
+  const si = document.getElementById('slide-trigger-icon');
+  const sl = document.getElementById('slide-trigger-label');
+  const st = document.getElementById('slide-trigger');
+  if (sn) {
+    sn.classList.remove('open');
+    setTimeout(() => { if (!_slideOpen) sn.style.display='none'; }, 360);
+  }
+  if (sb) sb.style.display = 'none';
+  if (si) si.style.transform = 'rotate(0deg)';
+  if (sl) sl.textContent = 'Menu';
+  if (st) { st.classList.remove('open'); st.style.opacity=''; st.style.pointerEvents=''; }
+}
+
+// ── Touch swipe-down on slide-nav to close ────────
+(function initSwipeClose() {
+  let _touchStartY = 0, _touchStartTime = 0;
+  document.addEventListener('touchstart', e => {
+    _touchStartY    = e.touches[0].clientY;
+    _touchStartTime = Date.now();
+  }, { passive:true });
+  document.addEventListener('touchend', e => {
+    if (!_slideOpen) return;
+    const dy       = e.changedTouches[0].clientY - _touchStartY;
+    const elapsed  = Date.now() - _touchStartTime;
+    const isFast   = elapsed < 350;
+    const isDown   = dy > 60;                   // dragged down ≥60px
+    const isFling  = isFast && dy > 30;         // quick flick downward
+    if (isDown || isFling) closeSlideNav();
+  }, { passive:true });
+})();
+
+function toggleSlideNav() { _slideOpen ? closeSlideNav() : openSlideNav(); }
+function mobileNav(tab) { closeSlideNav(); switchTab(tab); }
+function updateSlideNavActive(tab) {
+  document.querySelectorAll('.slide-nav-item[id^="snav-m-"]').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('snav-m-'+tab); if (el) el.classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+//  Mobile detection — show/hide each element directly
+// ════════════════════════════════════════════════
+function applyMobileMode() {
+  const isMobile = window.innerWidth <= 768;
+  const mobAvatar = document.getElementById('mob-avatar');
+  const mobLogout = document.getElementById('mob-logout-btn');
+  const hamburger = document.getElementById('hamburger-btn');
+  const trigger   = document.getElementById('slide-trigger');
+  if (mobAvatar) mobAvatar.style.display = isMobile ? 'flex' : 'none';
+  if (mobLogout) mobLogout.style.display = isMobile ? 'flex' : 'none';
+  if (hamburger) hamburger.style.display = isMobile ? 'none' : '';
+  if (trigger)   trigger.style.display   = isMobile ? 'flex' : 'none';
+  // On desktop, force close and hide slide nav too
+  if (!isMobile) {
+    _slideOpen = false;
+    const sn = document.getElementById('slide-nav');
+    const sb = document.getElementById('slide-backdrop');
+    if (sn) { sn.style.display='none'; sn.classList.remove('open'); }
+    if (sb) sb.style.display = 'none';
+  }
+}
+applyMobileMode();
+window.addEventListener('resize', applyMobileMode);
+
+// ════════════════════════════════════════════════
+//  Tab switching
+// ════════════════════════════════════════════════
+let _activeTab = 'home';
+function switchTab(tab) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const tb=document.getElementById('tab-btn-'+tab); if(tb) tb.classList.add('active');
+  const sn=document.getElementById('snav-'+tab);    if(sn) sn.classList.add('active');
+  const titles={home:'Student Dashboard',book:'Book a Space',mybookings:'My Bookings',maintenance:'Report Issue',announce:'Announcements'};
+  document.getElementById('page-title').textContent = titles[tab] || 'Dashboard';
+  _activeTab = tab;
+  updateSlideNavActive(tab);
+  if (tab==='mybookings')  loadBookings();
+  if (tab==='announce')    loadAnnouncements();
+  if (tab==='maintenance') loadMyReports();
+}
+document.getElementById('snav-home').classList.add('active');
+
+// ════════════════════════════════════════════════
+//  Notifications
+// ════════════════════════════════════════════════
+const notifPanel = document.getElementById('notif-panel');
+let _notifOpen = false;
+document.getElementById('notif-bell').addEventListener('click', e => {
+  e.stopPropagation();
+  _notifOpen = !_notifOpen;
+  notifPanel.classList.toggle('open', _notifOpen);
+  if (_notifOpen) loadNotifications();
+});
+document.addEventListener('click', e => {
+  if (_notifOpen && !notifPanel.contains(e.target) && e.target.id !== 'notif-bell') {
+    _notifOpen = false; notifPanel.classList.remove('open');
+  }
+});
+async function loadNotifications() {
+  const data = await api('api/notifications.php');
+  if (!data.success) return;
+  const list = data.notifications || [], unread = data.unread_count || 0;
+  document.getElementById('notif-count').textContent = unread;
+  document.getElementById('notif-count').classList.toggle('hidden', unread===0);
+  const el = document.getElementById('notif-list');
+  el.innerHTML = list.length ? list.map(n=>`
+    <div class="notif-row ${n.is_read?'':'unread'}" onclick="markOneRead(${n.notification_id})">
+      <div class="notif-dot ${n.is_read?'read':'unread'}"></div>
+      <div><div class="notif-text">${esc(n.message)}</div><div class="notif-time">${n.created_at}</div></div>
+    </div>`).join('') : '<div class="notif-empty">No notifications yet.</div>';
+}
+async function markAllRead()  { await api('api/notifications.php','POST',{action:'read_all'}); _notifOpen=false; notifPanel.classList.remove('open'); loadNotifications(); }
+async function markOneRead(id){ await api('api/notifications.php','POST',{action:'read_one',notification_id:id}); loadNotifications(); }
+
+// ════════════════════════════════════════════════
+//  Custom dropdowns — no native OS picker on mobile
+// ════════════════════════════════════════════════
+// ── Universal dropdown positioner ───────────────────────────────────
+// Works on all screen sizes — uses getBoundingClientRect + position:fixed
+// so it escapes overflow:hidden, stacking contexts, scroll offsets
+// ── Dropdown positioning helper ──────────────────────────────────────
+// ── Dropdown toggles — same pattern as facility dashboard ────────────
+function toggleCdd(id) {
+  const panel = document.getElementById(id+'-panel');
+  const btn   = document.getElementById(id+'-btn');
+  if (!panel || !btn) return;
+  const isOpen = panel.classList.contains('open');
+  // Close all open panels first
+  document.querySelectorAll('.cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    const b = document.getElementById(p.id.replace('-panel','-btn'));
+    if (b) b.classList.remove('open');
+  });
+  document.querySelectorAll('.bf-cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    p.closest('.bf-cdd')?.querySelector('.bf-cdd-btn')?.classList.remove('open');
+  });
+  if (!isOpen) {
+    panel.classList.add('open');
+    btn.classList.add('open');
+    // Flip left if panel overflows right edge
+    requestAnimationFrame(() => {
+      const rect = panel.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) {
+        panel.style.left = 'auto'; panel.style.right = '0';
+      } else {
+        panel.style.left = ''; panel.style.right = '';
+      }
+    });
+  }
+}
+
+function toggleBfCdd(id) {
+  const panel = document.getElementById('bfcdd-'+id+'-panel');
+  const btn   = document.getElementById('bfcdd-'+id)?.querySelector('.bf-cdd-btn');
+  if (!panel || !btn) return;
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    const b = document.getElementById(p.id.replace('-panel','-btn'));
+    if (b) b.classList.remove('open');
+  });
+  document.querySelectorAll('.bf-cdd-panel.open').forEach(p => {
+    p.classList.remove('open');
+    p.closest('.bf-cdd')?.querySelector('.bf-cdd-btn')?.classList.remove('open');
+  });
+  if (!isOpen) {
+    panel.classList.add('open');
+    btn.classList.add('open');
+  }
+}
+
+// Close on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cdd-wrap') && !e.target.closest('.bf-cdd')) {
+    document.querySelectorAll('.cdd-panel.open').forEach(p => {
+      p.classList.remove('open');
+      const b = document.getElementById(p.id.replace('-panel','-btn'));
+      if (b) b.classList.remove('open');
+    });
+    document.querySelectorAll('.bf-cdd-panel.open').forEach(p => {
+      p.classList.remove('open');
+      p.closest('.bf-cdd')?.querySelector('.bf-cdd-btn')?.classList.remove('open');
+    });
+  }
+});
+function setCdd(id, val, label, callback) {
+  const hidden = document.getElementById(id+'-filter');
+  if (hidden) hidden.value = val;
+  const labelEl = document.getElementById(id+'-label');
+  if (labelEl) labelEl.textContent = label;
+  const panel = document.getElementById(id+'-panel');
+  if (panel) { panel.querySelectorAll('.cdd-opt').forEach(o => o.classList.toggle('selected', o.dataset.val===val)); panel.classList.remove('open'); }
+  const btn = document.getElementById(id+'-btn');
+  if (btn) btn.classList.remove('open');
+  if (callback) callback();
+}
+
+// ════════════════════════════════════════════════
+//  Bookings — search · status filter · 8 per page
+// ════════════════════════════════════════════════
+const BK_PER_PAGE = 8;
+let allBookings = [], bkPage = 1;
+
+async function loadBookings() {
+  const data = await api('api/bookings.php');
+  if (!data.success) return;
+  const c = data.counts || {};
+  document.getElementById('stat-total').textContent   = c.total    || 0;
+  document.getElementById('stat-approved').textContent= c.approved || 0;
+  document.getElementById('stat-pending').textContent = c.pending  || 0;
+  document.getElementById('nb-bookings').textContent  = c.pending  || 0;
+  allBookings = data.bookings || [];
+  window._stBookings = allBookings;
+  renderOvBookings();
+  bkPage = 1;
+  renderBookings();
+}
+
+function getFilteredBookings() {
+  const q      = (document.getElementById('bk-search')?.value || '').toLowerCase();
+  const status = document.getElementById('bk-status-filter')?.value || '';
+  return allBookings.filter(b => {
+    if (q && !(b.facility_name||'').toLowerCase().includes(q) && !(b.purpose||'').toLowerCase().includes(q)) return false;
+    if (status && (b.status_name||'').toLowerCase() !== status) return false;
+    return true;
+  });
+}
+
+function renderBookings() {
+  const filtered = getFilteredBookings();
+  const total    = filtered.length;
+  const pages    = Math.ceil(total / BK_PER_PAGE) || 1;
+  bkPage         = Math.min(bkPage, pages);
+  const slice    = filtered.slice((bkPage-1)*BK_PER_PAGE, bkPage*BK_PER_PAGE);
+  document.getElementById('bookings-sub').textContent = total + ' booking' + (total!==1?'s':'') + (total!==allBookings.length?' (filtered)':'');
+
+  const icons = {approved:'✅',pending:'⏳',rejected:'✕',cancelled:'⊘'};
+
+  // Desktop timeline
+  const listEl = document.getElementById('bookings-list');
+  if (listEl) {
+    listEl.innerHTML = slice.length ? slice.map(b => {
+      const st = (b.status_name||'').toLowerCase();
+      return `<div class="tl-item">
+        <div class="tl-icon ${st}">${icons[st]||'📅'}</div>
+        <div class="tl-body">
+          <div class="tl-name">${esc(b.facility_name)}</div>
+          <div class="tl-meta">📅 ${b.booking_date} · 🕐 ${b.start_time}–${b.end_time}${b.purpose?' · '+esc(b.purpose):''}</div>
+        </div>
+        <span class="badge ${st}">${esc(b.status_name)}</span>
+        ${['pending','approved'].includes(st) ? `<button class="btn-cancel-bk" onclick="cancelBooking(${b.booking_id},'${esc(b.facility_name)}')">Cancel</button>` : ''}
+      </div>`;
+    }).join('') : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No bookings match this filter.</div>';
+  }
+
+  // Mobile cards
+  const cardsEl = document.getElementById('bk-cards');
+  if (cardsEl) {
+    cardsEl.innerHTML = slice.length ? slice.map(b => {
+      const st = (b.status_name||'').toLowerCase();
+      return `<div class="bk-card">
+        <div class="bk-card-top">
+          <div class="bk-card-fac">${esc(b.facility_name)}</div>
+          <span class="badge ${st}">${esc(b.status_name)}</span>
+        </div>
+        <div class="bk-card-meta">📅 ${b.booking_date} · 🕐 ${b.start_time}–${b.end_time}</div>
+        ${b.purpose ? `<div class="bk-card-meta">📝 ${esc(b.purpose)}</div>` : ''}
+        ${['pending','approved'].includes(st) ? `<button class="btn-cancel-bk full" onclick="cancelBooking(${b.booking_id},'${esc(b.facility_name)}')">Cancel Booking</button>` : ''}
+      </div>`;
+    }).join('') : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No bookings match this filter.</div>';
+  }
+
+  // Pagination
+  const pagEl  = document.getElementById('bk-pagination');
+  const btnsEl = document.getElementById('bk-page-btns');
+  const infoEl = document.getElementById('bk-page-info');
+  if (!pagEl) return;
+  if (pages <= 1) { pagEl.style.display='none'; return; }
+  pagEl.style.display = 'flex';
+  const from=(bkPage-1)*BK_PER_PAGE+1, to=Math.min(bkPage*BK_PER_PAGE, total);
+  infoEl.innerHTML = `Showing <b>${from}–${to}</b> of <b>${total}</b>`;
+  let html = `<button class="st-page-btn" ${bkPage<=1?'disabled':''} onclick="gotoBkPage(${bkPage-1})">← Prev</button>`;
+  const start=Math.max(1,bkPage-2), end=Math.min(pages,start+4);
+  for(let i=start;i<=end;i++) html+=`<button class="st-page-btn ${i===bkPage?'active-page':''}" onclick="gotoBkPage(${i})">${i}</button>`;
+  html+=`<button class="st-page-btn" ${bkPage>=pages?'disabled':''} onclick="gotoBkPage(${bkPage+1})">Next →</button>`;
+  btnsEl.innerHTML = html;
+}
+function gotoBkPage(p) { bkPage=p; renderBookings(); document.getElementById('tab-mybookings').scrollIntoView({behavior:'smooth',block:'start'}); }
+
+async function cancelBooking(bookingId, facilityName) {
+  if (!confirm('Cancel your booking for "' + facilityName + '"?\nThis cannot be undone.')) return;
+  const btn = event?.target;
+  if (btn) { btn.disabled=true; btn.textContent='Cancelling…'; }
+  const data = await api('api/bookings.php','POST',{action:'cancel',booking_id:bookingId});
+  if (data.success) {
+    loadBookings();
+  } else {
+    alert(data.message || 'Could not cancel booking.');
+    if (btn) { btn.disabled=false; btn.textContent='Cancel'; }
+  }
+}
+
+// ════════════════════════════════════════════════
+//  Facilities — search · availability · type · 6 per page
+// ════════════════════════════════════════════════
+const TYPE_ICONS = {'Lecture Hall':'🏛️','Laboratory':'💻','Sports Facility':'🏀','Meeting Room':'🗂️','Study Room':'📚'};
+const FAC_PER_PAGE = 6;
+let allFacs = [], facPage = 1;
+
+async function loadFacilities() {
+  document.getElementById('fac-browse').innerHTML = [1,2,3].map(()=>'<div class="skeleton" style="height:100px;border-radius:13px;"></div>').join('');
+  const data = await api('api/facilities.php');
+  if (!data.success||!data.facilities) return;
+  allFacs = data.facilities;
+  window._stFacils = allFacs;
+  document.getElementById('stat-fac').textContent = allFacs.filter(f=>f.is_available).length;
+  facPage = 1;
+  renderFacGrid();
+  buildFacDropdowns();
+  renderOvAvail();
+}
+
+function renderFacGrid() {
+  const q     = (document.getElementById('fac-search')?.value || '').toLowerCase();
+  const avail = document.getElementById('fac-avail-filter')?.value || '';
+  const type  = document.getElementById('fac-type-filter')?.value  || '';
+  const filtered = allFacs.filter(f => {
+    if (q     && !(f.facility_name||'').toLowerCase().includes(q) && !(f.location||'').toLowerCase().includes(q)) return false;
+    if (avail === '1' && !f.is_available) return false;
+    if (avail === '0' &&  f.is_available) return false;
+    if (type  && (f.type_name||'') !== type) return false;
+    return true;
+  });
+  const total = filtered.length;
+  const pages = Math.ceil(total / FAC_PER_PAGE) || 1;
+  facPage     = Math.min(facPage, pages);
+  const slice = filtered.slice((facPage-1)*FAC_PER_PAGE, facPage*FAC_PER_PAGE);
+
+  document.getElementById('fac-browse-sub').textContent =
+    total + ' facilit' + (total!==1?'ies':'y') + ' · ' + filtered.filter(f=>f.is_available).length + ' available' +
+    (total!==allFacs.length?' (filtered)':'');
+
+  document.getElementById('fac-browse').innerHTML = slice.length ? slice.map(f => {
+    const e = f.emoji || TYPE_ICONS[f.type_name] || '🏛️';
+    return `<div class="fac-card${f.is_available?'':' unavailable'}" onclick="${f.is_available?`selectFac(${f.facility_id})`:''}">
+      <span class="fac-emoji">${e}</span>
+      <div class="fac-name">${esc(f.facility_name)}</div>
+      <div class="fac-cap">${f.capacity} pax · ${esc(f.type_name||'')}</div>
+      <span class="badge ${f.is_available?'approved':'rejected'}" style="font-size:10px">${f.is_available?'Available':'Unavailable'}</span>
+    </div>`;
+  }).join('') : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No facilities match this filter.</div>';
+
+  // Pagination
+  const pagEl  = document.getElementById('fac-pagination');
+  const btnsEl = document.getElementById('fac-page-btns');
+  const infoEl = document.getElementById('fac-page-info');
+  if (!pagEl) return;
+  if (pages <= 1) { pagEl.style.display='none'; return; }
+  pagEl.style.display = 'flex';
+  const from=(facPage-1)*FAC_PER_PAGE+1, to=Math.min(facPage*FAC_PER_PAGE, total);
+  infoEl.innerHTML = `Showing <b>${from}–${to}</b> of <b>${total}</b>`;
+  let html = `<button class="st-page-btn" ${facPage<=1?'disabled':''} onclick="gotoFacPage(${facPage-1})">← Prev</button>`;
+  const start=Math.max(1,facPage-2), end=Math.min(pages,start+4);
+  for(let i=start;i<=end;i++) html+=`<button class="st-page-btn ${i===facPage?'active-page':''}" onclick="gotoFacPage(${i})">${i}</button>`;
+  html+=`<button class="st-page-btn" ${facPage>=pages?'disabled':''} onclick="gotoFacPage(${facPage+1})">Next →</button>`;
+  btnsEl.innerHTML = html;
+}
+function gotoFacPage(p) { facPage=p; renderFacGrid(); }
+
+function selectFac(id) {
+  const fac = allFacs.find(f => f.facility_id === id);
+  if (!fac) return;
+  const label = (fac.emoji || '🏛️') + ' ' + fac.facility_name;
+  setFacSelect(id, label);
+  switchTab('book');
+}
+
+// ════════════════════════════════════════════════
+//  Submit booking
+// ════════════════════════════════════════════════
+async function submitBooking() {
+  const facId  = document.getElementById('fac-select').value;
+  const date   =document.getElementById('book-date').value;
+  const start  =document.getElementById('book-start').value;
+  const end    =document.getElementById('book-end').value;
+  const purpose=document.getElementById('book-purpose').value.trim();
+  const alertEl=document.getElementById('book-alert'); alertEl.className='bf-alert';
+  if(!facId) {alertEl.textContent='✕ Please select a facility.';     alertEl.className='bf-alert show error';return;}
+  if(!date)  {alertEl.textContent='✕ Please choose a date.';         alertEl.className='bf-alert show error';return;}
+  if(!start||!end){alertEl.textContent='✕ Start and end time required.';alertEl.className='bf-alert show error';return;}
+  if(start>=end)  {alertEl.textContent='✕ End time must be after start.';alertEl.className='bf-alert show error';return;}
+  const btn=document.getElementById('book-btn');
+  btn.disabled=true;btn.innerHTML='<div class="btn-spin"></div> Submitting…';
+  const data=await api('api/bookings.php','POST',{facility_id:parseInt(facId),booking_date:date,start_time:start,end_time:end,purpose});
+  if(!data.success){alertEl.textContent='✕ '+(data.message||'Booking failed.');alertEl.className='bf-alert show error';}
+  else{
+    alertEl.textContent='✓ Booking submitted! Awaiting approval.';alertEl.className='bf-alert show success';
+    document.getElementById('fac-select').value='';
+    const fsl=document.getElementById('bfcdd-fac-select-label');if(fsl)fsl.textContent='— Select a facility —';
+    document.getElementById('bfcdd-fac-select-panel')?.querySelectorAll('.bf-cdd-opt').forEach(o=>o.classList.remove('selected'));
+    document.getElementById('book-purpose').value='';
+    loadBookings();
+    setTimeout(()=>alertEl.className='bf-alert',5000);
+  }
+  btn.disabled=false;btn.innerHTML='Submit Booking →';
+}
+
+// ════════════════════════════════════════════════
+//  Announcements + voting
+// ════════════════════════════════════════════════
+const PRI_LABEL = { high:'Important', medium:'Medium', low:'General' };
+let _anns = [];
+
+async function loadAnnouncements() {
+  const data=await api('api/announcements.php');
+  const total = data.announcements?.length || 0;
+  const list = (data.announcements || []).slice(0, 7); // 7 most recent
+  _anns = list;
+  const el = document.getElementById('ann-list');
+  const showing = Math.min(list.length, 7);
+  document.getElementById('ann-sub').textContent = total > 7
+    ? `Showing 7 of ${total} active`
+    : total + ' active announcement' + (total !== 1 ? 's' : '');
+  if(!list.length){el.innerHTML='<div class="empty-state"><div class="es-icon">📢</div><div class="es-title">No announcements</div><div class="es-msg">Nothing posted yet.</div></div>';return;}
+  el.innerHTML=list.map(a=>{
+    const uv=a.user_vote||null;
+    return `<div class="ann-card" id="ann-${a.announcement_id}">
+      <div class="ann-head">
+        <div class="ann-title">${esc(a.title)}</div>
+        <span class="ann-pri ${a.priority}">${PRI_LABEL[a.priority]||a.priority}</span>
+      </div>
+      <div class="ann-msg">${esc(a.message)}</div>
+      <div class="ann-footer">
+        <div class="ann-meta">📅 ${a.created_at} · By: ${esc(a.posted_by_name||'Admin')}</div>
+        <div class="vote-row">
+          <button class="vote-btn up ${uv==='up'?'voted-up':''}" id="vup-${a.announcement_id}" onclick="vote(${a.announcement_id},'up')">
+            👍 <span id="vc-up-${a.announcement_id}">${a.upvotes||0}</span>
+          </button>
+          <button class="vote-btn down ${uv==='down'?'voted-down':''}" id="vdn-${a.announcement_id}" onclick="vote(${a.announcement_id},'down')">
+            👎 <span id="vc-dn-${a.announcement_id}">${a.downvotes||0}</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function vote(annId, voteType) {
+  const upBtn=document.getElementById('vup-'+annId), dnBtn=document.getElementById('vdn-'+annId);
+  if(!upBtn||!dnBtn)return; upBtn.disabled=true; dnBtn.disabled=true;
+  try {
+    const d=await api('api/announcements.php','POST',{action:'vote',announcement_id:annId,vote:voteType});
+    if(!d.success)return;
+    document.getElementById('vc-up-'+annId).textContent=d.upvotes;
+    document.getElementById('vc-dn-'+annId).textContent=d.downvotes;
+    upBtn.className='vote-btn up' +(d.vote==='up' ?' voted-up':'');
+    dnBtn.className='vote-btn down'+(d.vote==='down'?' voted-down':'');
+    const a=_anns.find(x=>x.announcement_id==annId);
+    if(a){a.upvotes=d.upvotes;a.downvotes=d.downvotes;a.user_vote=d.vote;}
+  } finally { upBtn.disabled=false; dnBtn.disabled=false; }
+}
+
+// ════════════════════════════════════════════════
+//  Maintenance — report + view own reports
+// ════════════════════════════════════════════════
+const MR_STATUS_CLS = { 'Pending':'pending', 'In Progress':'progress', 'Completed':'approved' };
+const MR_PRI_CLS    = { 'High':'high', 'Medium':'medium', 'Low':'low' };
+const MR_PCT        = { 'Pending':5, 'In Progress':50, 'Completed':100 };
+
+async function loadMyReports() {
+  const el = document.getElementById('mr-list');
+  const data = await api('api/maintenance.php?my_reports=1');
+  if (!data.success) { el.innerHTML='<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">Could not load reports.</div>'; return; }
+  const list = data.requests || [];
+  document.getElementById('mr-sub').textContent = list.length+' report'+(list.length!==1?'s':'');
+  renderOvReports(list); // update overview progress bars
+  if (!list.length) { el.innerHTML='<div style="padding:24px;text-align:center;font-size:13px;color:var(--dim);">No reports submitted yet.</div>'; return; }
+  el.innerHTML = list.map(r => {
+    const stCls    = MR_STATUS_CLS[r.status_name] || 'pending';
+    const priCls   = MR_PRI_CLS[r.priority]        || 'medium';
+    const pct      = MR_PCT[r.status_name]          || 5;
+    const isPending= r.status_name === 'Pending';
+    const progressNote = r.progress ? `<div style="font-size:11px;color:var(--dim);margin-bottom:4px;">📝 ${esc(r.progress)}</div>` : '';
+    return `<div style="padding:12px 18px;border-bottom:1px solid rgba(37,37,64,.5);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${esc(r.emoji||'🏛️')} ${esc(r.facility_name)}</div>
+          <div style="font-size:11px;color:var(--muted);">📍 ${esc(r.location||'—')}</div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;">
+          <span class="badge ${priCls}" style="font-size:10px;">${esc(r.priority)}</span>
+          <span class="badge ${stCls}"  style="font-size:10px;">${esc(r.status_name)}</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">${esc(r.description)}</div>
+      ${progressNote}
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px;">
+        <div style="height:100%;border-radius:2px;width:${pct}%;background:${stCls==='approved'?'var(--green)':stCls==='progress'?'var(--blue)':'var(--amber)'};transition:width .5s;"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        <div style="font-size:11px;color:var(--dim);">📅 ${r.created_at}</div>
+        ${isPending
+          ? `<button style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid rgba(248,113,113,.35);background:transparent;color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;" onclick="confirmDeleteReport(${r.request_id},'${esc(r.facility_name)}')">🗑️ Delete</button>`
+          : `<span style="font-size:11px;color:var(--dim);">⚠️ Being actioned</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function confirmDeleteReport(requestId, facilityName) {
+  if (!document.getElementById('mr-confirm-modal')) {
+    const m = document.createElement('div');
+    m.id = 'mr-confirm-modal';
+    m.style.cssText = 'display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;';
+    m.innerHTML = `<div style="background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:24px;width:100%;max-width:380px;animation:modalIn .25s cubic-bezier(.16,1,.3,1);">
+      <div style="font-family:'Inter',sans-serif;font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">🗑️ Delete Report?</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.55;" id="mr-confirm-msg">This cannot be undone.</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="closeMrConfirm()" style="background:transparent;border:1px solid var(--border2);border-radius:10px;padding:10px 18px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;">Cancel</button>
+        <button id="mr-confirm-ok" style="flex:1;background:linear-gradient(135deg,#dc2626,#f87171);border:none;border-radius:10px;padding:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;">Delete</button>
+      </div>
+    </div>`;
+    m.addEventListener('click', e => { if (e.target === m) closeMrConfirm(); });
+    document.body.appendChild(m);
+  }
+  document.getElementById('mr-confirm-msg').textContent = `Delete your report for "${facilityName}"? This cannot be undone.`;
+  document.getElementById('mr-confirm-ok').onclick = () => { closeMrConfirm(); deleteMyReport(requestId); };
+  const modal = document.getElementById('mr-confirm-modal');
+  modal.style.display = 'flex';
+}
+function closeMrConfirm() {
+  const m = document.getElementById('mr-confirm-modal');
+  if (m) m.style.display = 'none';
+}
+async function deleteMyReport(requestId) {
+  const data = await api('api/maintenance.php','POST',{action:'delete_report',request_id:requestId});
+  if (data.success) { loadMyReports(); loadNotifications(); }
+  else {
+    document.getElementById('mr-confirm-msg').textContent = data.message || 'Could not delete — report may already be actioned.';
+    document.getElementById('mr-confirm-modal').style.display = 'flex';
+    setTimeout(() => closeMrConfirm(), 2500);
+  }
+}
+
+async function submitReport() {
+  const facId=document.getElementById('mr-facility').value, pri=document.getElementById('mr-priority').value;
+  const desc =document.getElementById('mr-desc').value.trim();
+  const alertEl=document.getElementById('mr-alert'); alertEl.className='bf-alert';
+  if(!facId){alertEl.className='bf-alert show error';alertEl.textContent='✕ Please select a facility.';return;}
+  if(!desc) {alertEl.textContent='✕ Please describe the issue.';alertEl.className='bf-alert show error';return;}
+  if(desc.length<10){alertEl.textContent='✕ Description too short — please add more detail.';alertEl.className='bf-alert show error';return;}
+  const btn=document.getElementById('mr-btn');
+  btn.disabled=true;btn.innerHTML='<span class="btn-spin"></span> Submitting…';
+  const data=await api('api/maintenance.php','POST',{action:'report',facility_id:parseInt(facId),priority:pri,description:desc});
+  if(!data.success){alertEl.textContent='✕ '+(data.message||'Failed.');alertEl.className='bf-alert show error';btn.disabled=false;btn.innerHTML='🔧 Submit Report';return;}
+  alertEl.textContent='✓ Report submitted! Maintenance team has been notified.';alertEl.className='bf-alert show success';
+  document.getElementById('mr-desc').value='';
+  document.getElementById('mr-priority').value='Medium';
+  document.getElementById('mr-priority-label').textContent='🟡 Medium — needs attention';
+  document.querySelectorAll('#mr-priority-panel .cdd-opt').forEach(o=>o.classList.toggle('selected',o.dataset.val==='Medium'));
+  loadMyReports(); loadNotifications();
+  setTimeout(()=>alertEl.className='bf-alert',5000);
+  btn.disabled=false;btn.innerHTML='🔧 Submit Report';
+}
+
+// ════════════════════════════════════════════════
+//  Logout & util
+// ════════════════════════════════════════════════
+function logout(){localStorage.removeItem('yagums_token');localStorage.removeItem('yagums_user');document.cookie='yagums_token=; path=/; max-age=0';window.location.href=window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'login.html';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Init ──────────────────────────────────────────
+document.getElementById('snav-home').classList.add('active');
+updateSlideNavActive('home');
+loadBookings();
+loadFacilities();
+loadNotifications();
+loadMyReports();
+loadAnnouncements();
+window._stFacils   = [];
+window._stBookings = [];
+
+// ── Custom bf-cdd dropdowns ──────────────────────────────
+function setFacSelect(val, label) {
+  document.getElementById('fac-select').value = val;
+  const lbl = document.getElementById('bfcdd-fac-select-label');
+  if (lbl) lbl.textContent = label;
+  const panel = document.getElementById('bfcdd-fac-select-panel');
+  const btn   = document.getElementById('bfcdd-fac-select')?.querySelector('.bf-cdd-btn');
+  if (panel) {
+    panel.querySelectorAll('.bf-cdd-opt').forEach(o => o.classList.remove('selected'));
+    [...panel.querySelectorAll('.bf-cdd-opt')].find(o => o.dataset.val===String(val))?.classList.add('selected');
+    panel.classList.remove('open');
+  }
+  if (btn) btn.classList.remove('open');
+}
+function setMrFacility(val, label) {
+  document.getElementById('mr-facility').value = val;
+  const lbl = document.getElementById('bfcdd-mr-facility-label');
+  if (lbl) lbl.textContent = label;
+  const panel = document.getElementById('bfcdd-mr-facility-panel');
+  const btn   = document.getElementById('bfcdd-mr-facility')?.querySelector('.bf-cdd-btn');
+  if (panel) {
+    panel.querySelectorAll('.bf-cdd-opt').forEach(o => o.classList.remove('selected'));
+    [...panel.querySelectorAll('.bf-cdd-opt')].find(o => o.dataset.val===String(val))?.classList.add('selected');
+    panel.classList.remove('open');
+  }
+  if (btn) btn.classList.remove('open');
+}
+function buildFacDropdowns() {
+  const nbPanel = document.getElementById('bfcdd-fac-select-panel');
+  if (nbPanel) {
+    const avail = window._stFacils.filter(f => f.is_available);
+    nbPanel.innerHTML = avail.length
+      ? avail.map(f => `<div class="bf-cdd-opt" data-val="${f.facility_id}" onclick="setFacSelect(${f.facility_id},'${esc(f.emoji||'🏛️')} ${esc(f.facility_name)}')">${esc(f.emoji||'🏛️')} ${esc(f.facility_name)} — ${esc(f.location||'')}</div>`).join('')
+      : '<div class="bf-cdd-opt" style="opacity:.5;pointer-events:none;">No facilities available</div>';
+  }
+  const mrPanel = document.getElementById('bfcdd-mr-facility-panel');
+  if (mrPanel) {
+    mrPanel.innerHTML = window._stFacils.length
+      ? window._stFacils.map(f => `<div class="bf-cdd-opt" data-val="${f.facility_id}" onclick="setMrFacility(${f.facility_id},'${esc(f.emoji||'🏛️')} ${esc(f.facility_name)}')">${esc(f.emoji||'🏛️')} ${esc(f.facility_name)} — ${esc(f.location||'')}</div>`).join('')
+      : '<div class="bf-cdd-opt" style="opacity:.5;pointer-events:none;">No facilities found</div>';
+  }
+}
+
+// ── Report progress bars (overview) ─────────────────────
+function renderOvReports(reports) {
+  const listEl = document.getElementById('ov-rep-list');
+  const subEl  = document.getElementById('ov-rep-sub');
+  if (!listEl) return;
+  const list = (reports || []).slice(0, 4);
+  if (subEl) subEl.textContent = (reports||[]).length + ' report' + ((reports||[]).length!==1?'s':'');
+  const STATUS_PROG = {Pending:25,'In Progress':65,Completed:100,Rejected:100};
+  const STATUS_CLS  = {Pending:'pending','In Progress':'in-progress',Completed:'completed',Rejected:'rejected'};
+  listEl.innerHTML = list.length
+    ? list.map(r => {
+        const prog = STATUS_PROG[r.status_name] || 25;
+        const cls  = STATUS_CLS[r.status_name]  || 'pending';
+        return `<div class="rep-item">
+          <div class="rep-item-head">
+            <div class="rep-item-fac">${esc(r.facility_name||'—')}</div>
+            <span class="badge ${cls}" style="font-size:10px;padding:2px 8px;flex-shrink:0;">${esc(r.status_name||'—')}</span>
+          </div>
+          <div class="rep-item-meta">📝 ${esc((r.description||'').substring(0,50))}${(r.description||'').length>50?'…':''}</div>
+          <div class="rep-bar-wrap"><div class="rep-bar ${cls}" style="width:${prog}%;"></div></div>
+        </div>`;
+      }).join('')
+    : `<div style="display:flex;flex-direction:column;gap:10px;">${[1,2,3].map(()=>`<div class="rep-item">
+        <div style="height:8px;background:var(--surface);border-radius:4px;width:60%;opacity:.3;"></div>
+        <div style="height:5px;background:var(--surface);border-radius:100px;width:100%;opacity:.15;margin-top:6px;"></div>
+      </div>`).join('')}</div>`;
+}
+
+// ── Available Spaces widget — 2-col card grid, 8 per page ──
+const ST_AVAIL_PER_PAGE = 8;
+let stAvailPage = 1;
+function renderOvAvail() {
+  const listEl   = document.getElementById('ov-avail-list');
+  const footerEl = document.getElementById('ov-avail-footer');
+  const subEl    = document.getElementById('ov-avail-sub');
+  if (!listEl) return;
+  const sorted = [...window._stFacils].sort((a,b) => b.is_available - a.is_available);
+  const avail  = sorted.filter(f => f.is_available).length;
+  const total  = sorted.length;
+  const pages  = Math.ceil(total / ST_AVAIL_PER_PAGE) || 1;
+  stAvailPage  = Math.max(1, Math.min(stAvailPage, pages));
+  const slice  = sorted.slice((stAvailPage-1)*ST_AVAIL_PER_PAGE, stAvailPage*ST_AVAIL_PER_PAGE);
+  if (subEl) subEl.textContent = avail + ' available · ' + (total-avail) + ' unavailable';
+  if (!total) {
+    listEl.innerHTML = '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No facilities found.</div>';
+    if (footerEl) footerEl.style.display = 'none';
+    return;
+  }
+  // Render as 2-col card grid — grid-auto-rows:1fr enforced via CSS
+  listEl.innerHTML = `<div class="st-avail-grid">${slice.map(f => {
+    const ok  = f.is_available;
+    const dot = ok ? '<div class="st-avail-dot-wrap"></div>' : '<div class="st-unavail-dot"></div>';
+    return `<div class="st-avail-card${ok?'':' dim'}">
+      <div class="st-avail-card-top">
+        ${dot}
+        <div class="st-avail-name" title="${esc(f.facility_name)}">${esc(f.emoji||'🏛️')} ${esc(f.facility_name)}</div>
+      </div>
+      <div class="st-avail-meta">📍 ${esc(f.location||'—')} · 👥 ${f.capacity||'—'} pax</div>
+      <button class="st-avail-book-btn${ok?'':' unavail'}" ${ok?`onclick="bookSpace(${f.facility_id},'${esc(f.emoji||'🏛️')} ${esc(f.facility_name)}')"`:'disabled'}>${ok?'Book':'Unavailable'}</button>
+    </div>`;
+  }).join('')}</div>`;
+  // Pagination — centred, margin-top:auto via CSS
+  if (footerEl) {
+    if (pages <= 1) { footerEl.style.display = 'none'; return; }
+    footerEl.style.display = 'flex';
+    footerEl.innerHTML = `
+      <button class="st-nav-btn" ${stAvailPage<=1?'disabled':''} onclick="stAvailGoto(${stAvailPage-1})">‹</button>
+      <span style="font-size:11px;color:var(--muted);">${stAvailPage} / ${pages}</span>
+      <button class="st-nav-btn" ${stAvailPage>=pages?'disabled':''} onclick="stAvailGoto(${stAvailPage+1})">›</button>`;
+  }
+}
+function stAvailGoto(p){stAvailPage=p;renderOvAvail();}
+function bookSpace(facId, label) {
+  switchTab('book');
+  setTimeout(() => setFacSelect(facId, label), 80);
+}
+
+// ── Recent Bookings widget ───────────────────────────────
+function renderOvBookings() {
+  const listEl = document.getElementById('ov-bk-list');
+  const subEl  = document.getElementById('ov-bk-sub');
+  if (!listEl) return;
+  const recent = (window._stBookings || []).slice(0, 4);
+  if (subEl) subEl.textContent = (window._stBookings||[]).length + ' total';
+  listEl.innerHTML = recent.length
+    ? recent.map(b => `<div class="st-bk-row">
+        <div class="st-bk-info">
+          <div class="st-bk-fac">${esc(b.facility_name||'—')}</div>
+          <div class="st-bk-meta">📅 ${b.booking_date||'—'} · 🕐 ${b.start_time||'—'}–${b.end_time||'—'}</div>
+        </div>
+        <span class="badge ${(b.status_name||'').toLowerCase()}" style="font-size:10px;flex-shrink:0;">${esc(b.status_name||'—')}</span>
+      </div>`).join('')
+    : '<div style="padding:20px;text-align:center;font-size:13px;color:var(--dim);">No bookings yet.</div>';
+}
+
+// ── Silent 5s refresh ────────────────────────────────────
+let _stBkHash = '', _stAnnHash = '', _stNotifHash = '';
+setInterval(async () => {
+  // Bookings — update stats + recent widget
+  const bd = await api('api/bookings.php');
+  if (bd.success) {
+    const h = JSON.stringify(bd.bookings);
+    if (h !== _stBkHash) {
+      _stBkHash = h;
+      window._stBookings = bd.bookings || [];
+      const cnt = bd.counts||{};
+      document.getElementById('stat-total').textContent    = cnt.total    || 0;
+      document.getElementById('stat-approved').textContent = cnt.approved || 0;
+      document.getElementById('stat-pending').textContent  = cnt.pending  || 0;
+      renderOvBookings();
+    }
+  }
+  // Announcements
+  const ad = await api('api/announcements.php');
+  if (ad.success) {
+    const ah = JSON.stringify((ad.announcements||[]).slice(0,7));
+    if (ah !== _stAnnHash) { _stAnnHash = ah; loadAnnouncements(); }
+  }
+  // Notifications — always poll so badge updates when admin acts
+  const nd = await api('api/notifications.php');
+  if (nd.success) {
+    const nh = nd.unread_count + '|' + JSON.stringify(nd.notifications?.slice(0,5));
+    if (nh !== _stNotifHash) {
+      _stNotifHash = nh;
+      const count = nd.unread_count || 0;
+      document.getElementById('notif-count').textContent = count;
+      document.getElementById('notif-count').classList.toggle('hidden', count === 0);
+      // If panel is open, refresh it live
+      if (_notifOpen) loadNotifications();
+    }
+  }
+  // Reports — update overview progress bars silently
+  const rd = await api('api/maintenance.php?my_reports=1');
+  if (rd.success) renderOvReports(rd.requests||[]);
+}, 5000);
+</script>
+</body>
+</html>
