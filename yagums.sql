@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: May 04, 2026 at 10:11 AM
+-- Generation Time: Jun 02, 2026 at 04:47 AM
 -- Server version: 9.1.0
 -- PHP Version: 8.3.14
 
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `admin_logs` (
   KEY `fk_log_admin` (`admin_id`),
   KEY `idx_log_action` (`action`),
   KEY `idx_log_created` (`created_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=56 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `admin_logs`
@@ -102,7 +102,8 @@ INSERT INTO `admin_logs` (`log_id`, `admin_id`, `action`, `target_type`, `target
 (52, 1, 'LOGIN', NULL, NULL, 'Super Admin (Admin) logged in', '::1', '2026-05-03 16:32:45'),
 (53, 1, 'LOGOUT', NULL, NULL, 'Super Admin logged out', '::1', '2026-05-03 16:33:00'),
 (54, 1, 'LOGIN', NULL, NULL, 'Super Admin (Admin) logged in', '::1', '2026-05-03 22:25:21'),
-(55, 1, 'LOGOUT', NULL, NULL, 'Super Admin logged out', '::1', '2026-05-03 22:26:32');
+(55, 1, 'LOGOUT', NULL, NULL, 'Super Admin logged out', '::1', '2026-05-03 22:26:32'),
+(56, 2, 'CREATE', 'facility', 13, 'Added facility: chem lab 123', '127.0.0.1', '2026-06-01 14:13:35');
 
 -- --------------------------------------------------------
 
@@ -278,58 +279,63 @@ CREATE TABLE IF NOT EXISTS `bookings` (
   `purpose` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `recurring_weeks` tinyint DEFAULT NULL,
+  `recurring_group_id` bigint DEFAULT NULL,
   PRIMARY KEY (`booking_id`),
   UNIQUE KEY `uq_booking_slot` (`facility_id`,`booking_date`,`start_time`,`end_time`),
   KEY `fk_booking_user` (`user_id`),
   KEY `fk_booking_status` (`status_id`),
   KEY `idx_booking_date` (`booking_date`)
-) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`booking_id`, `user_id`, `facility_id`, `booking_date`, `start_time`, `end_time`, `status_id`, `purpose`, `created_at`, `updated_at`) VALUES
-(1, 11, 11, '2026-05-02', '10:00:00', '12:00:00', 2, 'Algorithms study group', '2026-04-27 10:00:00', '2026-05-02 04:35:57'),
-(2, 11, 9, '2026-04-20', '09:00:00', '10:00:00', 2, 'Group project meeting', '2026-04-15 09:00:00', '2026-04-16 10:00:00'),
-(3, 11, 7, '2026-04-10', '16:00:00', '18:00:00', 2, 'Basketball practice', '2026-04-08 09:00:00', '2026-04-09 10:00:00'),
-(4, 11, 4, '2026-03-28', '13:00:00', '15:00:00', 3, 'Programming lab', '2026-03-26 09:00:00', '2026-03-28 14:00:00'),
-(5, 11, 12, '2026-04-25', '08:00:00', '09:00:00', 1, 'Solo study session', '2026-04-26 10:00:00', '2026-04-26 10:00:00'),
-(6, 12, 12, '2026-05-04', '13:00:00', '15:00:00', 1, 'Group study — Data Structures', '2026-04-26 14:00:00', '2026-04-26 14:00:00'),
-(7, 12, 9, '2026-04-22', '10:00:00', '11:00:00', 2, 'Project presentation prep', '2026-04-20 10:00:00', '2026-04-21 10:00:00'),
-(8, 12, 7, '2026-04-08', '17:00:00', '19:00:00', 2, 'Basketball friendly match', '2026-04-06 10:00:00', '2026-04-07 10:00:00'),
-(9, 12, 1, '2026-03-25', '09:00:00', '11:00:00', 3, 'Seminar attendance', '2026-03-23 10:00:00', '2026-03-25 10:00:00'),
-(10, 13, 8, '2026-05-05', '07:00:00', '09:00:00', 1, 'Morning swim training', '2026-04-26 09:00:00', '2026-04-26 09:00:00'),
-(11, 13, 11, '2026-04-25', '14:00:00', '16:00:00', 2, 'Networks study session', '2026-04-23 10:00:00', '2026-04-24 10:00:00'),
-(12, 13, 10, '2026-05-09', '15:00:00', '16:00:00', 1, 'Club committee meeting', '2026-04-26 08:00:00', '2026-04-26 08:00:00'),
-(13, 14, 12, '2026-05-02', '13:00:00', '15:00:00', 1, 'Math revision', '2026-04-26 12:00:00', '2026-04-26 12:00:00'),
-(14, 14, 9, '2026-04-22', '13:00:00', '14:00:00', 2, 'Thesis discussion', '2026-04-20 11:00:00', '2026-04-21 11:00:00'),
-(15, 14, 6, '2026-04-03', '10:00:00', '12:00:00', 2, 'Chemistry experiment', '2026-04-01 09:00:00', '2026-04-02 10:00:00'),
-(16, 15, 11, '2026-04-24', '09:00:00', '10:00:00', 2, 'Solo reading', '2026-04-22 10:00:00', '2026-04-23 10:00:00'),
-(17, 15, 7, '2026-05-06', '14:00:00', '16:00:00', 1, 'Badminton practice', '2026-04-26 11:00:00', '2026-04-26 11:00:00'),
-(18, 15, 4, '2026-03-30', '14:00:00', '16:00:00', 3, 'Programming assignment', '2026-03-29 10:00:00', '2026-03-30 15:00:00'),
-(19, 16, 12, '2026-05-03', '12:00:00', '13:00:00', 1, 'Lunch study', '2026-04-26 13:00:00', '2026-04-26 13:00:00'),
-(20, 16, 6, '2026-04-16', '13:00:00', '15:00:00', 2, 'Physics lab', '2026-04-14 10:00:00', '2026-04-15 10:00:00'),
-(21, 7, 1, '2026-05-02', '09:00:00', '11:00:00', 2, 'CS301 Algorithms lecture', '2026-04-25 09:00:00', '2026-04-26 09:00:00'),
-(22, 7, 4, '2026-05-04', '14:00:00', '17:00:00', 1, 'Database lab session', '2026-04-26 10:00:00', '2026-04-26 10:00:00'),
-(23, 7, 9, '2026-04-20', '10:00:00', '11:00:00', 2, 'Department meeting', '2026-04-18 10:00:00', '2026-04-19 10:00:00'),
-(24, 7, 2, '2026-04-08', '08:00:00', '10:00:00', 2, 'Operating Systems lecture', '2026-04-06 09:00:00', '2026-04-07 09:00:00'),
-(25, 8, 2, '2026-05-01', '13:00:00', '15:00:00', 2, 'Mathematics tutorial', '2026-04-25 10:00:00', '2026-04-26 10:00:00'),
-(26, 8, 1, '2026-05-05', '09:00:00', '12:00:00', 1, 'Calculus lecture', '2026-04-26 08:00:00', '2026-04-26 08:00:00'),
-(27, 8, 10, '2026-04-19', '14:00:00', '15:00:00', 2, 'Faculty board meeting', '2026-04-17 10:00:00', '2026-04-18 10:00:00'),
-(28, 9, 6, '2026-05-03', '10:00:00', '12:00:00', 1, 'Chemistry lab class', '2026-04-26 09:00:00', '2026-04-26 09:00:00'),
-(29, 9, 2, '2026-04-09', '08:00:00', '10:00:00', 2, 'Chemistry 101 lecture', '2026-04-07 09:00:00', '2026-04-08 09:00:00'),
-(30, 9, 10, '2026-05-06', '13:00:00', '14:00:00', 1, 'Research committee', '2026-04-26 10:00:00', '2026-04-26 10:00:00'),
-(31, 10, 1, '2026-05-07', '14:00:00', '16:00:00', 1, 'EE201 Electronics lecture', '2026-04-26 11:00:00', '2026-04-26 11:00:00'),
-(32, 10, 4, '2026-04-17', '10:00:00', '13:00:00', 2, 'Circuits lab session', '2026-04-15 10:00:00', '2026-04-16 10:00:00'),
-(33, 11, 2, '2026-05-12', '10:00:00', '12:00:00', 1, 'Extra revision session', '2026-04-27 08:00:00', '2026-04-27 08:00:00'),
-(34, 12, 8, '2026-05-11', '06:00:00', '08:00:00', 1, 'Morning swim', '2026-04-27 08:30:00', '2026-04-27 08:30:00'),
-(35, 13, 1, '2026-05-13', '08:00:00', '10:00:00', 1, 'Entrepreneurship club', '2026-04-27 09:00:00', '2026-04-27 09:00:00'),
-(36, 7, 6, '2026-05-04', '10:00:00', '12:00:00', 3, 'Science lab class', '2026-04-27 09:30:00', '2026-05-02 20:03:37'),
-(37, 14, 12, '2026-05-10', '09:00:00', '11:00:00', 2, 'Guest lecture attendance', '2026-04-27 10:00:00', '2026-05-02 20:03:02'),
-(38, 15, 4, '2026-04-01', '14:00:00', '16:00:00', 3, 'Lab session', '2026-03-30 10:00:00', '2026-04-01 15:00:00'),
-(39, 16, 10, '2026-04-15', '10:00:00', '11:00:00', 3, 'Meeting', '2026-04-13 10:00:00', '2026-04-15 11:00:00'),
-(40, 11, 3, '2026-04-20', '16:00:00', '18:00:00', 3, 'Sports session', '2026-04-18 10:00:00', '2026-04-20 17:00:00');
+INSERT INTO `bookings` (`booking_id`, `user_id`, `facility_id`, `booking_date`, `start_time`, `end_time`, `status_id`, `purpose`, `created_at`, `updated_at`, `recurring_weeks`, `recurring_group_id`) VALUES
+(1, 11, 11, '2026-05-02', '10:00:00', '12:00:00', 2, 'Algorithms study group', '2026-04-27 10:00:00', '2026-05-02 04:35:57', NULL, NULL),
+(2, 11, 9, '2026-04-20', '09:00:00', '10:00:00', 2, 'Group project meeting', '2026-04-15 09:00:00', '2026-04-16 10:00:00', NULL, NULL),
+(3, 11, 7, '2026-04-10', '16:00:00', '18:00:00', 2, 'Basketball practice', '2026-04-08 09:00:00', '2026-04-09 10:00:00', NULL, NULL),
+(4, 11, 4, '2026-03-28', '13:00:00', '15:00:00', 3, 'Programming lab', '2026-03-26 09:00:00', '2026-03-28 14:00:00', NULL, NULL),
+(5, 11, 12, '2026-04-25', '08:00:00', '09:00:00', 1, 'Solo study session', '2026-04-26 10:00:00', '2026-04-26 10:00:00', NULL, NULL),
+(6, 12, 12, '2026-05-04', '13:00:00', '15:00:00', 1, 'Group study — Data Structures', '2026-04-26 14:00:00', '2026-04-26 14:00:00', NULL, NULL),
+(7, 12, 9, '2026-04-22', '10:00:00', '11:00:00', 2, 'Project presentation prep', '2026-04-20 10:00:00', '2026-04-21 10:00:00', NULL, NULL),
+(8, 12, 7, '2026-04-08', '17:00:00', '19:00:00', 2, 'Basketball friendly match', '2026-04-06 10:00:00', '2026-04-07 10:00:00', NULL, NULL),
+(9, 12, 1, '2026-03-25', '09:00:00', '11:00:00', 3, 'Seminar attendance', '2026-03-23 10:00:00', '2026-03-25 10:00:00', NULL, NULL),
+(10, 13, 8, '2026-05-05', '07:00:00', '09:00:00', 1, 'Morning swim training', '2026-04-26 09:00:00', '2026-04-26 09:00:00', NULL, NULL),
+(11, 13, 11, '2026-04-25', '14:00:00', '16:00:00', 2, 'Networks study session', '2026-04-23 10:00:00', '2026-04-24 10:00:00', NULL, NULL),
+(12, 13, 10, '2026-05-09', '15:00:00', '16:00:00', 1, 'Club committee meeting', '2026-04-26 08:00:00', '2026-04-26 08:00:00', NULL, NULL),
+(13, 14, 12, '2026-05-02', '13:00:00', '15:00:00', 1, 'Math revision', '2026-04-26 12:00:00', '2026-04-26 12:00:00', NULL, NULL),
+(14, 14, 9, '2026-04-22', '13:00:00', '14:00:00', 2, 'Thesis discussion', '2026-04-20 11:00:00', '2026-04-21 11:00:00', NULL, NULL),
+(15, 14, 6, '2026-04-03', '10:00:00', '12:00:00', 2, 'Chemistry experiment', '2026-04-01 09:00:00', '2026-04-02 10:00:00', NULL, NULL),
+(16, 15, 11, '2026-04-24', '09:00:00', '10:00:00', 2, 'Solo reading', '2026-04-22 10:00:00', '2026-04-23 10:00:00', NULL, NULL),
+(17, 15, 7, '2026-05-06', '14:00:00', '16:00:00', 1, 'Badminton practice', '2026-04-26 11:00:00', '2026-04-26 11:00:00', NULL, NULL),
+(18, 15, 4, '2026-03-30', '14:00:00', '16:00:00', 3, 'Programming assignment', '2026-03-29 10:00:00', '2026-03-30 15:00:00', NULL, NULL),
+(19, 16, 12, '2026-05-03', '12:00:00', '13:00:00', 1, 'Lunch study', '2026-04-26 13:00:00', '2026-04-26 13:00:00', NULL, NULL),
+(20, 16, 6, '2026-04-16', '13:00:00', '15:00:00', 2, 'Physics lab', '2026-04-14 10:00:00', '2026-04-15 10:00:00', NULL, NULL),
+(21, 7, 1, '2026-05-02', '09:00:00', '11:00:00', 2, 'CS301 Algorithms lecture', '2026-04-25 09:00:00', '2026-04-26 09:00:00', NULL, NULL),
+(22, 7, 4, '2026-05-04', '14:00:00', '17:00:00', 1, 'Database lab session', '2026-04-26 10:00:00', '2026-04-26 10:00:00', NULL, NULL),
+(23, 7, 9, '2026-04-20', '10:00:00', '11:00:00', 2, 'Department meeting', '2026-04-18 10:00:00', '2026-04-19 10:00:00', NULL, NULL),
+(24, 7, 2, '2026-04-08', '08:00:00', '10:00:00', 2, 'Operating Systems lecture', '2026-04-06 09:00:00', '2026-04-07 09:00:00', NULL, NULL),
+(25, 8, 2, '2026-05-01', '13:00:00', '15:00:00', 2, 'Mathematics tutorial', '2026-04-25 10:00:00', '2026-04-26 10:00:00', NULL, NULL),
+(26, 8, 1, '2026-05-05', '09:00:00', '12:00:00', 1, 'Calculus lecture', '2026-04-26 08:00:00', '2026-04-26 08:00:00', NULL, NULL),
+(27, 8, 10, '2026-04-19', '14:00:00', '15:00:00', 2, 'Faculty board meeting', '2026-04-17 10:00:00', '2026-04-18 10:00:00', NULL, NULL),
+(28, 9, 6, '2026-05-03', '10:00:00', '12:00:00', 1, 'Chemistry lab class', '2026-04-26 09:00:00', '2026-04-26 09:00:00', NULL, NULL),
+(29, 9, 2, '2026-04-09', '08:00:00', '10:00:00', 2, 'Chemistry 101 lecture', '2026-04-07 09:00:00', '2026-04-08 09:00:00', NULL, NULL),
+(30, 9, 10, '2026-05-06', '13:00:00', '14:00:00', 1, 'Research committee', '2026-04-26 10:00:00', '2026-04-26 10:00:00', NULL, NULL),
+(31, 10, 1, '2026-05-07', '14:00:00', '16:00:00', 1, 'EE201 Electronics lecture', '2026-04-26 11:00:00', '2026-04-26 11:00:00', NULL, NULL),
+(32, 10, 4, '2026-04-17', '10:00:00', '13:00:00', 2, 'Circuits lab session', '2026-04-15 10:00:00', '2026-04-16 10:00:00', NULL, NULL),
+(33, 11, 2, '2026-05-12', '10:00:00', '12:00:00', 1, 'Extra revision session', '2026-04-27 08:00:00', '2026-04-27 08:00:00', NULL, NULL),
+(34, 12, 8, '2026-05-11', '06:00:00', '08:00:00', 1, 'Morning swim', '2026-04-27 08:30:00', '2026-04-27 08:30:00', NULL, NULL),
+(35, 13, 1, '2026-05-13', '08:00:00', '10:00:00', 2, 'Entrepreneurship club', '2026-04-27 09:00:00', '2026-06-01 14:17:05', NULL, NULL),
+(36, 7, 6, '2026-05-04', '10:00:00', '12:00:00', 3, 'Science lab class', '2026-04-27 09:30:00', '2026-05-02 20:03:37', NULL, NULL),
+(37, 14, 12, '2026-05-10', '09:00:00', '11:00:00', 2, 'Guest lecture attendance', '2026-04-27 10:00:00', '2026-05-02 20:03:02', NULL, NULL),
+(38, 15, 4, '2026-04-01', '14:00:00', '16:00:00', 3, 'Lab session', '2026-03-30 10:00:00', '2026-04-01 15:00:00', NULL, NULL),
+(39, 16, 10, '2026-04-15', '10:00:00', '11:00:00', 3, 'Meeting', '2026-04-13 10:00:00', '2026-04-15 11:00:00', NULL, NULL),
+(40, 11, 3, '2026-04-20', '16:00:00', '18:00:00', 3, 'Sports session', '2026-04-18 10:00:00', '2026-04-20 17:00:00', NULL, NULL),
+(41, 7, 1, '2026-06-03', '09:00:00', '10:00:00', 1, 'testing 123', '2026-06-02 12:44:44', '2026-06-02 12:44:44', 2, 1780375484504),
+(42, 7, 1, '2026-06-10', '09:00:00', '10:00:00', 1, 'testing 123', '2026-06-02 12:44:44', '2026-06-02 12:44:44', NULL, 1780375484504),
+(43, 7, 1, '2026-06-17', '09:00:00', '10:00:00', 1, 'testing 123', '2026-06-02 12:44:44', '2026-06-02 12:44:44', NULL, 1780375484504);
 
 -- --------------------------------------------------------
 
@@ -373,7 +379,7 @@ CREATE TABLE IF NOT EXISTS `facilities` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`facility_id`),
   KEY `fk_facility_type` (`type_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `facilities`
@@ -391,7 +397,8 @@ INSERT INTO `facilities` (`facility_id`, `facility_name`, `emoji`, `type_id`, `c
 (9, 'Meeting Room 1', '🗂️', 4, 20, 'Admin Block, Level 1', 1, '2026-03-30 17:24:16'),
 (10, 'Meeting Room 2', '📋', 4, 15, 'Admin Block, Level 2', 1, '2026-04-01 09:00:00'),
 (11, 'Study Room 5', '📚', 5, 10, 'Library, Level 2', 1, '2026-03-30 17:24:16'),
-(12, 'Study Room 6', '📖', 5, 8, 'Library, Level 3', 1, '2026-04-01 09:00:00');
+(12, 'Study Room 6', '📖', 5, 8, 'Library, Level 3', 1, '2026-04-01 09:00:00'),
+(13, 'chem lab 123', '🧪', 2, 20, 'Block C, level 2', 1, '2026-06-01 14:13:35');
 
 -- --------------------------------------------------------
 
@@ -464,7 +471,7 @@ INSERT INTO `maintenancerequests` (`request_id`, `facility_id`, `reported_by`, `
 (17, 6, 16, 'Sink drains very slowly during experiments', 'Low', 3, '2026-04-05 09:00:00', '2026-04-15 09:00:00'),
 (18, 5, 11, 'Room number sign is faded and hard to read', 'Low', 1, '2026-04-24 10:00:00', '2026-04-24 10:00:00'),
 (19, 8, 13, 'Lifeguard chair is cracked and needs replacement', 'Low', 2, '2026-04-16 09:00:00', '2026-04-22 09:00:00'),
-(20, 3, 14, 'Lecture Hall C ceiling has water leak after heavy rain', 'High', 1, '2026-04-25 10:00:00', '2026-04-25 10:00:00');
+(20, 3, 14, 'Lecture Hall C ceiling has water leak after heavy rain', 'High', 2, '2026-04-25 10:00:00', '2026-06-01 14:15:09');
 
 -- --------------------------------------------------------
 
@@ -507,7 +514,7 @@ CREATE TABLE IF NOT EXISTS `maintenancetasks` (
   PRIMARY KEY (`task_id`),
   KEY `fk_task_request` (`request_id`),
   KEY `fk_task_user` (`assigned_to`)
-) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `maintenancetasks`
@@ -552,7 +559,8 @@ INSERT INTO `maintenancetasks` (`task_id`, `request_id`, `assigned_to`, `progres
 (36, 17, 6, 'Drain tested under full flow — clears in under 5 seconds', 1, '2026-04-05 09:00:00', '2026-04-13 11:00:00'),
 (37, 19, 4, 'Replacement chair on order — delivery expected next week', 0, '2026-04-16 09:00:00', '2026-04-22 08:00:00'),
 (38, 19, 5, 'Cracked chair removed from poolside — using backup chair', 0, '2026-04-16 09:00:00', '2026-04-22 09:00:00'),
-(39, 19, 6, 'Safety tape placed around old chair — hazard mitigated', 0, '2026-04-16 09:00:00', '2026-04-22 10:00:00');
+(39, 19, 6, 'Safety tape placed around old chair — hazard mitigated', 0, '2026-04-16 09:00:00', '2026-04-22 10:00:00'),
+(40, 20, 6, 'check wiring 123 321', 0, '2026-06-01 14:15:09', '2026-06-01 14:15:09');
 
 -- --------------------------------------------------------
 
@@ -573,7 +581,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   KEY `fk_notif_user` (`user_id`),
   KEY `idx_notif_type` (`type`),
   KEY `idx_notif_announcement` (`is_announcement`)
-) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -646,7 +654,12 @@ INSERT INTO `notifications` (`notification_id`, `user_id`, `message`, `is_read`,
 (64, 17, '📢 Library Study Rooms — Extended Hours', 0, 'announcement', 1, '2026-04-24 09:00:00'),
 (65, 11, 'Your booking for Study Room 5 on 2026-05-02 has been Approved ✅.', 0, 'success', 0, '2026-05-02 04:35:57'),
 (66, 14, 'Your booking for Study Room 6 on 2026-05-10 has been Approved ✅.', 0, 'success', 0, '2026-05-02 20:03:02'),
-(67, 7, 'Your booking for Science Lab A on 2026-05-04 has been Rejected ❌.', 0, 'warning', 0, '2026-05-02 20:03:37');
+(67, 7, 'Your booking for Science Lab A on 2026-05-04 has been Rejected ❌.', 0, 'warning', 0, '2026-05-02 20:03:37'),
+(68, 6, 'You have been assigned a maintenance task for Lecture Hall C: check wiring 123 321', 0, 'info', 0, '2026-06-01 14:15:09'),
+(69, 13, 'Your booking for Lecture Hall A on 2026-05-13 has been Approved ✅.', 0, 'success', 0, '2026-06-01 14:17:05'),
+(70, 7, '📅 Your booking for Lecture Hall A on 2026-06-03 is pending approval.', 0, 'info', 0, '2026-06-02 12:44:44'),
+(71, 2, '📅 New booking request from Dr. Kumar for Lecture Hall A on 2026-06-03 — awaiting your approval.', 0, 'info', 0, '2026-06-02 12:44:44'),
+(72, 3, '📅 New booking request from Dr. Kumar for Lecture Hall A on 2026-06-03 — awaiting your approval.', 0, 'info', 0, '2026-06-02 12:44:44');
 
 -- --------------------------------------------------------
 
@@ -706,7 +719,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`user_id`, `first_name`, `last_name`, `email`, `phone_number`, `password`, `role_id`, `profile_picture`, `backup_code`, `is_active`, `is_protected`, `created_at`, `updated_at`) VALUES
 (1, 'Super', 'Admin', 'admin@yagums.edu', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, '1.jpg', '$2y$10$1RnB1ju1YB3sFaNQmL3Lh.lTLi7D/0wPXntOrSUD2yKMI31q7k0AK', 1, 1, '2026-03-30 17:24:16', '2026-03-30 17:24:16'),
-(2, 'Haziq', 'Ibrahim', 'haziq@yagums.edu', '+60161112222', '123', 2, NULL, NULL, 1, 0, '2026-04-01 09:00:00', '2026-04-01 09:00:00'),
+(2, 'Haziq', 'Ibrahim', 'haziq@yagums.edu', '+60161112222', '123', 2, '2.jpg', NULL, 1, 0, '2026-04-01 09:00:00', '2026-06-01 14:21:31'),
 (3, 'Priya', 'Nair', 'priya.fm@yagums.edu', '+60173334444', '123', 2, NULL, NULL, 1, 0, '2026-04-01 09:00:00', '2026-04-01 09:00:00'),
 (4, 'Ahmad', 'Rahman', 'ahmad@maintenance.edu', '+60195556666', '123', 3, NULL, NULL, 1, 0, '2026-04-01 09:00:00', '2026-04-01 09:00:00'),
 (5, 'Rajan', 'Pillai', 'rajan@maintenance.edu', '+60127778888', '123', 3, NULL, NULL, 1, 0, '2026-04-01 09:00:00', '2026-04-01 09:00:00'),

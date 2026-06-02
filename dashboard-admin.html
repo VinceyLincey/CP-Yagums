@@ -892,8 +892,8 @@
 
 <div class="slide-nav-backdrop" id="slide-backdrop" style="display:none" onclick="closeSlideNav()"></div>
 <div class="slide-nav" id="slide-nav" style="display:none">
-  <div class="slide-nav-handle" onclick="toggleSlideNav()" style="cursor:pointer;"></div>
-  <div class="slide-nav-title" onclick="toggleSlideNav()" style="cursor:pointer;user-select:none;">Navigation</div>
+  <div class="slide-nav-handle"></div>
+  <div class="slide-nav-title">Navigation</div>
   <div class="slide-nav-grid">
     <button class="slide-nav-item" id="snav-m-overview"   onclick="mobileNav('overview')">  <span class="slide-nav-icon">🏠</span>Home</button>
     <button class="slide-nav-item" id="snav-m-users"      onclick="mobileNav('users')">     <span class="slide-nav-icon">👥</span>Users</button>
@@ -1423,7 +1423,7 @@ function openAddUserModal() {
   document.getElementById('pw-reveal').style.display='none';
   document.getElementById('modal-form').style.display='block';
   document.getElementById('m_active_wrap').style.display='none';
-  document.getElementById('modal-submit-btn').textContent='Create User';
+  document.getElementById('modal-actions').innerHTML='<button class="btn-modal-cancel" onclick="closeModal()">Cancel</button><button class="btn-modal-ok" id="modal-submit-btn" onclick="submitModal()">Create User</button>';
   ['m_first','m_last','m_email','m_phone'].forEach(id=>document.getElementById(id).value='');
   _resetModalCdds();
   document.getElementById('modal-actions').style.display='flex';
@@ -2006,15 +2006,227 @@ function exportPDF(){
   const date=new Date().toLocaleDateString('en-MY',{day:'numeric',month:'long',year:'numeric'});
   const datetime=new Date().toLocaleString('en-MY',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const escP=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  let body='';
-  if(type==='summary')body=`<table><tr><th>Metric</th><th>Value</th></tr>${Object.entries(data.summary||{}).map(([k,v])=>`<tr><td>${escP(k.replace(/_/g,' '))}</td><td>${v}</td></tr>`).join('')}</table>`;
-  if(type==='bookings')body=`<table><tr><th>Facility</th><th>User</th><th>Date</th><th>Time</th><th>Status</th></tr>${(data.bookings||[]).map(r=>`<tr><td>${escP(r.facility_name)}</td><td>${escP(r.user_name)}</td><td>${r.booking_date}</td><td>${r.start_time}–${r.end_time}</td><td>${escP(r.status_name)}</td></tr>`).join('')}</table>`;
-  if(type==='maintenance')body=`<table><tr><th>Facility</th><th>Reported By</th><th>Description</th><th>Priority</th><th>Status</th><th>Date</th></tr>${(data.requests||[]).map(r=>`<tr><td>${escP(r.facility_name||'—')}</td><td>${escP(r.reported_by_name||'—')}</td><td>${escP((r.description||'').substring(0,60))}</td><td>${escP(r.priority)}</td><td>${escP(r.status_name)}</td><td>${r.created_at}</td></tr>`).join('')}</table>`;
-  if(type==='users')body=`<table><tr><th>Name</th><th>Email</th><th>Role</th><th>Bookings</th><th>Joined</th><th>Active</th></tr>${(data.users||[]).map(r=>`<tr><td>${escP(r.first_name)} ${escP(r.last_name)}</td><td>${escP(r.email)}</td><td>${escP(r.role_name)}</td><td>${r.booking_count}</td><td>${r.created_at}</td><td>${r.is_active?'Yes':'No'}</td></tr>`).join('')}</table>`;
-  if(type==='facilities')body=`<table><tr><th>Facility</th><th>Type</th><th>Location</th><th>Capacity</th><th>Bookings</th><th>Available</th></tr>${(data.facilities||[]).map(r=>`<tr><td>${escP(r.facility_name)}</td><td>${escP(r.type_name||'—')}</td><td>${escP(r.location)}</td><td>${r.capacity}</td><td>${r.total_bookings}</td><td>${r.is_available?'Yes':'No'}</td></tr>`).join('')}</table>`;
-  if(type==='announcements')body=`<table><tr><th>Title</th><th>Priority</th><th>Posted By</th><th>Date</th><th>👍</th><th>👎</th></tr>${(data.announcements||[]).map(r=>`<tr><td>${escP(r.title)}</td><td>${escP(r.priority)}</td><td>${escP(r.posted_by_name)}</td><td>${r.created_at}</td><td>${r.upvotes}</td><td>${r.downvotes}</td></tr>`).join('')}</table>`;
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>YAGUMS Report — ${type}</title><style>body{font-family:'DM Sans',sans-serif;color:#0f0f1a;padding:30px;}h1{font-size:20px;margin-bottom:4px;}p{font-size:12px;color:#666;margin-bottom:20px;}table{width:100%;border-collapse:collapse;}th,td{padding:9px 12px;border:1px solid #ddd;font-size:12px;}th{background:#f5f5f5;font-weight:700;}tr:nth-child(even){background:#fafafa;}.footer{margin-top:30px;font-size:10px;color:#999;}</style></head><body><h1>YAGUMS ${type.charAt(0).toUpperCase()+type.slice(1)} Report</h1><p>Generated: ${datetime}</p>${body}<div class="footer">YAGUMS — Generated on ${date}</div></body></html>`;
-  const w=window.open('','_blank');w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),500);
+  const typeLabel={summary:'Summary',bookings:'Bookings',maintenance:'Maintenance',users:'Users',facilities:'Facilities',announcements:'Announcements'}[type]||type;
+
+  const statusColor=s=>{s=(s||'').toLowerCase();if(s==='approved'||s==='active'||s==='available')return'#34d399';if(s==='pending')return'#fbbf24';if(s==='rejected'||s==='inactive'||s==='disabled')return'#f87171';if(s==='high')return'#f87171';if(s==='medium')return'#fbbf24';if(s==='low')return'#34d399';return'#a78bfa';};
+  const badge=s=>`<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${statusColor(s)}22;color:${statusColor(s)};border:1px solid ${statusColor(s)}55;letter-spacing:.04em;text-transform:uppercase;">${escP(s)}</span>`;
+
+  // ── SVG chart builders ──────────────────────────────────────────
+  function buildBarChart(items, valueKey, labelKey, title, color='#a78bfa'){
+    if(!items||!items.length) return '';
+    const max=Math.max(...items.map(i=>i[valueKey]||0))||1;
+    const W=680, barH=22, gap=10, padL=160, padR=40, padT=36, rows=items.length;
+    const H=padT+rows*(barH+gap)+20;
+    const bars=items.map((item,i)=>{
+      const val=item[valueKey]||0;
+      const bw=Math.max(2,Math.round((val/max)*(W-padL-padR)));
+      const y=padT+i*(barH+gap);
+      const lbl=escP(String(item[labelKey]||'').substring(0,20));
+      return `<text x="${padL-8}" y="${y+barH/2+4}" text-anchor="end" font-size="11" fill="#c4b5fd" font-family="DM Sans,sans-serif">${lbl}</text>
+        <rect x="${padL}" y="${y}" width="${bw}" height="${barH}" rx="4" fill="${color}" opacity="0.85"/>
+        <text x="${padL+bw+6}" y="${y+barH/2+4}" font-size="11" fill="#e9d5ff" font-family="DM Sans,sans-serif">${val}</text>`;
+    }).join('');
+    return `<div style="margin:20px 0;">
+      <svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;">
+        <text x="${W/2}" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#e9d5ff" font-family="DM Sans,sans-serif" letter-spacing="1">${escP(title.toUpperCase())}</text>
+        <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-10}" stroke="#3b2f6e" stroke-width="1"/>
+        ${bars}
+      </svg></div>`;
+  }
+
+  function buildDonutChart(segments, title){
+    if(!segments||!segments.length) return '';
+    const total=segments.reduce((a,s)=>a+(s.value||0),0)||1;
+    const colors=['#a78bfa','#34d399','#fbbf24','#f87171','#60a5fa','#fb923c'];
+    const cx=100,cy=100,r=70,ri=42;
+    let angle=-Math.PI/2, paths='', legendItems='';
+    segments.forEach((seg,i)=>{
+      const slice=(seg.value/total)*2*Math.PI;
+      const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+      const x2=cx+r*Math.cos(angle+slice),y2=cy+r*Math.sin(angle+slice);
+      const xi1=cx+ri*Math.cos(angle),yi1=cy+ri*Math.sin(angle);
+      const xi2=cx+ri*Math.cos(angle+slice),yi2=cy+ri*Math.sin(angle+slice);
+      const large=slice>Math.PI?1:0;
+      const c=colors[i%colors.length];
+      paths+=`<path d="M${xi1},${yi1} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} L${xi2},${yi2} A${ri},${ri} 0 ${large},0 ${xi1},${yi1}" fill="${c}" opacity="0.9"/>`;
+      legendItems+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;"><div style="width:10px;height:10px;border-radius:3px;background:${c};flex-shrink:0;"></div><span style="font-size:11px;color:#c4b5fd;">${escP(seg.label)}</span><span style="font-size:11px;color:#e9d5ff;font-weight:700;margin-left:auto;">${seg.value}</span></div>`;
+      angle+=slice;
+    });
+    return `<div style="display:flex;align-items:center;gap:24px;margin:20px 0;background:rgba(255,255,255,.03);border-radius:12px;padding:16px;border:1px solid #3b2f6e;">
+      <div style="flex-shrink:0;">
+        <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <text x="100" y="14" text-anchor="middle" font-size="11" font-weight="700" fill="#e9d5ff" font-family="DM Sans,sans-serif" letter-spacing="1">${escP(title.toUpperCase())}</text>
+          ${paths}
+          <text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="18" font-weight="800" fill="#e9d5ff" font-family="DM Sans,sans-serif">${total}</text>
+          <text x="${cx}" y="${cy+18}" text-anchor="middle" font-size="9" fill="#a78bfa" font-family="DM Sans,sans-serif">TOTAL</text>
+        </svg>
+      </div>
+      <div style="flex:1;">${legendItems}</div>
+    </div>`;
+  }
+
+  // ── Build charts + body per type ───────────────────────────────
+  let charts='', body='';
+
+  if(type==='summary'){
+    const s=data.summary||{};
+    const donutData=[
+      {label:'Approved',value:s.approved_bookings||0},
+      {label:'Pending',value:s.pending_bookings||0},
+      {label:'Rejected',value:(s.total_bookings||0)-(s.approved_bookings||0)-(s.pending_bookings||0)},
+    ].filter(x=>x.value>0);
+    const maintData=[
+      {label:'Open Maintenance',value:s.pending_maintenance||0},
+      {label:'Resolved',value:(s.total_maintenance||0)-(s.pending_maintenance||0)},
+    ].filter(x=>x.value>0);
+    charts=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      ${buildDonutChart(donutData,'Booking Status')}
+      ${buildDonutChart(maintData,'Maintenance Status')}
+    </div>`;
+    const entries=Object.entries(s);
+    body=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">${entries.map(([k,v])=>`<div style="background:rgba(124,58,237,.15);border-radius:10px;padding:14px 12px;border:1px solid rgba(124,58,237,.3);text-align:center;"><div style="font-size:20px;font-weight:800;color:#a78bfa;">${escP(String(v))}</div><div style="font-size:9px;color:#7c6fad;text-transform:uppercase;letter-spacing:.07em;margin-top:3px;font-weight:600;">${escP(k.replace(/_/g,' '))}</div></div>`).join('')}</div>`;
+  }
+
+  if(type==='bookings'){
+    const rows=data.bookings||[], stats=data.stats||{};
+    const statusCounts=[
+      {label:'Approved',value:stats.approved||0},
+      {label:'Pending',value:stats.pending||0},
+      {label:'Rejected',value:stats.rejected||0},
+    ].filter(x=>x.value>0);
+    // bookings per facility
+    const facMap={};rows.forEach(r=>{facMap[r.facility_name]=(facMap[r.facility_name]||0)+1;});
+    const facItems=Object.entries(facMap).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value).slice(0,6);
+    charts=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      ${buildDonutChart(statusCounts,'Booking Status')}
+      ${buildBarChart(facItems,'value','label','Bookings by Facility','#a78bfa')}
+    </div>`;
+    const statEntries=Object.entries(stats);
+    body=`${statEntries.length?`<div style="display:grid;grid-template-columns:repeat(${Math.min(statEntries.length,5)},1fr);gap:10px;margin-bottom:18px;">${statEntries.map(([k,v])=>`<div style="background:rgba(124,58,237,.15);border-radius:10px;padding:12px;border:1px solid rgba(124,58,237,.3);text-align:center;"><div style="font-size:18px;font-weight:800;color:#a78bfa;">${v}</div><div style="font-size:9px;color:#7c6fad;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">${escP(k)}</div></div>`).join('')}</div>`:''}
+    <table><thead><tr><th>Facility</th><th>User</th><th>Date</th><th>Time</th><th>Status</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${i%2===0?'even':''}"><td>${escP(r.facility_name)}</td><td>${escP(r.user_name)}</td><td>${r.booking_date}</td><td>${r.start_time}–${r.end_time}</td><td>${badge(r.status_name)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No data in this range.</td></tr>'}</tbody></table>`;
+  }
+
+  if(type==='maintenance'){
+    const rows=data.requests||[];
+    const priMap={},stMap={};
+    rows.forEach(r=>{priMap[r.priority]=(priMap[r.priority]||0)+1;stMap[r.status_name]=(stMap[r.status_name]||0)+1;});
+    const priItems=Object.entries(priMap).map(([label,value])=>({label,value}));
+    const stItems=Object.entries(stMap).map(([label,value])=>({label,value}));
+    charts=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      ${buildDonutChart(priItems,'By Priority')}
+      ${buildDonutChart(stItems,'By Status')}
+    </div>`;
+    body=`<table><thead><tr><th>Facility</th><th>Reported By</th><th>Description</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${i%2===0?'even':''}"><td><strong>${escP(r.facility_name||'—')}</strong></td><td>${escP(r.reported_by_name||'—')}</td><td style="font-size:11px;">${escP((r.description||'').substring(0,55))}${(r.description||'').length>55?'…':''}</td><td>${badge(r.priority)}</td><td>${badge(r.status_name)}</td><td style="white-space:nowrap;font-size:11px;">${r.created_at}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">No data in this range.</td></tr>'}</tbody></table>`;
+  }
+
+  if(type==='users'){
+    const rows=data.users||[];
+    const roleMap={};rows.forEach(r=>{roleMap[r.role_name]=(roleMap[r.role_name]||0)+1;});
+    const roleItems=Object.entries(roleMap).map(([label,value])=>({label,value})).sort((a,b)=>b.value-a.value);
+    const topBookers=[...rows].sort((a,b)=>b.booking_count-a.booking_count).slice(0,6).map(r=>({label:r.first_name+' '+r.last_name,value:r.booking_count}));
+    charts=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      ${buildDonutChart(roleItems,'Users by Role')}
+      ${buildBarChart(topBookers,'value','label','Top Bookers','#34d399')}
+    </div>`;
+    body=`<table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Bookings</th><th>Joined</th><th>Status</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${i%2===0?'even':''}"><td><strong>${escP(r.first_name)} ${escP(r.last_name)}</strong></td><td style="font-size:11px;">${escP(r.email)}</td><td>${escP(r.role_name)}</td><td style="text-align:center;font-weight:700;color:#a78bfa;">${r.booking_count}</td><td style="font-size:11px;">${r.created_at}</td><td>${badge(r.is_active?'Active':'Inactive')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">No data.</td></tr>'}</tbody></table>`;
+  }
+
+  if(type==='facilities'){
+    const rows=data.facilities||[];
+    const availItems=[{label:'Available',value:rows.filter(r=>r.is_available).length},{label:'Disabled',value:rows.filter(r=>!r.is_available).length}].filter(x=>x.value>0);
+    const bookingItems=rows.map(r=>({label:r.facility_name,value:r.total_bookings})).sort((a,b)=>b.value-a.value).slice(0,6);
+    charts=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      ${buildDonutChart(availItems,'Availability')}
+      ${buildBarChart(bookingItems,'value','label','Bookings per Facility','#60a5fa')}
+    </div>`;
+    body=`<table><thead><tr><th>Facility</th><th>Type</th><th>Location</th><th>Capacity</th><th>Bookings</th><th>Status</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${i%2===0?'even':''}"><td><strong>${escP(r.facility_name)}</strong></td><td>${escP(r.type_name||'—')}</td><td style="font-size:11px;">${escP(r.location)}</td><td style="text-align:center;">${r.capacity}</td><td style="text-align:center;font-weight:700;color:#a78bfa;">${r.total_bookings}</td><td>${badge(r.is_available?'Available':'Disabled')}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">No data.</td></tr>'}</tbody></table>`;
+  }
+
+  if(type==='announcements'){
+    const rows=data.announcements||[];
+    const priMap={};rows.forEach(r=>{priMap[r.priority]=(priMap[r.priority]||0)+1;});
+    const priItems=Object.entries(priMap).map(([label,value])=>({label,value}));
+    const engagementItems=rows.slice(0,6).map(r=>({label:r.title.substring(0,18),value:r.upvotes+r.downvotes}));
+    charts=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      ${buildDonutChart(priItems,'By Priority')}
+      ${buildBarChart(engagementItems,'value','label','Engagement (votes)','#fbbf24')}
+    </div>`;
+    body=`<table><thead><tr><th>Title</th><th>Priority</th><th>Posted By</th><th>Date</th><th>👍</th><th>👎</th><th>Status</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${i%2===0?'even':''}"><td><strong>${escP(r.title)}</strong></td><td>${badge(r.priority)}</td><td>${escP(r.posted_by_name)}</td><td style="font-size:11px;">${r.created_at}</td><td style="text-align:center;">${r.upvotes}</td><td style="text-align:center;">${r.downvotes}</td><td>${badge(r.is_active?'Active':'Archived')}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">No data.</td></tr>'}</tbody></table>`;
+  }
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>YAGUMS ${typeLabel} Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{width:100%;background:#111 !important;color:#e2d9f3;font-family:'DM Sans',sans-serif;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact;display:flex;justify-content:center;padding:20px 0;}
+    .page{width:210mm;min-height:297mm;background:#0f0e1a;padding:0;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.6);}
+    @media print{html,body{padding:0;background:#0f0e1a !important;} .page{box-shadow:none;}}
+
+    /* Header */
+    .header{background:linear-gradient(135deg,#1a1333 0%,#2d1a5e 60%,#1a1333 100%);padding:28px 36px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #7c3aed;}
+    .header-right{text-align:right;}
+    .report-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+
+    /* Divider */
+    .divider{height:3px;background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 50%,#7c3aed 100%);}
+
+    /* Meta strip */
+    .meta{background:#140f28;padding:8px 36px;display:flex;gap:24px;border-bottom:1px solid #2a1f4e;}
+    .meta-item{font-size:10px;color:#6b5fa0;} .meta-item strong{color:#a78bfa;margin-right:4px;}
+
+    /* Body */
+    .body{padding:22px 36px 28px;}
+    .section-label{font-size:9px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:.15em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+    .section-label::before{content:'';width:3px;height:10px;background:#7c3aed;border-radius:2px;display:inline-block;}
+    .charts-wrap{margin-bottom:22px;}
+
+    /* Table */
+    table{width:100%;border-collapse:collapse;margin-top:8px;}
+    thead tr{background:#1e1440;}
+    th{padding:9px 12px;font-size:9px;font-weight:700;color:#a78bfa;text-transform:uppercase;letter-spacing:.1em;text-align:left;border-bottom:1px solid #3b2f6e;}
+    td{padding:8px 12px;font-size:11px;color:#c4b5fd;border-bottom:1px solid #1e1740;vertical-align:middle;}
+    tr.even td{background:#130e26;}
+    td strong{color:#e9d5ff;}
+    .empty{text-align:center;color:#4b4272;padding:20px !important;}
+
+    /* Footer */
+    .footer{background:#1a1333;padding:12px 36px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #2a1f4e;margin-top:auto;}    .footer-l{font-size:9px;color:#7c3aed;font-weight:800;letter-spacing:.12em;text-transform:uppercase;}
+    .footer-r{font-size:9px;color:#4b4272;}
+
+    @page{size:A4;margin:0;}
+    @media print{
+      html,body,.page{background:#0f0e1a !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    }
+  </style></head><body><div class="page">
+    <div class="header">
+      <div>
+        <img src="logo.png" style="height:60px;width:auto;display:block;">
+      </div>
+      <div class="header-right">
+        <div class="report-title">${typeLabel} Report</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="meta">
+      <div class="meta-item"><strong>Type</strong>${typeLabel}</div>
+      <div class="meta-item"><strong>Date</strong>${date}</div>
+      <div class="meta-item"><strong>System</strong>YAGUMS Admin Portal</div>
+      <div class="meta-item"><strong>Confidential</strong>Admin Use Only</div>
+    </div>
+      <div class="body" style="flex:1;">
+      <div class="section-label">Analytics Overview</div>
+      <div class="charts-wrap">${charts}</div>
+      <div class="section-label">Detailed Data</div>
+      ${body}
+    </div>
+    <div class="footer">
+      <div class="footer-l">YAGUMS Platform · Admin Report</div>
+      <div class="footer-r">Generated ${datetime}</div>
+    </div>
+  </div></body></html>`;
+
+  const w=window.open('','_blank');w.document.write(html);w.document.close();w.focus();setTimeout(()=>w.print(),600);
 }
 
 // ════════════════════════════════════════════════
